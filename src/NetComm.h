@@ -25,6 +25,7 @@
 #define MAX_FLOORS		8
 #define MAX_NAME	 	80
 #define MAX_MESSAGE		180
+#define MAX_OBJECTIVES	16
 
 // Definitions for various game data types
 #define bool			int
@@ -79,9 +80,10 @@ typedef struct pkt05{
 	char 		player_name[MAX_NAME_SIZE];
 };
 
-//Packet 6: 0x0006
-//	<< UNPURPOSED >>
-
+typedef struct pkt06{
+	floorNo_t	map_data[MAX_FLOORS];
+	int			objective_locations[MAX_OBJECTIVES]
+};
 //Packet 7: 0x0007
 //	<< UNPURPOSED >>
 	
@@ -100,7 +102,7 @@ typedef struct pkt10{
 	pos_t		yPos;
 	pos_t		xVel;
 	pos_t		yVel;
-};
+} PKT_POS_UPDATE;
 
 typedef struct pkt11{
 	floorNo_t 	floor;
@@ -109,17 +111,17 @@ typedef struct pkt11{
 	pos_t		yPos[MAX_PLAYERS];
 	pos_t		xVel[MAX_PLAYERS];
 	pos_t		yVel[MAX_PLAYERS];
-};
+} PKT_ALL_POS_UPDATE;
 
 typedef struct pkt12{
 	playerNo_t 	player_number;
 	floorNo_t 	current_floor;
 	floorNo_t 	desired_floor;
-};
+} PKT_FLOOR_MOVE_REQUEST;
 
 typedef struct pkt13{
 	floor_t 	new_floor;
 	pos_t		xPos;
 	pos_t		yPos;
-};
+} PKT_FLOOR_MOVE;
 
