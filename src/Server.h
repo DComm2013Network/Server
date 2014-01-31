@@ -19,3 +19,14 @@
 -- NOTES:
 -- This is unique to the server
 ----------------------------------------------------------------------*/
+
+#include "NetComm.h"
+
+#define IPC_01		0xB1
+
+
+typedef struct ipc01{
+	int		maxPlayers;
+	int		maxFloors;
+	char	serverName[MAX_NAME];
+}
