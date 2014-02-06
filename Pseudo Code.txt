@@ -1,0 +1,78 @@
+Server Pseudo Code for Milestone 1
+v 1
+-----------------------------------
+
+START
+    setup socket pair for ui
+    capture sigint
+    fork ui
+    
+UI
+    prompt setup info
+    while running
+        get input
+        if quit
+            create quit packet
+            send to switchboard
+            exit
+        if other
+            other
+    
+SETUP
+    wait for "setup packet" from ui
+    initialize
+    
+PROCESS CONTROL
+    5 socket pairs
+    5 forks
+
+CONNECTION MANAGER
+    create, bind, 
+    loop 
+        listen, accept
+        pass accepted socket+info to inbound switchboard
+        
+INBOUND SWITCHBOARD
+    allocate socket lists
+    while 1
+        listen on all sockets
+        if new connection
+            add new connection to socket to list of inbound sockets
+            pass socket+info to outbound switchboard
+        
+        if movement packet
+            pass to gameplay controller
+            
+        if game status packet
+            pass to game status controller
+            
+            .... etc
+
+GAMESTATUS CONTROLLER
+    initialize objectives array
+    while 1
+        listen on ipc socket
+        update objectives
+        send to outbound switchboard
+
+GAMEPLAY CONTROLLER
+    *just milestone1*
+    wile 1
+        listen on ipc-socket
+        read player information
+        update player information
+        send to outbound switchboard
+        
+OUTBOUND SWITCHBOARD
+    allocate tcp and udp socket list
+    while 1
+        listen on socket
+        if new connection
+            add tcp socket descriptor
+            open udp socket
+        else
+            forward to esired players
+
+CLEANUP
+    sigint all processes
+    close all connections
