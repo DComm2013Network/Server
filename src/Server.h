@@ -19,3 +19,13 @@
 -- NOTES:
 -- This is unique to the server
 ----------------------------------------------------------------------*/
+
+#define SOCKET int
+
+//function prototypes
+int UI(SOCKET uiSockSet);
+int ConnectionManager(SOCKET connectionSockSet, SOCKET outswitchSockSet);
+int GameplayController(SOCKET gameplaySockSet, SOCKET outswitchSockSet);
+int OutboundSwitchboard(SOCKET outswitchSockSet);
+int InboundSwitchboard(SOCKET connectionSockSet, SOCKET generalSockSet, SOCKET gameplaySockSet, SOCKET outswitchSockSet);
+int GeneralController(SOCKET generalSockSet,SOCKET outswitchSockSet);
