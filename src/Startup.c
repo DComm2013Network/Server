@@ -23,8 +23,14 @@
 #include "Server.h"
 
 #include <sys/socket.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #define READ 0
 #define WRITE 1
+
 
 int main(int argc, char* argv[]){
 	SOCKET uiSockSet[2];
@@ -100,3 +106,4 @@ int main(int argc, char* argv[]){
 	InboundSwitchboard(connectionSockSet[WRITE], generalSockSet[WRITE], gameplaySockSet[WRITE], outswitchSockSet[WRITE]);
 	return 0;
 }
+
