@@ -6,3 +6,12 @@
  */
 
 
+/*
+ * GAMEPLAY CONTROLLER
+    *just milestone1*
+    wile 1
+        listen on ipc-socket
+        read player information
+        update player information
+        send to outbound switchboard
+ */

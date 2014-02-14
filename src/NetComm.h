@@ -1,4 +1,4 @@
-/*---------------------------------------------------------------------* 
+/*---------------------------------------------------------------------*
 -- HEADER FILE: NetComm.h 		The definitions and declarations to be
 -- 								to be used to communicate between the
 -- 								client and the server
@@ -86,7 +86,7 @@ typedef struct pkt06{
 };
 //Packet 7: 0x0007
 //	<< UNPURPOSED >>
-	
+
 typedef struct pkt08{
 	bool		objectives_captured[MAX_OBJECTIVES];
 	status_t	game_status;
@@ -94,7 +94,7 @@ typedef struct pkt08{
 
 //Packet 9: 0x0009
 //	<< UNPURPOSED >>
-	
+
 typedef struct pkt10{
 	floorNo_t 	floor;
 	playerNo_t 	player_number;

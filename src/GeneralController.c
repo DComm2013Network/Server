@@ -6,3 +6,11 @@
  */
 
 
+/*
+ * GENERAL CONTROLLER
+    initialize objectives array
+    while 1
+        listen on ipc socket
+        update objectives
+        send to outbound switchboard
+ */

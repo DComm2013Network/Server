@@ -5,4 +5,11 @@
  *      Author: chris
  */
 
+/*
+ * CONNECTION MANAGER
+    create, bind,
+    loop
+        listen, accept
+        pass accepted socket+info to inbound switchboard
 
+ */
