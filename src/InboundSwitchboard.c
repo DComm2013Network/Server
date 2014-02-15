@@ -45,23 +45,32 @@
 -- 
 ----------------------------------------------------------------------------------------------------------------------*/
 int InboundSwitchboard(SOCKET connectionSockSet, SOCKET generalSockSet, SOCKET gameplaySockSet, SOCKET outswitchSockSet){
-	/*
-	INBOUND SWITCHBOARD
-		allocate socket lists
-		while 1
-			listen on all sockets
-			if new connection
-				add new connection to socket to list of inbound sockets
-				pass socket+info to outbound switchboard
 
-			if movement packet
-				pass to gameplay controller
+	// Variable Declarations
+	SOCKET* tcpConnections;
+	SOCKET* udpConnections;
+	
+	// Allocate space for all the sockets
+	tcpConnections = malloc(sizeof(SOCKET) * MAX_PLAYERS);
+	udpConnections = malloc(sizeof(SOCKET) * MAX_PLAYERS);
+	memset(tcpConnections, 0, sizeof(SOCKET) * MAX_PLAYERS);
+	memset(udpConnections, 0, sizeof(SOCKET) * MAX_PLAYERS);
+	
+	// Switchboard Functionallity
+	while(0){
+ 
+		// Select on all sockets, recieve 1 int
+		//		tpc sockets
+		//		udp sockets
+		//		connection socket
+		
+		// From live socket, receive the specified struct
+		
+		// Based on the struct, dispactch to the appropriate process
 
-			if game status packet
-				pass to game status controller
-
-				.... etc
-	 */
+	}
+	
+	// Cleanup
 	
 	return -99;
 }
