@@ -32,7 +32,7 @@
 #define floorNo_t 		int
 #define playerNo_t 		unsigned int
 #define teamNo_t		unsigned int
-#define status_t	int
+#define status_t		int
 #define pos_t			unsigned int
 
 // Connect code Definitions
@@ -48,6 +48,9 @@
 
 // Special floor Definitions
 #define FLOOR_LOBBY				0x000
+
+// Other Includes
+#include <time.h>
 
 // Packet Definitions
 
@@ -66,11 +69,13 @@ typedef struct pkt03{
 	char 		otherPlayers_name[MAX_PLAYERS][MAX_NAME];
 	teamNo_t 	otherPlayers_teams[MAX_PLAYERS];
 	status_t	readystatus[MAX_PLAYERS];
+	clock_t		timestamp;
 };
 
 typedef struct pkt04{
 	playerNo_t 	sendingPlayer_number;
 	char 		message[MAX_MESSAGE];
+	clock_t		timestamp;
 };
 
 typedef struct pkt05{
@@ -78,6 +83,7 @@ typedef struct pkt05{
 	status_t	ready_status;
 	teamNo_t	team_number;
 	char 		player_name[MAX_NAME];
+	clock_t		timestamp;
 };
 
 typedef struct pkt06{
@@ -102,6 +108,7 @@ typedef struct pkt10{
 	pos_t		yPos;
 	pos_t		xVel;
 	pos_t		yVel;
+	clock_t		timestamp;
 } PKT_POS_UPDATE;
 
 typedef struct pkt11{
@@ -111,6 +118,7 @@ typedef struct pkt11{
 	pos_t		yPos[MAX_PLAYERS];
 	pos_t		xVel[MAX_PLAYERS];
 	pos_t		yVel[MAX_PLAYERS];
+	clock_t		timestamp;
 } PKT_ALL_POS_UPDATE;
 
 typedef struct pkt12{
