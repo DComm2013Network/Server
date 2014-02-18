@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
 	SOCKET outswitchSockSet[2];
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, uiSockSet) == -1) {
-		printf(stderr, "Socket pair error: uiSockSet");
+		fprintf(stderr, "Socket pair error: uiSockSet");
 		return -1;
 	}
 
@@ -68,11 +68,11 @@ int main(int argc, char* argv[]) {
 	// ----------------------------
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, outswitchSockSet) == -1) {
-		printf(stderr, "Socket pair error: outswitchSockSet");
+		fprintf(stderr, "Socket pair error: outswitchSockSet");
 		return -1;
 	}
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, connectionSockSet) == -1) {
-		printf(stderr, "Socket pair error: connectionSockSet");
+		fprintf(stderr, "Socket pair error: connectionSockSet");
 		return -1;
 	}
 
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
 	// ----------------------------
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, generalSockSet) == -1) {
-		printf(stderr, "Socket pair error: generalSockSet");
+		fprintf(stderr, "Socket pair error: generalSockSet");
 		return -1;
 	}
 
@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
 	// ----------------------------
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, gameplaySockSet) == -1) {
-		printf(stderr, "Socket pair error: gameplaySockSet");
+		fprintf(stderr, "Socket pair error: gameplaySockSet");
 		return -1;
 	}
 
@@ -120,6 +120,8 @@ int main(int argc, char* argv[]) {
 
 	InboundSwitchboard(connectionSockSet[WRITE], generalSockSet[WRITE],
 			gameplaySockSet[WRITE], outswitchSockSet[WRITE]);
+	
+	printf("Server Terminated\n");
 	return 0;
 }
 

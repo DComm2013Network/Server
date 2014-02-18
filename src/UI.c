@@ -1,19 +1,48 @@
-/*
- * UI.c
- *
- *  Created on: 13 Feb 2014
- *      Author: chris
- */
+/*-------------------------------------------------------------------------------------------------------------------*
+-- SOURCE FILE: .c 	
+--		The Process that will ...
+--
+-- FUNCTIONS:
+-- 		int UI(SOCKET outSock)
+--
+--
+-- DATE: 		
+--
+-- REVISIONS: 	none
+--
+-- DESIGNER: 	
+--
+-- PROGRAMMER: 	
+--
+-- NOTES:
+-- 
+*-------------------------------------------------------------------------------------------------------------------*/
 
 
-/*
- * OUTBOUND SWITCHBOARD
-    allocate tcp and udp socket list
-    while 1
-        listen on socket
-        if new connection
-            add tcp socket descriptor
-            open udp socket
-        else
-            forward to esired players
- */
+#include "NetComm.h"
+#include "Server.h"
+
+/*--------------------------------------------------------------------------------------------------------------------
+-- FUNCTION:	...
+--
+-- DATE: 		
+--
+-- REVISIONS: 	none
+--
+-- DESIGNER: 	
+--
+-- PROGRAMMER: 	
+--
+-- INTERFACE: 	int UI(SOCKET outSock)
+--
+-- RETURNS: 	int
+--					failure:	-99 Not yet implemented
+--					success: 	0
+--
+-- NOTES:
+-- 
+----------------------------------------------------------------------------------------------------------------------*/
+int UI(SOCKET outSock){
+	
+	return -99;
+}
