@@ -29,3 +29,17 @@ int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock);
 int OutboundSwitchboard(SOCKET outswitchSock);
 int InboundSwitchboard(SOCKET connectionSock, SOCKET generalSock, SOCKET gameplaySock, SOCKET outswitchSock);
 int GeneralController(SOCKET generalSock, SOCKET outswitchSock);
+
+// structures
+typedef struct pktB1{
+	SOCKET		newClientSock;
+	playerNo_t	playerNo
+} PKT_NEW_CLIENT;
+
+#define IPC_PKT_1 0xB1
+
+typedef struct pktB2{
+	playerNo_t	playerNo
+} PKT_LOST_CLIENT;
+
+#define IPC_PKT_2 0xB2
