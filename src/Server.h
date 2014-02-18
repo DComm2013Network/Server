@@ -23,9 +23,9 @@
 #define SOCKET int
 
 //function prototypes
-int UI(SOCKET uiSockSet);
-int ConnectionManager(SOCKET connectionSockSet, SOCKET outswitchSockSet);
-int GameplayController(SOCKET gameplaySockSet, SOCKET outswitchSockSet);
-int OutboundSwitchboard(SOCKET outswitchSockSet);
-int InboundSwitchboard(SOCKET connectionSockSet, SOCKET generalSockSet, SOCKET gameplaySockSet, SOCKET outswitchSockSet);
-int GeneralController(SOCKET generalSockSet,SOCKET outswitchSockSet);
+int UI(SOCKET outSock);
+int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock);
+int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock);
+int OutboundSwitchboard(SOCKET outswitchSock);
+int InboundSwitchboard(SOCKET connectionSock, SOCKET generalSock, SOCKET gameplaySock, SOCKET outswitchSock);
+int GeneralController(SOCKET generalSock, SOCKET outswitchSock);
