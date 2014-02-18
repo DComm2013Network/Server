@@ -120,6 +120,8 @@ int main(int argc, char* argv[]) {
 
 	InboundSwitchboard(connectionSockSet[WRITE], generalSockSet[WRITE],
 			gameplaySockSet[WRITE], outswitchSockSet[WRITE]);
+	
+	printf("Server Terminated\n");
 	return 0;
 }
 

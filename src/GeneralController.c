@@ -19,7 +19,7 @@
 *-------------------------------------------------------------------------------------------------------------------*/
 
 
-#inlcude "NetComm.h"
+#include "NetComm.h"
 #include "Server.h"
 
 /*--------------------------------------------------------------------------------------------------------------------
@@ -42,7 +42,7 @@
 -- NOTES:
 -- 
 ----------------------------------------------------------------------------------------------------------------------*/
-int GeneralController(SOCKET generalSock, SOCKET outswitchSock);
+int GeneralController(SOCKET generalSock, SOCKET outswitchSock){
 /*
  * GENERAL CONTROLLER
     initialize objectives array
