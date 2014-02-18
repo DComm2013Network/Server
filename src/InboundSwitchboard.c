@@ -32,7 +32,6 @@
 // Globals
 SOCKET* tcpConnections;
 SOCKET* udpConnections;
-int running = 1;
 	
 
 /*--------------------------------------------------------------------------------------------------------------------
@@ -107,7 +106,7 @@ int getInput(SOCKET liveSocket){
 -- the outbound switchboard to do likewise.
 ----------------------------------------------------------------------------------------------------------------------*/
 void cleanupSocket(int pos, SOCKET conMan, SOCKET outSwitch){
-	struct PKT_LOST_CLIENT lost;
+	struct pktB2 lost;
 	
 	close(tcpConnections[pos]);
 	close(udpConnections[pos]);
@@ -163,7 +162,7 @@ int InboundSwitchboard(SOCKET connectionSock, SOCKET generalSock, SOCKET gamepla
 	
 	
 	// Switchboard Functionallity
-	while(running){
+	while(RUNNING){
 		
 		FD_ZERO(&fdset);
 		
@@ -173,7 +172,7 @@ int InboundSwitchboard(SOCKET connectionSock, SOCKET generalSock, SOCKET gamepla
 		
 		// Add TCP connections to select
 		for(i = 0; i < MAX_PLAYERS; ++i){
-			if(tcpConnections[i] != NULL){
+			if(tcpConnections[i]){
 				FD_SET(tcpConnections[i], &fdset);
 				highSocket = (tcpConnections[i] > highSocket) ? tcpConnections[i] : highSocket;
 			}
@@ -181,7 +180,7 @@ int InboundSwitchboard(SOCKET connectionSock, SOCKET generalSock, SOCKET gamepla
 		
 		// Add UDP sockets to select
 		for(i = 0; i < MAX_PLAYERS; ++i){
-			if(udpConnections[i] != NULL){
+			if(udpConnections[i]){
 				FD_SET(udpConnections[i], &fdset);
 				highSocket = (udpConnections[i] > highSocket) ? udpConnections[i] : highSocket;
 			}
@@ -197,7 +196,7 @@ int InboundSwitchboard(SOCKET connectionSock, SOCKET generalSock, SOCKET gamepla
 		
 		// Check TCP sockets
 		for(i = 0; i < MAX_PLAYERS; ++i){
-			if(tcpConnections[i] != NULL){
+			if(tcpConnections[i]){
 				if(FD_ISSET(tcpConnections[i], &fdset)){
 					if(!getInput(tcpConnections[i])){
 						cleanupSocket(i, connectionSock, outswitchSock);
@@ -208,7 +207,7 @@ int InboundSwitchboard(SOCKET connectionSock, SOCKET generalSock, SOCKET gamepla
 		
 		// Check UDP sockets
 		for(i = 0; i < MAX_PLAYERS; ++i){
-			if(udpConnections[i] != NULL){
+			if(udpConnections[i]){
 				if(FD_ISSET(udpConnections[i], &fdset)){
 					if(!getInput(udpConnections[i])){
 						cleanupSocket(i, connectionSock, outswitchSock);

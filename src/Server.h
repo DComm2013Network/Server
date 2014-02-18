@@ -22,6 +22,9 @@
 
 #define SOCKET int
 
+//Super Global
+int RUNNING = 1;
+
 //function prototypes
 int UI(SOCKET outSock);
 int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock);
