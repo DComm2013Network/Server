@@ -1,11 +1,48 @@
-/*
- * GeneralController.c
- *
- *  Created on: 13 Feb 2014
- *      Author: chris
- */
+/*-------------------------------------------------------------------------------------------------------------------*
+-- SOURCE FILE: .c 	
+--		The Process that will ...
+--
+-- FUNCTIONS:
+-- 		int ...
+--
+--
+-- DATE: 		
+--
+-- REVISIONS: 	none
+--
+-- DESIGNER: 	
+--
+-- PROGRAMMER: 	
+--
+-- NOTES:
+-- 
+*-------------------------------------------------------------------------------------------------------------------*/
 
 
+#inlcude "NetComm.h"
+#include "Server.h"
+
+/*--------------------------------------------------------------------------------------------------------------------
+-- FUNCTION:	...
+--
+-- DATE: 		
+--
+-- REVISIONS: 	none
+--
+-- DESIGNER: 	
+--
+-- PROGRAMMER: 	
+--
+-- INTERFACE: 	int ...
+--
+-- RETURNS: 	int
+--					failure:	-99 Not yet implemented
+--					success: 	0
+--
+-- NOTES:
+-- 
+----------------------------------------------------------------------------------------------------------------------*/
+int GeneralController(SOCKET generalSock, SOCKET outswitchSock);
 /*
  * GENERAL CONTROLLER
     initialize objectives array
@@ -14,3 +51,5 @@
         update objectives
         send to outbound switchboard
  */
+	return -99;
+}

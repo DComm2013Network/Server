@@ -44,7 +44,7 @@
 -- NOTES:
 -- 
 ----------------------------------------------------------------------------------------------------------------------*/
-int InboundSwitchboard(SOCKET connectionSockSet, SOCKET generalSockSet, SOCKET gameplaySockSet, SOCKET outswitchSockSet){
+int InboundSwitchboard(SOCKET connectionSock, SOCKET generalSock, SOCKET gameplaySock, SOCKET outswitchSock){
 
 	// Variable Declarations
 	SOCKET* tcpConnections;
