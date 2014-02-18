@@ -71,6 +71,8 @@ int InboundSwitchboard(SOCKET connectionSockSet, SOCKET generalSockSet, SOCKET g
 	}
 	
 	// Cleanup
+	free(tcpConnections);
+	free(udpConnections);
 	
 	return -99;
 }
