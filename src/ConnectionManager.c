@@ -252,6 +252,7 @@ int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock){
 		
 		if(FD_ISSET(connectionSock, &fdset)){
 			// connection lost
+			removeConnection(connectionSock);
 		}
 		
 		if(FD_ISSET(listenSock, &fdset){
