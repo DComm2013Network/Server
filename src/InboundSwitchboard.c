@@ -73,7 +73,7 @@ int getInput(SOCKET liveSocket){
 	// Master Functionality switch
 	switch(ctrl){
 		case IPC_PKT_1:	// New player added
-		 
+			// Note: no need to send data to outbound switch, ConMan will do it.
 			break;
 		
 		case 0x1:		// Shouldn't get these

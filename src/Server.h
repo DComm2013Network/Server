@@ -35,14 +35,16 @@ int GeneralController(SOCKET generalSock, SOCKET outswitchSock);
 
 // structures
 typedef struct pktB1{
-	SOCKET		newClientSock;
-	playerNo_t	playerNo
+	SOCKET				newClientSock;
+	playerNo_t			playerNo
+	char 				client_player_name[MAX_NAME];
+	struct sockaddr_in 	addrInfo;
 } PKT_NEW_CLIENT;
 
 #define IPC_PKT_1 0xB1
 
 typedef struct pktB2{
-	playerNo_t	playerNo
+	playerNo_t			playerNo;
 } PKT_LOST_CLIENT;
 
 #define IPC_PKT_2 0xB2
