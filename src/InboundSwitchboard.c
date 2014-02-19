@@ -22,17 +22,35 @@
 
 #include "NetComm.h"
 #include "Server.h"
-#include <fcntl.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <sys/socket.h>
 
 // Globals
 SOCKET* tcpConnections;
 SOCKET* udpConnections;
+extern int RUNNING;
 	
+
+/*--------------------------------------------------------------------------------------------------------------------
+-- FUNCTION:	Get Input
+--
+-- DATE: 		February 17, 2014
+--
+-- REVISIONS: 	none
+--
+-- DESIGNER: 	Andrew Burian
+--
+-- PROGRAMMER: 	Andrew Burian
+--
+-- INTERFACE: 	void addNewPlayer()
+--
+-- RETURNS: 	void
+--
+-- NOTES:
+-- Adds a new player based on the data provided by the connection manager.
+-- Opens both a TCP and UDP connection to the new client
+----------------------------------------------------------------------------------------------------------------------*/
+void addNewPlayer(){
+	
+}
 
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	Get Input
@@ -62,7 +80,7 @@ int getInput(SOCKET liveSocket){
 	* if it's a message, copy and pass it to the appropriate controller
 	* if game end, set running to false
 	*/
-	char ctrl = 0;
+	int ctrl = 0;
 	 
 	// Get the packet type
 	if(read(liveSocket, &ctrl, 1) == 0)
@@ -111,8 +129,8 @@ void cleanupSocket(int pos, SOCKET conMan, SOCKET outSwitch){
 	close(tcpConnections[pos]);
 	close(udpConnections[pos]);
 	
-	tcpConnections[pos] = NULL;
-	udpConnections[pos] = NULL;
+	tcpConnections[pos] = 0;
+	udpConnections[pos] = 0;
 	
 	lost.playerNo = pos;
 	
@@ -146,8 +164,6 @@ void cleanupSocket(int pos, SOCKET conMan, SOCKET outSwitch){
 int InboundSwitchboard(SOCKET connectionSock, SOCKET generalSock, SOCKET gameplaySock, SOCKET outswitchSock){
 
 	// Variable Declarations
-	int numActiveConnections = 0;
-	
 	fd_set fdset;
 	int numLiveSockets;
 	SOCKET highSocket;

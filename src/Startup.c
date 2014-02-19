@@ -47,6 +47,9 @@
 #define READ 0
 #define WRITE 1
 
+// Super Global
+int RUNNING = 1;
+
 int main(int argc, char* argv[]) {
 	SOCKET uiSockSet[2];
 	SOCKET connectionSockSet[2];

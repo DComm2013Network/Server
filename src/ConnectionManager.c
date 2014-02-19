@@ -4,6 +4,8 @@
 --
 -- FUNCTIONS:
 -- 		int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock)
+--		void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSock)
+-- 		void removeConnection(SOCKET connectionSock)
 --
 --
 -- DATE: 		February 16, 2014
@@ -22,23 +24,12 @@
 #include "NetComm.h"
 #include "Server.h"
 
-// Everything Aman included in his example.
-// Because to heck with it...
-#include <stdio.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <strings.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
-#include <unistd.h>
 
 // Globals
 SOCKET listenSock;
 SOCKET acceptSock;
 int connectedPlayers[MAX_PLAYERS];
+extern int RUNNING;
 
 
 /*--------------------------------------------------------------------------------------------------------------------
@@ -66,13 +57,13 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 	struct pkt01 clientReg;
 	struct pkt02 replyToClient;
 	struct sockaddr_in client;
-	int addr_len = sizeof(struct sockaddr_in);
-	int i;
+	socklen_t addr_len = sizeof(struct sockaddr_in);
+	int cmd, i;
 	
 	memset(&clientReg, 0, sizeof(struct pkt01));
-	memset(&replyToClient, 0, sizeof(struck pkt02));
+	memset(&replyToClient, 0, sizeof(struct pkt02));
 	
-	if ((acceptSock = accept (listenSock, (struct sockaddr *)&client, &addr_len)) == -1){
+	if ((acceptSock = accept(listenSock, (struct sockaddr *)&client, &addr_len)) == -1){
 		fprintf(stderr, "Cound not accept client\n");
 		return;
 	}
@@ -85,7 +76,7 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 	
 	// Register the new client if there is space available
 	if(cmd == 1){
-		if(recv(acceptSock, &clientReg, sizeof(struct pkt01)) != sizeof(struct pkt01)){
+		if(recv(acceptSock, &clientReg, sizeof(struct pkt01), 0) != sizeof(struct pkt01)){
 			perror("Failed to get client name");
 		}
 		
@@ -114,7 +105,7 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 			
 			// Notify switchboards
 			send(connectionSock, &newClientInfo, sizeof(struct pktB1), 0);
-			send(outoutswitchSock, &newClientInfo, sizeof(struct pktB1), 0);
+			send(outswitchSock, &newClientInfo, sizeof(struct pktB1), 0);
 		}
 		else{
 			// Server is full. GTFO
@@ -155,6 +146,7 @@ void removeConnection(SOCKET connectionSock){
 	// No need to send the remove to outswitch, inswich will have done it
 	
 	struct pktB2 lostClient;
+	int cmd;
 	
 	if(!recv(connectionSock, &cmd, 1, 0)){
 		perror("Failed to read in packet type for IPC [Lost Connection]");
@@ -166,7 +158,7 @@ void removeConnection(SOCKET connectionSock){
 		return;
 	}
 	
-	if(recv(acceptSock, &lostClient, sizeof(struct pktB2)) != sizeof(struct pktB2)){
+	if(recv(acceptSock, &lostClient, sizeof(struct pktB2), 0) != sizeof(struct pktB2)){
 			perror("Failed to get lost client no");
 	}
 	
@@ -207,7 +199,6 @@ int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock){
 
  */
 	
-	char cmd;
 	int maxPlayers = MAX_PLAYERS;
 	
 	fd_set fdset;
@@ -221,13 +212,13 @@ int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock){
 	listenSock = socket(AF_INET, SOCK_STREAM, 0);
 	
 	// No clients yet joined
-	memset(clientsInUse, 0, MAX_PLAYERS * sizeof(int));
+	memset(connectedPlayers, 0, MAX_PLAYERS * sizeof(int));
 	
 	memset(&server, 0, addr_len);
 	
 	// Set up the listening socket to any incoming address
 	server.sin_family = AF_INET;
-	server.sin_port = htons(port);
+	server.sin_port = htons(7000);
 	server.sin_addr.s_addr = htonl(INADDR_ANY);
 	
 	// Bind
@@ -250,12 +241,17 @@ int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock){
 		// Find all active Sockets
 		numLiveSockets = select(highSocket + 1, &fdset, NULL, NULL, NULL);
 		
+		if(numLiveSockets == -1){
+			perror("Select Failed in Inbound Switchboard!");
+			continue;
+		}
+		
 		if(FD_ISSET(connectionSock, &fdset)){
 			// connection lost
 			removeConnection(connectionSock);
 		}
 		
-		if(FD_ISSET(listenSock, &fdset){
+		if(FD_ISSET(listenSock, &fdset)){
 			// New connection appeared on listen
 			addNewConnection(maxPlayers, connectionSock, outswitchSock);
 		}

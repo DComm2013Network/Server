@@ -22,8 +22,18 @@
 
 #define SOCKET int
 
-//Super Global
-int RUNNING = 1;
+// Everything you could possibly need
+#include <stdio.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <errno.h>
+#include <strings.h>
+#include <string.h>
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 //function prototypes
 int UI(SOCKET outSock);
@@ -36,7 +46,7 @@ int GeneralController(SOCKET generalSock, SOCKET outswitchSock);
 // structures
 typedef struct pktB1{
 	SOCKET				newClientSock;
-	playerNo_t			playerNo
+	playerNo_t			playerNo;
 	char 				client_player_name[MAX_NAME];
 	struct sockaddr_in 	addrInfo;
 } PKT_NEW_CLIENT;
