@@ -57,6 +57,7 @@ int main(int argc, char* argv[]) {
 	SOCKET gameplaySockSet[2];
 	SOCKET outswitchSockSet[2];
 
+	DEBUG("Started");
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, uiSockSet) == -1) {
 		fprintf(stderr, "Socket pair error: uiSockSet");
 		return -1;

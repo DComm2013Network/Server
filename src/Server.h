@@ -35,6 +35,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define DEBUG_ON 1
+#define DEBUG(msg) if(DEBUG_ON){printf("Debug: %s\n", msg);}
+
 //function prototypes
 int UI(SOCKET outSock);
 int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock);

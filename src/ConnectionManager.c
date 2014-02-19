@@ -6,6 +6,7 @@
 -- 		int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock)
 --		void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSock)
 -- 		void removeConnection(SOCKET connectionSock)
+--		void connectionManagerSetup()
 --
 --
 -- DATE: 		February 16, 2014
@@ -31,6 +32,29 @@ SOCKET acceptSock;
 int connectedPlayers[MAX_PLAYERS];
 extern int RUNNING;
 
+
+/*--------------------------------------------------------------------------------------------------------------------
+-- FUNCTION:	Setup
+--
+-- DATE: 		February 16, 2014
+--
+-- REVISIONS: 	none
+--
+-- DESIGNER: 	Andrew Burian
+--
+-- PROGRAMMER: 	Andrew Burian
+--
+-- INTERFACE: 	void connectionManagerSetup(SOCKET connectionSock, int* maxPlayers, char* gameName)
+--
+-- RETURNS: 	void
+--
+-- NOTES:
+-- Reads in the setup packet send by the switchboard from the UI
+----------------------------------------------------------------------------------------------------------------------*/
+void connectionManagerSetup(SOCKET connectionSock, int* maxPlayers, char* gameName){
+	
+	return;
+}
 
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	Add New Connection
@@ -199,7 +223,8 @@ int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock){
 
  */
 	
-	int maxPlayers = MAX_PLAYERS;
+	int maxPlayers;
+	char* gameName;
 	
 	fd_set fdset;
 	int numLiveSockets;
@@ -208,7 +233,12 @@ int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock){
 	struct	sockaddr_in server;
 	int addr_len = sizeof(struct sockaddr_in);
 	
+	gameName = (char*)malloc(sizeof(char) * MAX_NAME);
 	
+	// Read the packet from UI and get started
+	connectionManagerSetup(connectionSock, &maxPlayers, gameName);
+	
+	// Start listening for incoming connections
 	listenSock = socket(AF_INET, SOCK_STREAM, 0);
 	
 	// No clients yet joined
