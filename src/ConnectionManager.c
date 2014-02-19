@@ -151,7 +151,29 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 -- NOTES:
 -- 
 ----------------------------------------------------------------------------------------------------------------------*/
-void removeConnection();
+void removeConnection(SOCKET connectionSock){
+	// No need to send the remove to outswitch, inswich will have done it
+	
+	struct pktB2 lostClient;
+	
+	if(!recv(connectionSock, &cmd, 1, 0)){
+		perror("Failed to read in packet type for IPC [Lost Connection]");
+		return;
+	}
+	
+	if(cmd != IPC_PKT_2){
+		fprintf(stderr, "Remove Connection receiving packets it shouldn't be\n");
+		return;
+	}
+	
+	if(recv(acceptSock, &lostClient, sizeof(struct pktB2)) != sizeof(struct pktB2)){
+			perror("Failed to get lost client no");
+	}
+	
+	connectedPlayers[lostClient.playerNo] = 0;
+	
+	return;
+}
 
 
 /*--------------------------------------------------------------------------------------------------------------------
@@ -188,6 +210,10 @@ int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock){
 	char cmd;
 	int maxPlayers = MAX_PLAYERS;
 	
+	fd_set fdset;
+	int numLiveSockets;
+	SOCKET highSocket;
+	
 	struct	sockaddr_in server;
 	int addr_len = sizeof(struct sockaddr_in);
 	
@@ -216,11 +242,22 @@ int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock){
 	
 	while(RUNNING){
 		
+		FD_ZERO(&fdset);
+		FD_SET(connectionSock, &fdset);
+		FD_SET(listenSock, &fdset);
+		highSocket = (connectionSock > outswitchSock) ? connectionSock : outswitchSock;
 		
+		// Find all active Sockets
+		numLiveSockets = select(highSocket + 1, &fdset, NULL, NULL, NULL);
 		
+		if(FD_ISSET(connectionSock, &fdset)){
+			// connection lost
+		}
 		
-		
-		
+		if(FD_ISSET(listenSock, &fdset){
+			// New connection appeared on listen
+			addNewConnection(maxPlayers, connectionSock, outswitchSock);
+		}
 	}
 	
 	return -99;
