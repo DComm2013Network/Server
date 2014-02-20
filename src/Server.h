@@ -43,10 +43,18 @@ int UI(SOCKET outSock);
 int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock);
 int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock);
 int OutboundSwitchboard(SOCKET outswitchSock);
-int InboundSwitchboard(SOCKET connectionSock, SOCKET generalSock, SOCKET gameplaySock, SOCKET outswitchSock);
+int InboundSwitchboard(SOCKET uiSock, SOCKET connectionSock, SOCKET generalSock, SOCKET gameplaySock, SOCKET outswitchSock);
 int GeneralController(SOCKET generalSock, SOCKET outswitchSock);
 
 // structures
+typedef struct pktB0{
+	char				serverName[MAX_NAME];
+	int					maxPlayers;
+	int					port;
+} PKT_SERVER_SETUP;
+
+#define IPC_PKT_0 0xB0
+
 typedef struct pktB1{
 	SOCKET				newClientSock;
 	playerNo_t			playerNo;

@@ -28,6 +28,29 @@ SOCKET* tcpConnections;
 SOCKET* udpConnections;
 extern int RUNNING;
 	
+/*--------------------------------------------------------------------------------------------------------------------
+-- FUNCTION:	In-Switch Setup
+--
+-- DATE: 		February 19, 2014
+--
+-- REVISIONS: 	none
+--
+-- DESIGNER: 	Andrew Burian
+--
+-- PROGRAMMER: 	Andrew Burian
+--
+-- INTERFACE: 	void inswtichSetup(SOCKET uiSock)
+--
+-- RETURNS: 	void
+--
+-- NOTES:
+-- Receives the setup packet from the UI and passes it to all who need it.
+----------------------------------------------------------------------------------------------------------------------*/
+void inswtichSetup(SOCKET uiSock){
+	//struct pktB0 setupPkt;
+	
+	
+}
 
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	Get Input
@@ -161,7 +184,7 @@ void cleanupSocket(int pos, SOCKET conMan, SOCKET outSwitch){
 -- NOTES:
 -- 
 ----------------------------------------------------------------------------------------------------------------------*/
-int InboundSwitchboard(SOCKET connectionSock, SOCKET generalSock, SOCKET gameplaySock, SOCKET outswitchSock){
+int InboundSwitchboard(SOCKET uiSock, SOCKET connectionSock, SOCKET generalSock, SOCKET gameplaySock, SOCKET outswitchSock){
 
 	// Variable Declarations
 	fd_set fdset;
@@ -169,6 +192,22 @@ int InboundSwitchboard(SOCKET connectionSock, SOCKET generalSock, SOCKET gamepla
 	SOCKET highSocket;
 	
 	int i;
+	/*struct pkt01 packetType1;
+	struct pkt02 packetType2;
+	struct pkt03 packetType3;
+	struct pkt04 packetType4;
+	struct pkt05 packetType5;
+	struct pkt06 packetType6;
+	//struct pkt07 packetType7;
+	struct pkt08 packetType8;
+	//struct pkt09 packetType9;
+	struct pkt10 packetType10;
+	struct pkt11 packetType11;
+	struct pkt12 packetType12;
+	struct pkt13 packetType13;
+	struct pktB0 IPCpacketType0;
+	struct pktB1 IPCpacketType1;
+	struct pktB2 IPCpacketType2;*/
 	
 	// Allocate space for all the sockets
 	tcpConnections = malloc(sizeof(SOCKET) * MAX_PLAYERS);
@@ -176,6 +215,7 @@ int InboundSwitchboard(SOCKET connectionSock, SOCKET generalSock, SOCKET gamepla
 	memset(tcpConnections, 0, sizeof(SOCKET) * MAX_PLAYERS);
 	memset(udpConnections, 0, sizeof(SOCKET) * MAX_PLAYERS);
 	
+	inswtichSetup(outswitchSock);
 	
 	// Switchboard Functionallity
 	while(RUNNING){
