@@ -56,13 +56,13 @@
 
 typedef struct pkt01{
 	char 		client_player_name[MAX_NAME];
-};
+} PKT_PLAYER_JOIN;
 
 typedef struct pkt02{
 	unsigned int 		connect_code;
 	playerNo_t 	clients_player_number;
 	teamNo_t 	clients_team_number;
-};
+} PKT_JOIN_RESPONSE;
 
 typedef struct pkt03{
 	bool 		player_valid[MAX_PLAYERS];
@@ -70,13 +70,13 @@ typedef struct pkt03{
 	teamNo_t 	otherPlayers_teams[MAX_PLAYERS];
 	status_t	readystatus[MAX_PLAYERS];
 	clock_t		timestamp;
-};
+} PKT_PLAYERS_UPDATE;
 
 typedef struct pkt04{
 	playerNo_t 	sendingPlayer_number;
 	char 		message[MAX_MESSAGE];
 	clock_t		timestamp;
-};
+} PKT_CHAT;
 
 typedef struct pkt05{
 	playerNo_t	player_number;
@@ -84,19 +84,20 @@ typedef struct pkt05{
 	teamNo_t	team_number;
 	char 		player_name[MAX_NAME];
 	clock_t		timestamp;
-};
+} PKT_READY_STATUS;
 
 typedef struct pkt06{
 	floorNo_t	map_data[MAX_FLOORS];
 	int			objective_locations[MAX_OBJECTIVES];
-};
+} PKT_OBJECTIVES_DATA;
+
 //Packet 7: 0x0007
 //	<< UNPURPOSED >>
 
 typedef struct pkt08{
 	bool		objectives_captured[MAX_OBJECTIVES];
 	status_t	game_status;
-};
+} PKT_GAME_STATUS;
 
 //Packet 9: 0x0009
 //	<< UNPURPOSED >>

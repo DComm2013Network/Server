@@ -47,6 +47,9 @@
 #define READ 0
 #define WRITE 1
 
+// Super Global
+int RUNNING = 1;
+
 int main(int argc, char* argv[]) {
 	SOCKET uiSockSet[2];
 	SOCKET connectionSockSet[2];
@@ -54,6 +57,7 @@ int main(int argc, char* argv[]) {
 	SOCKET gameplaySockSet[2];
 	SOCKET outswitchSockSet[2];
 
+	DEBUG("Started");
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, uiSockSet) == -1) {
 		fprintf(stderr, "Socket pair error: uiSockSet");
 		return -1;
@@ -118,7 +122,7 @@ int main(int argc, char* argv[]) {
 	close(gameplaySockSet[READ]);
 	// ----------------------------
 
-	InboundSwitchboard(connectionSockSet[WRITE], generalSockSet[WRITE],
+	InboundSwitchboard(uiSockSet[READ], connectionSockSet[WRITE], generalSockSet[WRITE],
 			gameplaySockSet[WRITE], outswitchSockSet[WRITE]);
 	
 	printf("Server Terminated\n");
