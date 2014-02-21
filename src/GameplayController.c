@@ -45,8 +45,13 @@
  -- NOTES:  Each floor will have it's own controller.  This creates a master list for the floor, gets updates
  --		from the inbound switchboard, adds these updates to the master file and sends that to the outbound
  --		switchboard for distribution to players on that floor.
+ --		Takes packets 0, 1, 2, 10.
+ --		Sends packets 11
  --	CH - February 20, 2014: There is currently no error checking, handling or correction in place.  This will come
  --		in later updates.
+ --		For Milestone 1 only a small part of the functionality is in place.
+ --		Takes packets 10
+ --		Sends packets 11
  --
  ----------------------------------------------------------------------------------------------------------------------*/
 int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock) {
