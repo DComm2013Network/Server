@@ -1,19 +1,19 @@
 /*-------------------------------------------------------------------------------------------------------------------*
  -- SOURCE FILE: .c
  --		The Process will receive individual player updates, add them to the complete list
- and then send that updated package to outbound switchboard
+ --			and then send that updated package to outbound switchboard
  --
  -- FUNCTIONS:
- -- 		int ...
+ -- 		int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock)
  --
  --
- -- DATE:
+ -- DATE:  February 20, 2014
  --
  -- REVISIONS: 	none
  --
  -- DESIGNER: 	Andrew Burian
  --
- -- PROGRAMMER: 	Chris Holisky
+ -- PROGRAMMER: Chris Holisky
  --
  -- NOTES:
  --
@@ -29,9 +29,9 @@
  --
  -- REVISIONS: 	none
  --
- -- DESIGNER:  Andrew Burian / Chris Holisky
+ -- DESIGNER:	Andrew Burian / Chris Holisky
  --
- -- PROGRAMMER:  Chris Holisky
+ -- PROGRAMMER:	Chris Holisky
  --
  -- INTERFACE: 	int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock)
  --					SOCKET gameplaySock: socket that leads to this function
