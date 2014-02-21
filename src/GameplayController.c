@@ -22,6 +22,8 @@
 #include "NetComm.h"
 #include "Server.h"
 
+extern int RUNNING;
+
 /*--------------------------------------------------------------------------------------------------------------------
  -- FUNCTION:	GameplayController
  --
@@ -66,6 +68,7 @@ int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock) {
 	 send to outbound switchboard
 	 */
 
+	int i = 0;
 
 	//create structs for buffers
 	PKT_POS_UPDATE *bufPlayerIn = malloc(sizeof(PKT_POS_UPDATE));
@@ -74,13 +77,32 @@ int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock) {
 	//This will end up being a master file for this floor controller
 	PKT_ALL_POS_UPDATE *bufPlayerAll = malloc(sizeof(PKT_ALL_POS_UPDATE));
 	memset(&bufPlayerAll, 0, sizeof(PKT_ALL_POS_UPDATE));
+	/*Need an array of these, one for each floor */
+
+	 PKT_ALL_POS_UPDATE floorArray[MAX_FLOORS+1];
+
+	for (i = 0; i <= MAX_FLOORS; i++) {
+floorArray[i].floor = i;
+	}
+
+	/* set up other packets*/
 
 	//assign struct lengths before the loop so as not to keep checking
 	size_t lenPktIn = sizeof(struct pkt10);
 	size_t lenPktAll = sizeof(struct pkt11);
 
-	while (1) {
+	while (RUNNING) {
 		//get the packet from the inbound packet
+		/* read int sizeof int
+		 * then swtich on the int to fill the right structure
+		 *
+		 * use getPacketType and
+		 * getPacket
+		 */
+
+		//get packet type.  Save to int.
+		//switch to handle each type of packet
+		//each switch statement reads packet, sets up outbound, sends outbound - refine later
 		read(gameplaySock, bufPlayerIn, lenPktIn);
 
 		//get player number
@@ -90,7 +112,7 @@ int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock) {
 		bufPlayerAll->floor = bufPlayerIn->floor;
 
 		//register this player on floor
-		bufPlayerAll->players_on_floor[thisPlayer]=1;
+		bufPlayerAll->players_on_floor[thisPlayer] = 1;
 
 		//put position and velocity in update packet
 		bufPlayerAll->xPos[thisPlayer] = bufPlayerIn->xPos;
@@ -99,7 +121,8 @@ int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock) {
 		bufPlayerAll->yVel[thisPlayer] = bufPlayerIn->yVel;
 
 		//stamp the time on the packet to make Shane happy  :p
-		bufPlayerAll->timestamp = bufPlayerIn->timestamp;
+		//bufPlayerAll->timestamp = bufPlayerIn->timestamp;
+		//clock(bufPlayerAll->timestamp);
 
 		//write the packet to th eoutbound server
 		write(outswitchSock, bufPlayerAll, lenPktAll);
