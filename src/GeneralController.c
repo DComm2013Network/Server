@@ -25,7 +25,7 @@
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	...
 --
--- DATE: 		
+-- DATE: 		20 February 2014
 --
 -- REVISIONS: 	none
 --
@@ -44,12 +44,28 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 int GeneralController(SOCKET generalSock, SOCKET outswitchSock){
 /*
- * GENERAL CONTROLLER
-    initialize objectives array
-    while 1
-        listen on ipc socket
-        update objectives
-        send to outbound switchboard
+if udp socket
+	receive the size of the largest UDP packet
+	determine which packet type it is
+	cast the received data to the appropriate structure
+
+	if packet 10 (Movement)
+		pass to Gameplay
+	
+if tcp socket
+	if socket is closed or terminated
+		remove the socket and it's UDP counterpart
+		create IPC packet 2 (Player lost) and pass it to Connection Manager, Outbound Switchboard, General, Gameplay
+		close descriptors
+	
+	else
+	
+	read in the packet type
+	fill the appropriate structure
+
+	if packet 8 (gameplay update)
+		pass packet to General
+
  */
 	return -99;
 }
