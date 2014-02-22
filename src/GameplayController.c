@@ -166,6 +166,10 @@ int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock) {
 			outPType = 11;
 
 			//send packet type and then packet to outbound switchboard
+			/*
+			 * Remove this from the switch, perhaps put it into an if block
+			 * with a goodToSend boolean or something
+			 */
 			write(outswitchSock, &outPType, sizeof(outPType));
 			write(outswitchSock, &floorArray[playerFloor], lenPktAll);
 
