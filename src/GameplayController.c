@@ -179,6 +179,7 @@ int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock) {
 			break;
 		}
 	}
-
+	free(bufPlayerAll);
+	free(bufPlayerIn);
 	return 0;
 }
