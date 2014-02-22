@@ -88,7 +88,7 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 	memset(&replyToClient, 0, sizeof(struct pkt02));
 	
 	if ((acceptSock = accept(listenSock, (struct sockaddr *)&client, &addr_len)) == -1){
-		fprintf(stderr, "Cound not accept client\n");
+		fprintf(stderr, "Could not accept client\n");
 		return;
 	}
 	

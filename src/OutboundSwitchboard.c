@@ -36,7 +36,7 @@ extern int RUNNING;
  -- PROGRAMMER:	Chris Holisky
  --
  -- INTERFACE: 	int OutboundSwitchboard(SOCKET outswitchSock)
- 	 	 	 	 	SOCKET outswitchSock : inbound socket
+ SOCKET outswitchSock : inbound socket
  --
  -- RETURNS: 	int
  --					failure:	-99 Not yet implemented
@@ -108,8 +108,7 @@ int OutboundSwitchboard(SOCKET outswitchSock) {
 	memset(&bufPlayerFloorUpdate, 0, sizeof(PKT_ALL_POS_UPDATE));
 	int lenFloorUpdate = sizeof(PKT_ALL_POS_UPDATE);
 
-
-	 // wait for IPC packet 0 - This is the server startup packet
+	// wait for IPC packet 0 - This is the server startup packet
 	getPacket(outswitchSock, bufSetup, lenSetup);
 
 	while (RUNNING) {
@@ -129,11 +128,13 @@ int OutboundSwitchboard(SOCKET outswitchSock) {
 			}
 			/*
 			 * add player's sockets to connection lists
+			 *
+			 * I have no idea what the hell I'm doing here... I'm too damn tired to understand
+			 * 	any code at all right now......
 			 */
-			udpConnections[bufNewClient->playerNo] = 0;
-			tcpConnections[bufNewClient->playerNo] = 0;
-			bufNewClient->addrInfo;
-			bufNewClient->newClientSock;
+
+				return -1;
+
 			break;
 
 			//player dropped
@@ -170,42 +171,46 @@ int OutboundSwitchboard(SOCKET outswitchSock) {
 			}
 			for (i = 0; i < MAX_PLAYERS; i++) {
 				if (udpConnections[i] != 0) {
-					/*
-					 * send this packet to client[i]
-					 */
+					if (sendto(udpConnections[i], bufObjectiveStatus,
+							lenObjective, 0, what structure?, addr_len) == -1)
+						perror("Outbound packet 8 failed to send");
 				}
+				/*
+				 * send this packet to client[i]
+				 */
+			}
+
+		break;
+
+		// position update for players on a given floor
+		case 11:
+		if (getPacket(outswitchSock, bufPlayerFloorUpdate, lenFloorUpdate)
+				== -1) {
+			break;
+		}
+		for (i = 0; i < MAX_PLAYERS; i++) {
+			if (bufPlayerFloorUpdate->players_on_floor[i] == 1
+					&& udpConnections[i] != 0) {
+				bufPlayerFloorUpdate->timestamp = clock();
+
+				/*
+				 * send bufPlayerFloorUpdate to client[i]
+				 */
 			}
 			break;
-
-			// position update for players on a given floor
-		case 11:
-			if (getPacket(outswitchSock, bufPlayerFloorUpdate, lenFloorUpdate)
-					== -1) {
-				break;
-			}
-			for (i = 0; i < MAX_PLAYERS; i++) {
-				if (bufPlayerFloorUpdate->players_on_floor[i] == 1
-						&& udpConnections[i] != 0) {
-					bufPlayerFloorUpdate->timestamp = clock();
-
-					/*
-					 * send bufPlayerFloorUpdate to client[i]
-					 */
-				}
-				break;
-				default:
-				break;
-			}
+			default:
+			break;
 		}
 	}
+}
 
-	free(bufDropPlayer);
-	free(bufNewClient);
-	free(bufObjectiveStatus);
-	free(bufPlayerFloorUpdate);
-	free(bufReadyStatus);
-	free(bufSetup);
-	free(tcpConnections);
-	free(udpConnections);
-	return 0;
+free( bufDropPlayer);
+free( bufNewClient);
+free( bufObjectiveStatus);
+free( bufPlayerFloorUpdate);
+free( bufReadyStatus);
+free( bufSetup);
+free( tcpConnections);
+free( udpConnections);
+return 0;
 }
