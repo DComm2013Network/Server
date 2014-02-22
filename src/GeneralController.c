@@ -21,6 +21,10 @@
 
 #include "NetComm.h"
 #include "Server.h"
+#include "Sockets.h"
+
+extern int RUNNING;
+double winRatio = MAX_OBJECTIVES * 0.75;
 
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	GeneralController
@@ -43,68 +47,102 @@
 -- 
 ----------------------------------------------------------------------------------------------------------------------*/
 
-/*
- typedef struct pkt01{
-	char 		client_player_name[MAX_NAME];
-} PKT_PLAYER_JOIN;
-
-typedef struct pkt02{
-	unsigned int 		connect_code;
-	playerNo_t 	clients_player_number;
-	teamNo_t 	clients_team_number;
-} PKT_JOIN_RESPONSE;
-
-typedef struct pkt08{
-	bool		objectives_captured[MAX_OBJECTIVES];
-	status_t	game_status;
-} PKT_GAME_STATUS;
-
-*/
 int GeneralController(SOCKET generalSock, SOCKET outswitchSock) {
 	
-	bool objectivesCaptured[MAX_OBJECTIVES];
-	playerNo_t playerList[MAX_PLAYERS];	
+	bool objCaptured[MAX_OBJECTIVES];
+	status_t status = GAME_STATE_WAITING;
+	size_t 	numPlayers = 0;
+	int pktType, i;
 	
+	/* Will look into changing this... */
+	PKT_SERVER_SETUP	*pkt0;
+	PKT_NEW_CLIENT		*pkt1;
+	//IPC_PKT_2			*pkt2;
+	PKT_SERVER_SETUP	*pktServerSetup;
+	PKT_GAME_STATUS		*pktGameStatus;
 	
-	// initialize objectives array
-    PKT_READY_STATUS pkt;
-    size_t pktSize = sizeof(pkt);
-    
-    //while 1
+	size_t pkt0Size, pkt1Size, pktServerSetupSize, pktGameStatusSize;
+	pkt0Size 		= sizeof(IPC_PKT_0			);
+	pkt1Size 		= sizeof(IPC_PKT_1			);
+	//pkt2Size 		= sizeof(IPC_PKT_2			);
+	pktServerSetupSize 	= sizeof(PKT_SERVER_SETUP	);
+	pktGameStatusSize 	= sizeof(PKT_GAME_STATUS	);
+	
+	pkt0 		= malloc(pkt0Size 		);
+	pkt1 		= malloc(pkt1Size 		);
+	//pkt2 		= malloc(pkt2Size 		);
+	pktServerSetup	= malloc(pktServerSetupSize 	);
+	pktGameStatus	= malloc(pktGameStatusSize 	);
+	
+	memset(objCaptured, 0, MAX_OBJECTIVES	);
+	memset(pkt0, 		0, pkt0Size 		);
+	memset(pkt1, 		0, pkt1Size 		);
+	//memset(pkt2, 		0, pkt2Size 		);
+	memset(pktServerSetup, 	0, pktServerSetupSize 	);
+	memset(pktGameStatus, 	0, pktGameStatusSize 	);
+			
+	// wait ipc 0	
+	if((pktType = getPacketType(generalSock)) != IPC_PKT_0)
+	{
+		fprintf(stderr, "Expected packet type: %d\nReceived: %d\n", IPC_PKT_0, pktType);
+		return -1;
+	}
+	getPacket(generalSock, pkt0, pkt0Size);
+	
+	//while 1
     while(RUNNING)
     {
-        // listen on ipc socket
-        read(gneralSock, &pkt, pktSize);
-        // how do i check what packet type i read
-        
-        // if read pkt 01
-			//insert player name to ___?
-			//insert into playerlist
-			//determine teamnumber 
-			//	= { loop through playerlist
-			//		count teams }
-			// send pkt5
-			
-        // if read pkt 02
-			//___?
-			
-        // if read pkt 08
-			//merge pkt8.objectives captured
-				//with local
-			//send pkt08 with merged objectives
-        
+        pktType = getPacketType(generalSock);
+		switch(pktType)	
+		{
+			case IPC_PKT_1: // New Player
+				if(numPlayers == MAX_PLAYERS)
+					break;
+
+				getPacket(generalSock, pkt1, pkt1Size);
+				numPlayers++;
+
+				if(numPlayers == MAX_PLAYERS)
+					status = GAME_STATE_ACTIVE;
+					
+				pktGameStatus->game_status = status;
+				memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);					
+
+				write(generalSock, pktGameStatus, pktGameStatusSize);
+			break;
+					
+			case 8: // Game Status
+				getPacket(generalSock, pktGameStatus, pktGameStatusSize);
+				if(status == GAME_STATE_ACTIVE)
+				{
+					//update objective listing
+					int countCaptured = 0;
+					// Copy the client's objective listing to the server.
+					// May need some better handling; if 2 are received very close to each other
+					memcpy(objCaptured, pktGameStatus->objectives_captured, MAX_OBJECTIVES);
+
+					//check win
+					for(i = 0; i < MAX_OBJECTIVES; i++)
+						if(objCaptured[i] == 1)
+							countCaptured++;
+
+					if(countCaptured >= winRatio)
+						status = GAME_STATE_OVER;
+				}
+				
+				// send pkt8
+				memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);
+				pktGameStatus->game_status = status;
+				write(generalSock, pktGameStatus, pktGameStatusSize);
+			break;
+		}
 	}
 	return -99;
 }
 
 /*
-typedef struct pkt05{
-	playerNo_t	player_number;
-	status_t	ready_status;
-	teamNo_t	team_number;
-	char 		player_name[MAX_NAME];
-	clock_t		timestamp;
-} PKT_READY_STATUS;
+
+pk3
 
 typedef struct pkt08{
 	bool		objectives_captured[MAX_OBJECTIVES];
