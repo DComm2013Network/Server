@@ -57,7 +57,7 @@ int GeneralController(SOCKET generalSock, SOCKET outswitchSock) {
 	/* Will look into changing this... */
 	PKT_SERVER_SETUP	*pkt0;
 	PKT_NEW_CLIENT		*pkt1;
-	//IPC_PKT_2			*pkt2;
+	//			*pkt2;
 	PKT_SERVER_SETUP	*pktServerSetup;
 	PKT_GAME_STATUS		*pktGameStatus;
 	
@@ -139,13 +139,3 @@ int GeneralController(SOCKET generalSock, SOCKET outswitchSock) {
 	}
 	return -99;
 }
-
-/*
-
-pk3
-
-typedef struct pkt08{
-	bool		objectives_captured[MAX_OBJECTIVES];
-	status_t	game_status;
-} PKT_GAME_STATUS;
-*/
