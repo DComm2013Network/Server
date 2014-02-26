@@ -1,15 +1,13 @@
 #MakeFile
 
 CC=gcc
-# Hey!, I am comment number 2. I want to say that CFLAGS will be the
-# options I'll pass to the compiler.
 CFLAGS=-c -Wall
-
+GBD=-g
 
 all: Server
 
 Server: Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o
-	$(CC) Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o -o ../bin/Server
+	$(CC) $(GDB) Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o -o ../bin/Server
 
 Startup.o: ../src/Startup.c
 	$(CC) $(CFLAGS) ../src/Startup.c 

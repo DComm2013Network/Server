@@ -27,6 +27,8 @@
 #define MAX_MESSAGE		180
 #define MAX_OBJECTIVES	16
 
+#define NUM_NET_PACKETS 13
+
 // Definitions for various game data types
 #define bool			int
 #define floorNo_t 		int

@@ -19,9 +19,7 @@
  --
  *-------------------------------------------------------------------------------------------------------------------*/
 
-#include "NetComm.h"
 #include "Server.h"
-#include "Sockets.h"
 
 extern int RUNNING;
 
@@ -62,21 +60,18 @@ extern int RUNNING;
  --		Sends packets 11
  --
  ----------------------------------------------------------------------------------------------------------------------*/
-int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock) {
+void* GameplayController(void* ipcSocks){
 
 	int i = 0;
 	int pType = -1;
 	int playerFloor = -1;
 	playerNo_t thisPlayer = -1;
 	int outPType = -1;
-
+	
+	SOCKET gameplaySock = ((SOCKET*)ipcSocks)[0];
+	SOCKET outswitchSock = ((SOCKET*)ipcSocks)[1];
+	
 	//create structs for buffers
-
-	/*
-	 * set up other packets:
-	 * 	incoming IPC_PKT_0 0xB0
-	 * 	incoming IPC_PKT_1 0xB1
-	 */
 
 	PKT_POS_UPDATE *bufPlayerIn = malloc(sizeof(PKT_POS_UPDATE));
 	memset(&bufPlayerIn, 0, sizeof(PKT_POS_UPDATE));

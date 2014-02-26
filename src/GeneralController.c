@@ -18,10 +18,7 @@
 -- 
 *-------------------------------------------------------------------------------------------------------------------*/
 
-
-#include "NetComm.h"
 #include "Server.h"
-#include "Sockets.h"
 
 extern int RUNNING;
 double winRatio = MAX_OBJECTIVES * 0.75;
@@ -47,12 +44,15 @@ double winRatio = MAX_OBJECTIVES * 0.75;
 -- 
 ----------------------------------------------------------------------------------------------------------------------*/
 
-int GeneralController(SOCKET generalSock, SOCKET outswitchSock) {
+void* GeneralController(void* ipcSocks){
 	
 	bool objCaptured[MAX_OBJECTIVES];
 	status_t status = GAME_STATE_WAITING;
 	size_t 	numPlayers = 0;
 	int pktType, i;
+	
+	SOCKET generalSock = ((SOCKET*)ipcSocks)[0];
+	SOCKET outswitchSock = ((SOCKET*)ipcSocks)[1];
 	
 	/* Will look into changing this... */
 	PKT_SERVER_SETUP	*pkt0;
@@ -85,7 +85,7 @@ int GeneralController(SOCKET generalSock, SOCKET outswitchSock) {
 	if((pktType = getPacketType(generalSock)) != IPC_PKT_0)
 	{
 		fprintf(stderr, "Expected packet type: %d\nReceived: %d\n", IPC_PKT_0, pktType);
-		return -1;
+		return NULL;
 	}
 	getPacket(generalSock, pkt0, pkt0Size);
 	
@@ -108,7 +108,7 @@ int GeneralController(SOCKET generalSock, SOCKET outswitchSock) {
 				pktGameStatus->game_status = status;
 				memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);					
 
-				write(generalSock, pktGameStatus, pktGameStatusSize);
+				write(outswitchSock, pktGameStatus, pktGameStatusSize);
 			break;
 					
 			case 8: // Game Status
@@ -133,9 +133,9 @@ int GeneralController(SOCKET generalSock, SOCKET outswitchSock) {
 				// send pkt8
 				memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);
 				pktGameStatus->game_status = status;
-				write(generalSock, pktGameStatus, pktGameStatusSize);
+				write(outswitchSock, pktGameStatus, pktGameStatusSize);
 			break;
 		}
 	}
-	return -99;
+	return NULL;
 }

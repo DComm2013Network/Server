@@ -39,6 +39,9 @@
 #include <signal.h>
 
 #include "NetComm.h"
+#include "Sockets.h"
+
+#define NUM_IPC_PACKETS 3
 
 #define SERVER_VERSION 0.2
 
@@ -60,16 +63,13 @@ void* OutboundSwitchboard(void* ipcSocks);
 typedef struct pktB0{
 	char				serverName[MAX_NAME];
 	int					maxPlayers;
-	int					port;
 } PKT_SERVER_SETUP;
 
 #define IPC_PKT_0 0xB0
 
 typedef struct pktB1{
-	SOCKET				newClientSock;
 	playerNo_t			playerNo;
 	char 				client_player_name[MAX_NAME];
-	struct sockaddr_in 	addrInfo;
 } PKT_NEW_CLIENT;
 
 #define IPC_PKT_1 0xB1
@@ -85,6 +85,11 @@ typedef struct pktB2{
 // global data stores
 
 SOCKET 				tcpConnections[MAX_PLAYERS];
-struct sockaddr_in 	udpConnections[MAX_PLAYERS];
+SOCKET				udpConnection;
+struct sockaddr_in 	udpAddresses[MAX_PLAYERS];
 
+
+int netPacketSizes[NUM_NET_PACKETS + 1];
+int ipcPacketSizes[NUM_IPC_PACKETS + 1];
+int largestNetPacket, largestIpcPacket, largestPacket;
 

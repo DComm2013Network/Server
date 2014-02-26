@@ -18,9 +18,7 @@
  --
  *-------------------------------------------------------------------------------------------------------------------*/
 
-#include "NetComm.h"
 #include "Server.h"
-#include "Sockets.h"
 
 extern int RUNNING;
 
@@ -45,7 +43,7 @@ extern int RUNNING;
  -- NOTES:
  --
  ----------------------------------------------------------------------------------------------------------------------*/
-int OutboundSwitchboard(SOCKET outswitchSock) {
+void* OutboundSwitchboard(void* ipcSocks){
 	/*
 	 * OUTBOUND SWITCHBOARD
 	 while 1

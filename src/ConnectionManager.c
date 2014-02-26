@@ -21,14 +21,11 @@
 -- 
 *-------------------------------------------------------------------------------------------------------------------*/
 
-
-#include "NetComm.h"
 #include "Server.h"
 
 
 // Globals
 SOCKET listenSock;
-SOCKET acceptSock;
 int connectedPlayers[MAX_PLAYERS];
 extern int RUNNING;
 
@@ -52,6 +49,20 @@ extern int RUNNING;
 -- Reads in the setup packet send by the switchboard from the UI
 ----------------------------------------------------------------------------------------------------------------------*/
 void connectionManagerSetup(SOCKET connectionSock, int* maxPlayers, char* gameName){
+	
+	struct pktB0 setupPkt;
+	
+	if(getPacketType(connectionSock) != 0xB0){
+		DEBUG("CM> CM setup getting packets it shouldn't be");
+		return;
+	}
+	
+	getPacket(connectionSock, &setupPkt, ipcPacketSizes[0]);
+	
+	*maxPlayers = setupPkt.maxPlayers;
+	memcpy(gameName, setupPkt.serverName, MAX_NAME);
+	
+	DEBUG("CM> Setup Received");
 	
 	return;
 }
@@ -80,68 +91,76 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 	struct pktB1 newClientInfo;
 	struct pkt01 clientReg;
 	struct pkt02 replyToClient;
+	
+	SOCKET acceptSock;
+	
 	struct sockaddr_in client;
 	socklen_t addr_len = sizeof(struct sockaddr_in);
-	int cmd, i;
+	int i;
 	
-	memset(&clientReg, 0, sizeof(struct pkt01));
-	memset(&replyToClient, 0, sizeof(struct pkt02));
+	DEBUG("CM> Adding new connection");
+	
+	bzero(&replyToClient, netPacketSizes[2]);
+	bzero(&newClientInfo, ipcPacketSizes[1]);
 	
 	if ((acceptSock = accept(listenSock, (struct sockaddr *)&client, &addr_len)) == -1){
-		fprintf(stderr, "Could not accept client\n");
+		DEBUG("Could not accept client");
 		return;
 	}
 	
 	// Read in the packet type, which should be 1
-	if(!recv(acceptSock, &cmd, 1, 0)){
-		perror("Failed to read in packet type for new connection");
+	if(getPacketType(acceptSock) != 1){
+		DEBUG("CM> Add new connection getting packets it shouldn't be");
 		return;
 	}
 	
 	// Register the new client if there is space available
-	if(cmd == 1){
-		if(recv(acceptSock, &clientReg, sizeof(struct pkt01), 0) != sizeof(struct pkt01)){
-			perror("Failed to get client name");
+	getPacket(acceptSock, &clientReg, netPacketSizes[1]);
+	
+	for(i = 0; i < maxPlayers; ++i){
+		if(connectedPlayers[i] == 0){
+			break;
 		}
+	}
+	
+	// Add player if space
+	if(i < maxPlayers){
+		DEBUG("CM> Space available, adding player");
 		
-		for(i = 0; i < maxPlayers; ++i){
-			if(connectedPlayers[i] == 0){
-				break;
-			}
-		}
+		connectedPlayers[i] = acceptSock;
+		replyToClient.connect_code = CONNECT_CODE_ACCEPTED;
+		replyToClient.clients_player_number = i;
 		
-		// Add player if space
-		if(i < maxPlayers){
-			connectedPlayers[i] = acceptSock;
-			replyToClient.connect_code = CONNECT_CODE_ACCEPTED;
-			replyToClient.clients_player_number = i;
-			
-			// This is just for milestone 1, where first player is team 1, second is team 2
-			replyToClient.clients_team_number = i;
-			
-			// Send accept to client with their player and team number
-			send(acceptSock, &replyToClient, sizeof(struct pkt02), 0);
-			
-			newClientInfo.newClientSock = acceptSock;
-			newClientInfo.playerNo = i;
-			memcpy(&newClientInfo.client_player_name, &clientReg.client_player_name, MAX_NAME);
-			memcpy(&newClientInfo.addrInfo, &client, addr_len);
-			
-			// Notify switchboards
-			send(connectionSock, &newClientInfo, sizeof(struct pktB1), 0);
-			send(outswitchSock, &newClientInfo, sizeof(struct pktB1), 0);
-		}
-		else{
-			// Server is full. GTFO
-			replyToClient.connect_code = CONNECT_CODE_DENIED;
-			send(acceptSock, &replyToClient, sizeof(struct pkt02), 0);
-			close(acceptSock);
-		}
+		// This is just for milestone 1, where first player is team 1, second is team 2
+		replyToClient.clients_team_number = i;
 		
+		// Send accept to client with their player and team number
+		send(acceptSock, &replyToClient, sizeof(struct pkt02), 0);
+		
+		newClientInfo.newClientSock = acceptSock;
+		newClientInfo.playerNo = i;
+		memcpy(&newClientInfo.client_player_name, &clientReg.client_player_name, MAX_NAME);
+		
+		// add TCP connection to list
+		tcpConnections[i] = acceptSock;
+		
+		// set UDP connection info, but override the port
+		memcpy(&udpAddresses[i], &client, sizeof(struct sockaddr_in));
+		udpAddresses[i].sin_port = htons(UDP_PORT);
+		
+		DEBUG("CM> Notifying switchboards");
+		// Notify switchboards
+		write(connectionSock, &newClientInfo, sizeof(struct pktB1));
+		write(outswitchSock, &newClientInfo, sizeof(struct pktB1));
+		
+		DEBUG("CM> New client added");
 	}
 	else{
-		fprintf(stderr, "Connection Manager receiving packets it shouldn't be\n");
-		return;
+		// Server is full. GTFO
+		DEBUG("CM> Game full, rejecting client");
+		replyToClient.connect_code = CONNECT_CODE_DENIED;
+		send(acceptSock, &replyToClient, sizeof(struct pkt02), 0);
+		close(acceptSock);
 	}
 	
 	return;
@@ -170,23 +189,20 @@ void removeConnection(SOCKET connectionSock){
 	// No need to send the remove to outswitch, inswich will have done it
 	
 	struct pktB2 lostClient;
-	int cmd;
+	int type = 0xB2;
 	
-	if(!recv(connectionSock, &cmd, 1, 0)){
-		perror("Failed to read in packet type for IPC [Lost Connection]");
+	DEBUG("CM> Removing player from game");
+	
+	if(getPacketType(connectionSock) != type){
+		DEBUG("CM> Connection manager Remove Connection getting packets it shouldn't be.");
 		return;
 	}
 	
-	if(cmd != IPC_PKT_2){
-		fprintf(stderr, "Remove Connection receiving packets it shouldn't be\n");
-		return;
-	}
-	
-	if(recv(acceptSock, &lostClient, sizeof(struct pktB2), 0) != sizeof(struct pktB2)){
-			perror("Failed to get lost client no");
-	}
+	getPacket(connectionSock, &lostClient, ipcPacketSizes[2]);
 	
 	connectedPlayers[lostClient.playerNo] = 0;
+	
+	DEBUG("CM> Removed player from game");
 	
 	return;
 }
@@ -214,15 +230,7 @@ void removeConnection(SOCKET connectionSock){
 -- 
 ----------------------------------------------------------------------------------------------------------------------*/
 void* ConnectionManager(void* ipcSocks){
-/*
- * CONNECTION MANAGER
-    create, bind,
-    loop
-        listen, accept
-        pass accepted socket+info to inbound switchboard
 
- */
-	
 	int maxPlayers;
 	char* gameName;
 	
@@ -230,36 +238,58 @@ void* ConnectionManager(void* ipcSocks){
 	int numLiveSockets;
 	SOCKET highSocket;
 	
+	SOCKET connectionSock = ((SOCKET*)ipcSocks)[0];
+	SOCKET outswitchSock = ((SOCKET*)ipcSocks)[1];
+	
 	struct	sockaddr_in server;
 	int addr_len = sizeof(struct sockaddr_in);
-return -99;
+
 	gameName = (char*)malloc(sizeof(char) * MAX_NAME);
+	
+	DEBUG("CM> Connection Manager Started");
 	
 	// Read the packet from UI and get started
 	connectionManagerSetup(connectionSock, &maxPlayers, gameName);
 	
 	// Start listening for incoming connections
-	listenSock = socket(AF_INET, SOCK_STREAM, 0);
+	listenSock = 	socket(AF_INET, SOCK_STREAM, 0);
+	udpConnection = socket(AF_INET, SOCK_DGRAM, 0);
 	
 	// No clients yet joined
-	memset(connectedPlayers, 0, MAX_PLAYERS * sizeof(int));
+	bzero(connectedPlayers, 	sizeof(SOCKET) * MAX_PLAYERS);
+	bzero(tcpConnections, 		sizeof(SOCKET) * MAX_PLAYERS);
+	bzero(udpAddresses, 		sizeof(struct sockaddr_in) * MAX_PLAYERS);
 	
-	memset(&server, 0, addr_len);
+	bzero(&server, addr_len);
 	
 	// Set up the listening socket to any incoming address
-	server.sin_family = AF_INET;
-	server.sin_port = htons(7000);
-	server.sin_addr.s_addr = htonl(INADDR_ANY);
+	server.sin_family 		= AF_INET;
+	server.sin_port 		= htons(TCP_PORT);
+	server.sin_addr.s_addr 	= htonl(INADDR_ANY);
 	
 	// Bind
 	if (bind(listenSock, (struct sockaddr *)&server, addr_len) == -1)
 	{
-		perror("Can't bind name to socket");
-		return -1;
+		perror("Can't bind listen socket");
+		return NULL;
 	}
+	
+	DEBUG("CM> TCP socket bound");
+	
+	server.sin_port = htons(UDP_PORT);
+	
+	if (bind(udpConnection, (struct sockaddr *)&server, addr_len) == -1)
+	{
+		perror("Can't bind udp socket");
+		return NULL;
+	}
+	
+	DEBUG("CM> UDP socket bound");
 	
 	// queue up to 5 connect requests
 	listen(listenSock, 5);
+	
+	DEBUG("CM> Listening");
 	
 	while(RUNNING){
 		
@@ -287,5 +317,5 @@ return -99;
 		}
 	}
 	
-	return -99;
+	return NULL;
 }
