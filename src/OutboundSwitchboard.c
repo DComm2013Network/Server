@@ -132,6 +132,7 @@ void* OutboundSwitchboard(void* ipcSocks){
 	int lenFloorUpdate = sizeof(PKT_ALL_POS_UPDATE);
 
 	// wait for IPC packet 0 - This is the server startup packet
+	getPacketType(); // < finish dis.
 	getPacket(outswitchSock, bufSetup, lenSetup);
 
 	while (RUNNING) {
@@ -146,27 +147,8 @@ void* OutboundSwitchboard(void* ipcSocks){
 
 		//new player joined
 		case 0xB1:
-			if (getPacket(outswitchSock, bufNewClient, lenNewClient) == -1) {
-				break;
-			}
-			/*
-			 * add player's sockets to connection lists
-			 *
-			 * I have no idea what the hell I'm doing here... I'm too damn tired to understand
-			 * 	any code at all right now......
-			 */
-
-				return -1;
-
-			break;
-
-			//player dropped
 		case 0xB2:
-			if (getPacket(outswitchSock, bufDropPlayer, lenDropClient) == -1) {
-				break;
-			}
-			udpConnections[bufDropPlayer->playerNo] = 0;
-			tcpConnections[bufDropPlayer->playerNo] = 0;
+			// no need to do anything anymore. All handles are global.
 			break;
 
 			// player info to send to all players
