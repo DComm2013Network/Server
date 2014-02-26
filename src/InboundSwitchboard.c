@@ -26,6 +26,7 @@
 // Globals
 SOCKET* tcpConnections;
 SOCKET* udpConnections;
+SOCKET Inswitch_uiSocket, Inswitch_connectionSocket, Inswitch_generalSocket, Inswitch_gameplaySocket, Inswitch_outswitchSocket;
 extern int RUNNING;
 	
 /*--------------------------------------------------------------------------------------------------------------------
@@ -39,15 +40,16 @@ extern int RUNNING;
 --
 -- PROGRAMMER: 	Andrew Burian
 --
--- INTERFACE: 	void inswtichSetup(SOCKET uiSock)
+-- INTERFACE: 	void inswtichSetup()
 --
 -- RETURNS: 	void
 --
 -- NOTES:
 -- Receives the setup packet from the UI and passes it to all who need it.
 ----------------------------------------------------------------------------------------------------------------------*/
-void inswtichSetup(SOCKET uiSock){
-	//struct pktB0 setupPkt;
+void inswtichSetup(){
+	struct pktB0 setupPkt;
+	
 	
 	
 }
@@ -138,7 +140,7 @@ int getInput(SOCKET liveSocket){
 --
 -- PROGRAMMER: 	Andrew Burian
 --
--- INTERFACE: 	void cleanupSocket(int pos, SOCKET conMan, SOCKET outSwitch)
+-- INTERFACE: 	void cleanupSocket(int pos)
 --
 -- RETURNS: 	void
 --
@@ -146,7 +148,7 @@ int getInput(SOCKET liveSocket){
 -- Removes both TCP and UDP sockets for a certain player position, then notifies the connection manager and
 -- the outbound switchboard to do likewise.
 ----------------------------------------------------------------------------------------------------------------------*/
-void cleanupSocket(int pos, SOCKET conMan, SOCKET outSwitch){
+void cleanupSocket(int pos){
 	struct pktB2 lost;
 	
 	close(tcpConnections[pos]);
@@ -157,8 +159,8 @@ void cleanupSocket(int pos, SOCKET conMan, SOCKET outSwitch){
 	
 	lost.playerNo = pos;
 	
-	write(conMan, &lost, sizeof(lost));
-	write(outSwitch, &lost, sizeof(lost));
+	write(Inswitch_connectionSocket, &lost, sizeof(lost));
+	write(Inswitch_outswitchSocket, &lost, sizeof(lost));
 }
 
 /*--------------------------------------------------------------------------------------------------------------------
@@ -192,7 +194,7 @@ int InboundSwitchboard(SOCKET uiSock, SOCKET connectionSock, SOCKET generalSock,
 	SOCKET highSocket;
 	
 	int i;
-	/*struct pkt01 packetType1;
+	struct pkt01 packetType1;
 	struct pkt02 packetType2;
 	struct pkt03 packetType3;
 	struct pkt04 packetType4;
@@ -207,13 +209,20 @@ int InboundSwitchboard(SOCKET uiSock, SOCKET connectionSock, SOCKET generalSock,
 	struct pkt13 packetType13;
 	struct pktB0 IPCpacketType0;
 	struct pktB1 IPCpacketType1;
-	struct pktB2 IPCpacketType2;*/
+	struct pktB2 IPCpacketType2;
 	
 	// Allocate space for all the sockets
 	tcpConnections = malloc(sizeof(SOCKET) * MAX_PLAYERS);
 	udpConnections = malloc(sizeof(SOCKET) * MAX_PLAYERS);
 	memset(tcpConnections, 0, sizeof(SOCKET) * MAX_PLAYERS);
 	memset(udpConnections, 0, sizeof(SOCKET) * MAX_PLAYERS);
+	
+	// Assign the global Sockets to make life so much easier
+	Inswitch_uiSocket = uiSock;
+	Inswitch_connectionSocket = connectionSock; 
+	Inswitch_generalSocket = generalSock; 
+	Inswitch_gameplaySocket = gameplaySock;
+	Inswitch_outswitchSocket = outswitchSock;
 	
 	inswtichSetup(outswitchSock);
 	
@@ -255,7 +264,7 @@ int InboundSwitchboard(SOCKET uiSock, SOCKET connectionSock, SOCKET generalSock,
 			if(tcpConnections[i]){
 				if(FD_ISSET(tcpConnections[i], &fdset)){
 					if(!getInput(tcpConnections[i])){
-						cleanupSocket(i, connectionSock, outswitchSock);
+						//cleanupSocket(i, connectionSock, outswitchSock);
 					}
 				}
 			}
@@ -266,7 +275,7 @@ int InboundSwitchboard(SOCKET uiSock, SOCKET connectionSock, SOCKET generalSock,
 			if(udpConnections[i]){
 				if(FD_ISSET(udpConnections[i], &fdset)){
 					if(!getInput(udpConnections[i])){
-						cleanupSocket(i, connectionSock, outswitchSock);
+						//cleanupSocket(i, connectionSock, outswitchSock);
 					}
 				}
 			}
