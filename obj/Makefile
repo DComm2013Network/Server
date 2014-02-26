@@ -33,4 +33,4 @@ UI.o: ../src/UI.c
 	$(CC) $(CFLAGS) ../src/UI.c
 
 clean:
-	rm -rf *o Server
+	rm -rf *o ../bin/Server
