@@ -87,7 +87,7 @@ typedef struct pktB2{
 #define OUT_SET(mask, pos) mask|=(1<<(pos-1))
 #define OUT_SETALL(mask) mask=0xFFFFFFFF
 #define OUT_ZERO(mask) mask=0x00000000
-#define OUT_ISSET(mask, pos) ((mask|(1<<(pos-1)))==(1<<(pos-1)))
+#define OUT_ISSET(mask, pos) ((mask&(1<<(pos-1)))==(1<<(pos-1)))
 
 // global data stores
 SOCKET 				tcpConnections[MAX_PLAYERS];
