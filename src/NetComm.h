@@ -35,6 +35,8 @@
 #define status_t		int
 #define pos_t			unsigned int
 
+
+
 // Connect code Definitions
 #define CONNECT_CODE_ACCEPTED	0x001
 #define CONNECT_CODE_DENIED		0x000
@@ -45,6 +47,8 @@
 #define GAME_STATE_OVER			0x003
 #define PLAYER_STATE_READY		0x004
 #define PLAYER_STATE_WAITING	0x005
+#define GAME_TEAM1_WIN			0x006
+#define GAME_TEAM2_WIN			0x007
 
 // Special floor Definitions
 #define FLOOR_LOBBY				0x000
