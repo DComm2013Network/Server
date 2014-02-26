@@ -22,6 +22,31 @@
 
 extern int RUNNING;
 
+
+
+
+void sendToPlayers(int protocol, OUTMASK to, void* data, int len){
+	
+	int i;
+	
+	if(protocol == SOCK_STREAM){
+		for(i = 0; i < MAX_PLAYERS; ++i){
+			if(OUT_ISSET(to, i)){
+				send(tcpConnections[i], data, len);
+			}
+		}
+	}
+	else if(protocol == SOCK_DGRAM){
+		for(i = 0; i < MAX_PLAYERS; ++i){
+			if(OUT_ISSET(to, i)){
+				sendTo(udpConnection, data, len, udpAddresses[i], sizeof(udpAddresses[i]));
+			}
+		}
+	}
+	return;
+}
+
+
 /*--------------------------------------------------------------------------------------------------------------------
  -- FUNCTION:	OutboundSwitchboard
  --

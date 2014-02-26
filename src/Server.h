@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdint.h>
 
 #include "NetComm.h"
 #include "Sockets.h"
@@ -81,9 +82,14 @@ typedef struct pktB2{
 #define IPC_PKT_2 0xB2
 
 
+// Outbound masking
+#define OUTMASK int_fast32_t
+#define OUT_SET(mask, pos) mask|=(1<<(pos-1))
+#define OUT_SETALL(mask) mask=0xFFFFFFFF
+#define OUT_ZERO(mask) mask=0x00000000
+#define OUT_ISSET(mask, pos) ((mask|(1<<(pos-1)))==(1<<pos-1))
 
 // global data stores
-
 SOCKET 				tcpConnections[MAX_PLAYERS];
 SOCKET				udpConnection;
 struct sockaddr_in 	udpAddresses[MAX_PLAYERS];
