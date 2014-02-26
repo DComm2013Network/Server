@@ -213,7 +213,7 @@ void removeConnection(SOCKET connectionSock){
 -- NOTES:
 -- 
 ----------------------------------------------------------------------------------------------------------------------*/
-int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock){
+void* ConnectionManager(void* ipcSocks){
 /*
  * CONNECTION MANAGER
     create, bind,
@@ -232,7 +232,7 @@ int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock){
 	
 	struct	sockaddr_in server;
 	int addr_len = sizeof(struct sockaddr_in);
-	
+return -99;
 	gameName = (char*)malloc(sizeof(char) * MAX_NAME);
 	
 	// Read the packet from UI and get started

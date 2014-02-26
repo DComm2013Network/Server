@@ -28,23 +28,33 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <errno.h>
 #include <strings.h>
 #include <string.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <signal.h>
+
+#include "NetComm.h"
+
+#define SERVER_VERSION 0.2
+
+#define TCP_PORT 42337
+#define UDP_PORT 42338
 
 #define DEBUG_ON 1
 #define DEBUG(msg) if(DEBUG_ON){printf("Debug: %s\n", msg);}
 
 //function prototypes
-int UI(SOCKET outSock);
-int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock);
-int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock);
-int OutboundSwitchboard(SOCKET outswitchSock);
-int InboundSwitchboard(SOCKET uiSock, SOCKET connectionSock, SOCKET generalSock, SOCKET gameplaySock, SOCKET outswitchSock);
-int GeneralController(SOCKET generalSock, SOCKET outswitchSock);
+void* ConnectionManager(void* ipcSocks);
+void* InboundSwitchboard(void* ipcSocks);
+void* GameplayController(void* ipcSocks);
+void* GeneralController(void* ipcSocks);
+void* UIController(void* ipcSocks);
+void* OutboundSwitchboard(void* ipcSocks);
 
 // structures
 typedef struct pktB0{
@@ -69,3 +79,12 @@ typedef struct pktB2{
 } PKT_LOST_CLIENT;
 
 #define IPC_PKT_2 0xB2
+
+
+
+// global data stores
+
+SOCKET 				tcpConnections[MAX_PLAYERS];
+struct sockaddr_in 	udpConnections[MAX_PLAYERS];
+
+
