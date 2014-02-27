@@ -59,18 +59,27 @@ extern int RUNNING;
  --		Takes packets 10
  --		Sends packets 11
  --
+ --	CH - February 27, 2014: Added error messages for data inconsistencies, send and receive errors
+ --		Now using outbound mask
+ --
  ----------------------------------------------------------------------------------------------------------------------*/
-void* GameplayController(void* ipcSocks){
+void* GameplayController(void* ipcSocks) {
 
 	int i = 0;
 	int pType = -1;
 	int playerFloor = -1;
 	playerNo_t thisPlayer = -1;
 	int outPType = -1;
-	
-	SOCKET gameplaySock = ((SOCKET*)ipcSocks)[0];
-	SOCKET outswitchSock = ((SOCKET*)ipcSocks)[1];
-	
+	int errPacket = 0;
+	int errFloor = 0;
+	int errOut = 0;
+	int wrongPacket = 0;
+
+	OUTMASK m;
+
+	SOCKET gameplaySock = ((SOCKET*) ipcSocks)[0];
+	SOCKET outswitchSock = ((SOCKET*) ipcSocks)[1];
+
 	//create structs for buffers
 
 	PKT_POS_UPDATE *bufPlayerIn = malloc(sizeof(PKT_POS_UPDATE));
@@ -111,6 +120,9 @@ void* GameplayController(void* ipcSocks){
 
 			if (getPacket(gameplaySock, bufPlayerIn, lenPktIn) == -1) {
 				//couldn't read packet
+				errPacket++;
+				fprintf(stderr, "Gameplay Controller - error reading packet.  Count:%d\n", errPacket);
+
 				/*
 				 *  handle error here.  Perhaps check the size of the packet as well?
 				 */
@@ -144,6 +156,9 @@ void* GameplayController(void* ipcSocks){
 				 * from this player we can figure out if we didn't get their
 				 * floor update.
 				 */
+				errFloor++;
+				fprintf(stderr, "Gameplay Controller - player floor incorrect.  Count:%d\n", errFloor);
+
 				//for now, we just assign the player to this floor
 				floorArray[playerFloor].players_on_floor[thisPlayer] = 1;
 			}
@@ -157,20 +172,40 @@ void* GameplayController(void* ipcSocks){
 			//stamp the time on the packet to make Shane happy  :p
 			floorArray[playerFloor].timestamp = clock();
 
-			//write the packet to the outbound server
+			//set packet type for outbound server
 			outPType = 11;
 
+			//set outbound mask for outbound server
+			OUT_ZERO(m);
+			for (i = 0; i < MAX_PLAYERS; i++) {
+				if (floorArray[playerFloor].players_on_floor[i] == 1) {
+					OUT_SET(m, i);
+				}
+			}
 			//send packet type and then packet to outbound switchboard
 			/*
 			 * Remove this from the switch, perhaps put it into an if block
 			 * with a goodToSend boolean or something
 			 */
-			write(outswitchSock, &outPType, sizeof(outPType));
-			write(outswitchSock, &floorArray[playerFloor], lenPktAll);
+			if (write(outswitchSock, &outPType, sizeof(outPType)) == -1) {
+				errOut++;
+				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
+			}
+			if (write(outswitchSock, &floorArray[playerFloor], lenPktAll) == -1) {
+				errOut++;
+				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
+			}
+			if (write(outswitchSock, &m, 1) == -1) {
+				errOut++;
+				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
+			}
 
 			break;
 
 		default:
+			wrongPacket++;
+			fprintf(stderr, "Gameplay Controller - received unknown packet type.  Count:%d\n", wrongPacket);
+
 			break;
 		}
 	}
