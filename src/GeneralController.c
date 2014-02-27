@@ -49,7 +49,10 @@ void* GeneralController(void* ipcSocks){
 	bool objCaptured[MAX_OBJECTIVES];
 	status_t status = GAME_STATE_WAITING;
 	size_t 	numPlayers = 0;
-	int pktType, i;
+	int inPktType, i, outPktType = 8;
+	//TODO: store players into teams
+
+	OUTMASK m;
 	
 	SOCKET generalSock = ((SOCKET*)ipcSocks)[0];
 	SOCKET outswitchSock = ((SOCKET*)ipcSocks)[1];
@@ -57,43 +60,45 @@ void* GeneralController(void* ipcSocks){
 	/* Will look into changing this... */
 	PKT_SERVER_SETUP	*pkt0;
 	PKT_NEW_CLIENT		*pkt1;
-	//			*pkt2;
+	PKT_LOST_CLIENT		*pkt2;
 	PKT_SERVER_SETUP	*pktServerSetup;
 	PKT_GAME_STATUS		*pktGameStatus;
+		
 	
-	size_t pkt0Size, pkt1Size, pktServerSetupSize, pktGameStatusSize;
-	pkt0Size 		= sizeof(IPC_PKT_0			);
-	pkt1Size 		= sizeof(IPC_PKT_1			);
-	//pkt2Size 		= sizeof(IPC_PKT_2			);
-	pktServerSetupSize 	= sizeof(PKT_SERVER_SETUP	);
-	pktGameStatusSize 	= sizeof(PKT_GAME_STATUS	);
+	size_t pkt0Size, pkt1Size, pkt2Size, pktServerSetupSize, pktGameStatusSize;
+	pkt0Size 			= sizeof(IPC_PKT_0		  );
+	pkt1Size 			= sizeof(IPC_PKT_1		  );
+	pkt2Size 			= sizeof(IPC_PKT_2		  );
+	pktServerSetupSize 	= sizeof(PKT_SERVER_SETUP );
+	pktGameStatusSize 	= sizeof(PKT_GAME_STATUS  );
 	
-	pkt0 		= malloc(pkt0Size 		);
-	pkt1 		= malloc(pkt1Size 		);
-	//pkt2 		= malloc(pkt2Size 		);
-	pktServerSetup	= malloc(pktServerSetupSize 	);
+	pkt0 			= malloc(pkt0Size	 		);
+	pkt1 			= malloc(pkt1Size	 		);
+	pkt2 			= malloc(pkt2Size	 		);
+	pktServerSetup	= malloc(pktServerSetupSize	);
 	pktGameStatus	= malloc(pktGameStatusSize 	);
 	
-	memset(objCaptured, 0, MAX_OBJECTIVES	);
-	memset(pkt0, 		0, pkt0Size 		);
-	memset(pkt1, 		0, pkt1Size 		);
-	//memset(pkt2, 		0, pkt2Size 		);
-	memset(pktServerSetup, 	0, pktServerSetupSize 	);
-	memset(pktGameStatus, 	0, pktGameStatusSize 	);
-			
+	memset(objCaptured, 	0, MAX_OBJECTIVES	  );
+	memset(pkt0, 			0, pkt0Size 		  );
+	memset(pkt1, 			0, pkt1Size 		  );
+	memset(pkt2, 			0, pkt2Size 		  );
+	memset(pktServerSetup, 	0, pktServerSetupSize );
+	memset(pktGameStatus, 	0, pktGameStatusSize  );
+	// <--------------------------------------------------------------->			
+	
 	// wait ipc 0	
-	if((pktType = getPacketType(generalSock)) != IPC_PKT_0)
+	if((inPktType = getPacketType(generalSock)) != IPC_PKT_0)
 	{
-		fprintf(stderr, "Expected packet type: %d\nReceived: %d\n", IPC_PKT_0, pktType);
+		fprintf(stderr, "Expected packet type: %d\nReceived: %d\n", IPC_PKT_0, inPktType);
 		return NULL;
 	}
 	getPacket(generalSock, pkt0, pkt0Size);
+	//game initialized
 	
-	//while 1
     while(RUNNING)
     {
-        pktType = getPacketType(generalSock);
-		switch(pktType)	
+        inPktType = getPacketType(generalSock);
+		switch(inPktType)	
 		{
 			case IPC_PKT_1: // New Player
 				if(numPlayers == MAX_PLAYERS)
@@ -101,14 +106,26 @@ void* GeneralController(void* ipcSocks){
 
 				getPacket(generalSock, pkt1, pkt1Size);
 				numPlayers++;
-
+				// TODO: add to team
+				
 				if(numPlayers == MAX_PLAYERS)
 					status = GAME_STATE_ACTIVE;
-					
-				pktGameStatus->game_status = status;
-				memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);					
-
-				write(outswitchSock, pktGameStatus, pktGameStatusSize);
+			break;
+			
+			case IPC_PKT_2: // Player lost		
+				if(numPlayers < 1)
+					break;
+				
+				getPacket(generalSock, pkt2, pkt2Size);
+				numPlayers--;
+				
+				//TODO: in comments
+				if(numPlayers < 2) // or last player from a team dropped
+				{
+					// get dropped player/active player team
+					// set game winner
+					status  = GAME_STATE_OVER;
+				}
 			break;
 					
 			case 8: // Game Status
@@ -119,7 +136,7 @@ void* GeneralController(void* ipcSocks){
 					int countCaptured = 0;
 					// Copy the client's objective listing to the server.
 					// May need some better handling; if 2 are received very close to each other
-					memcpy(objCaptured, pktGameStatus->objectives_captured, MAX_OBJECTIVES);
+					 memcpy(objCaptured, pktGameStatus->objectives_captured, MAX_OBJECTIVES);
 
 					//check win
 					for(i = 0; i < MAX_OBJECTIVES; i++)
@@ -129,13 +146,19 @@ void* GeneralController(void* ipcSocks){
 					if(countCaptured >= winRatio)
 						status = GAME_STATE_OVER;
 				}
-				
-				// send pkt8
-				memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);
-				pktGameStatus->game_status = status;
-				write(outswitchSock, pktGameStatus, pktGameStatusSize);
 			break;
 		}
+		
+		
+
+		memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);
+		pktGameStatus->game_status = status;
+		 
+		OUT_ZERO(m); OUT_SETALL(m);
+		
+		write(outswitchSock, &outPktType, 1);
+		write(outswitchSock, pktGameStatus, pktGameStatusSize);
+		write(outswitchSock, &m, 1);
 	}
 	return NULL;
 }
