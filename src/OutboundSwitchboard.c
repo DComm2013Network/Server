@@ -25,13 +25,16 @@ extern int RUNNING;
 
 
 
-void sendToPlayers(int protocol, OUTMASK to, void* data, int len){
+void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 	
 	int i;
-	
+	void* packet = malloc(netPacketSizes[type] + sizeof(packet_t);
+
+
 	if(protocol == SOCK_STREAM){
 		for(i = 0; i < MAX_PLAYERS; ++i){
 			if(OUT_ISSET(to, i) && tcpConnections[i] != 0){
+				send(tcpConnections[i], &type, sizeof(packet_t), 0);
 				send(tcpConnections[i], data, len, 0);
 			}
 		}
@@ -39,7 +42,9 @@ void sendToPlayers(int protocol, OUTMASK to, void* data, int len){
 	else if(protocol == SOCK_DGRAM){
 		for(i = 0; i < MAX_PLAYERS; ++i){
 			if(OUT_ISSET(to, i) && tcpConnections[i] != 0){ // check tcp anyways, because will be valid even for udp
-				sendTo(udpConnection, data, len, 0, udpAddresses[i], sizeof(udpAddresses[i]));
+				((packet_t*)packet)[0] = type;
+				memcpy(&(packet[1]), data, netPacketSizes[type]);
+				sendTo(udpConnection, packet, netPacketSizes[type] + sizeof(packet_t), 0, udpAddresses[i], sizeof(udpAddresses[i]));
 			}
 		}
 	}
@@ -89,14 +94,14 @@ void handleOut(SOCKET liveSock){
 		case 0x09:
 		case 0x12:
 		case 0x13:
-			sendToPlayers(SOCK_STREAM, mask, packet, netPacketSizes[type]);
+			sendToPlayers(SOCK_STREAM, mask, packet, type);
 			break;
 		
 		// UDP cases
 		case 0x08:
 		case 0x10:
 		case 0x11:
-			sendToPlayers(SOCK_DGRAM, mask, packet, netPacketSizes[type]);
+			sendToPlayers(SOCK_DGRAM, mask, packet, type);
 			break;
 	}
 }
