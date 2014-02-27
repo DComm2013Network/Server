@@ -28,38 +28,49 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <errno.h>
 #include <strings.h>
 #include <string.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdint.h>
+
+#include "NetComm.h"
+#include "Sockets.h"
+
+#define NUM_IPC_PACKETS 3
+
+#define SERVER_VERSION 0.2
+
+#define TCP_PORT 42337
+#define UDP_PORT 42338
 
 #define DEBUG_ON 1
 #define DEBUG(msg) if(DEBUG_ON){printf("Debug: %s\n", msg);}
 
 //function prototypes
-int UI(SOCKET outSock);
-int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock);
-int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock);
-int OutboundSwitchboard(SOCKET outswitchSock);
-int InboundSwitchboard(SOCKET uiSock, SOCKET connectionSock, SOCKET generalSock, SOCKET gameplaySock, SOCKET outswitchSock);
-int GeneralController(SOCKET generalSock, SOCKET outswitchSock);
+void* ConnectionManager(void* ipcSocks);
+void* InboundSwitchboard(void* ipcSocks);
+void* GameplayController(void* ipcSocks);
+void* GeneralController(void* ipcSocks);
+void* UIController(void* ipcSocks);
+void* OutboundSwitchboard(void* ipcSocks);
 
 // structures
 typedef struct pktB0{
 	char				serverName[MAX_NAME];
 	int					maxPlayers;
-	int					port;
 } PKT_SERVER_SETUP;
 
 #define IPC_PKT_0 0xB0
 
 typedef struct pktB1{
-	SOCKET				newClientSock;
 	playerNo_t			playerNo;
 	char 				client_player_name[MAX_NAME];
-	struct sockaddr_in 	addrInfo;
 } PKT_NEW_CLIENT;
 
 #define IPC_PKT_1 0xB1
@@ -69,3 +80,22 @@ typedef struct pktB2{
 } PKT_LOST_CLIENT;
 
 #define IPC_PKT_2 0xB2
+
+
+// Outbound masking
+#define OUTMASK int_fast32_t
+#define OUT_SET(mask, pos) mask|=(1<<(pos-1))
+#define OUT_SETALL(mask) mask=0xFFFFFFFF
+#define OUT_ZERO(mask) mask=0x00000000
+#define OUT_ISSET(mask, pos) ((mask&(1<<(pos-1)))==(1<<(pos-1)))
+
+// global data stores
+SOCKET 				tcpConnections[MAX_PLAYERS];
+SOCKET				udpConnection;
+struct sockaddr_in 	udpAddresses[MAX_PLAYERS];
+
+
+int netPacketSizes[NUM_NET_PACKETS + 1];
+int ipcPacketSizes[NUM_IPC_PACKETS + 1];
+int largestNetPacket, largestIpcPacket, largestPacket;
+

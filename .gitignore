@@ -1,0 +1,7 @@
+# generic files to ignore
+
+*~
+*.o
+bin/* 
+*.gch
+*.geany

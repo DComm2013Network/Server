@@ -27,6 +27,8 @@
 #define MAX_MESSAGE		180
 #define MAX_OBJECTIVES	16
 
+#define NUM_NET_PACKETS 13
+
 // Definitions for various game data types
 #define bool			int
 #define floorNo_t 		int
@@ -34,6 +36,8 @@
 #define teamNo_t		unsigned int
 #define status_t		int
 #define pos_t			unsigned int
+
+
 
 // Connect code Definitions
 #define CONNECT_CODE_ACCEPTED	0x001
@@ -45,6 +49,8 @@
 #define GAME_STATE_OVER			0x003
 #define PLAYER_STATE_READY		0x004
 #define PLAYER_STATE_WAITING	0x005
+#define GAME_TEAM1_WIN			0x006
+#define GAME_TEAM2_WIN			0x007
 
 // Special floor Definitions
 #define FLOOR_LOBBY				0x000
