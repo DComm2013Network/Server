@@ -25,8 +25,6 @@
 extern int RUNNING;
 
 SOCKET Inswitch_uiSocket, Inswitch_connectionSocket, Inswitch_generalSocket, Inswitch_gameplaySocket, Inswitch_outswitchSocket;
-
-void* inswitch_packet;
 	
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	In-Switch Setup
@@ -57,9 +55,8 @@ void inswitchSetup(){
 	
 	getPacket(Inswitch_uiSocket, &setupPkt, ipcPacketSizes[0]);
 	
-	write(Inswitch_connectionSocket, &type, 1);
-	write(Inswitch_connectionSocket, &setupPkt, ipcPacketSizes[0]);
-	
+	relayPacket(&setupPkt, ipcPacketSizes[0]);
+	DEBUG("IS> Setup Complete");
 }
 
 /*--------------------------------------------------------------------------------------------------------------------
@@ -85,6 +82,105 @@ void addNewPlayer(){
 	
 }
 
+void relayPacket(void* packet, int type){
+	
+	switch(type){
+		
+		// --------------------------IPC--------------------------------
+		case 0xB0:		// Setup Packet
+			write(Inswitch_connectionSocket, 	packet, ipcPacketSizes[0]);
+			write(Inswitch_outswitchSocket,		packet, ipcPacketSizes[0]);
+			write(Inswitch_gameplaySocket,		packet, ipcPacketSizes[0]);
+			write(Inswitch_generalSocket,		packet, ipcPacketSizes[0]);
+			break;
+			
+		case 0xB1:		// New player added
+			write(Inswitch_outswitchSocket,		packet, ipcPacketSizes[1]);
+			write(Inswitch_gameplaySocket,		packet, ipcPacketSizes[1]);
+			write(Inswitch_generalSocket,		packet, ipcPacketSizes[1]);
+			break;
+			
+		case 0xB2:		// Client Disconnect
+			write(Inswitch_connectionSocket, 	packet, ipcPacketSizes[2]);
+			write(Inswitch_outswitchSocket,		packet, ipcPacketSizes[2]);
+			write(Inswitch_gameplaySocket,		packet, ipcPacketSizes[2]);
+			write(Inswitch_generalSocket,		packet, ipcPacketSizes[2]);
+			break;
+		
+		// --------------------------NET--------------------------------
+		
+		case 0x01:
+			break;
+			
+		case 0x02:
+			break;
+		
+		case 0x03:
+			break;
+		
+		case 0x04:
+			break;
+		
+		case 0x05:
+			break;
+		
+		case 0x06:
+			break;
+		
+		case 0x07:
+			break;
+		
+		case 0x08:		// Game Status
+			write(Inswitch_generalSocket,		packet, netPacketSizes[8]);
+			break;
+		
+		case 0x09:
+			break;
+		
+		case 0x10:		// Movement update
+			write(Inswitch_gameplaySocket,		packet, netPacketSizes[10]);
+			break;
+		
+		case 0x11:
+			break;
+		
+		case 0x12:
+			break;
+		
+		case 0x13:
+			break;
+		
+		default:
+			DEBUG("IS> In Switchboard getting packets it shouldn't be");
+			break;
+	}
+	
+}
+
+
+
+void getUdpInput(){
+	
+	int type = 0;
+	int received;
+	void* packet = malloc(sizeof(largestNetPacket + 1));
+	
+	// Get the datagram, we don't care about the client info for now
+	received = recvFrom(udpConnection, &packet, largestNetPacket, NULL, NULL); 
+	
+	// The first bit should be the type
+	type = *((int*)packet);
+	
+	if(received == netPacketSizes[type] + 1){
+		relayPacket(packet + 1, type);
+	}
+	else{
+		DEBUG("IS> UDP received incorrectly labled packet");
+	}
+	
+	
+}
+
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	Get Input
 --
@@ -105,31 +201,23 @@ void addNewPlayer(){
 -- NOTES:
 -- Reads a live socket.
 ----------------------------------------------------------------------------------------------------------------------*/
-int getInput(SOCKET liveSocket){
-	/* Check to see if socket has died
-	* 		remove if it has
-	* read 1 byte
-	* if it's a new connection, add it to the appropriate spot on the players list
-	* if it's a message, copy and pass it to the appropriate controller
-	* if game end, set running to false
-	*/
+int getTcpInput(int pos){
+
 	int ctrl = 0;
+	void* packet = malloc(largestPacket);
 	 
 	// Get the packet type
-	ctrl = getPacketType(liveSocket);
-	 
-	// Master Functionality switch
-	switch(ctrl){
-		case IPC_PKT_1:	// New player added
-			// Note: no need to send data to outbound switch, ConMan will do it.
-			break;
-		
-		case 0x1:		// Shouldn't get these
-		case 0x2:
-		default:
-			fprintf(stderr, "In Switchboard getting packets it shouldn't be\n");
-			break;
+	ctrl = getPacketType(tcpConnections[pos]);
+	
+	
+	if(ctrl == -1){
+		// packet type failed, therefor socket is closed
+		return 0;
 	}
+	
+	getPacket(tcpConnections[pos], packet, netPacketSizes[ctrl]);
+	
+	relayPacket(packet, ctrl);
 	
 	return 1;
 }
@@ -159,12 +247,13 @@ void cleanupSocket(int pos){
 	close(tcpConnections[pos]);
 	
 	tcpConnections[pos] = 0;
-	bzero(&udpConnections[pos], sizeof(struct sockaddr_in));
+	bzero(&udpAddresses[pos], sizeof(struct sockaddr_in));
 	
 	lost.playerNo = pos;
 	
-	write(Inswitch_connectionSocket, &lost, sizeof(lost));
-	write(Inswitch_outswitchSocket, &lost, sizeof(lost));
+	relayPacket(&lost, ipcPacketSizes[2]);
+	
+	DEBUG("IS> Connection closed");
 }
 
 /*--------------------------------------------------------------------------------------------------------------------
@@ -198,7 +287,6 @@ void* InboundSwitchboard(void* ipcSocks){
 	SOCKET highSocket;
 	
 	int i;
-	packet = malloc(largestPacket + 1);
 	
 	// Assign the global Sockets to make life so much easier
 	Inswitch_uiSocket = ((SOCKET*)ipcSocks)[2];
@@ -207,6 +295,7 @@ void* InboundSwitchboard(void* ipcSocks){
 	Inswitch_gameplaySocket = ((SOCKET*)ipcSocks)[1];
 	Inswitch_outswitchSocket = ((SOCKET*)ipcSocks)[3];
 	
+	DEBUG("IS> Inbound Switchboard started");
 	inswitchSetup();
 	
 	// Switchboard Functionallity
@@ -226,42 +315,41 @@ void* InboundSwitchboard(void* ipcSocks){
 			}
 		}
 		
-		// <<<<TODO UDP SOCKET>>>>>>
-		
+		// Add the master UPD socket
+		FD_SET(udpConnection, &fdset);
+		highSocket = (udpConnection > highSocket) ? udpConnection : highSocket;
 		
 		
 		// Find all active Sockets
 		numLiveSockets = select(highSocket + 1, &fdset, NULL, NULL, NULL);
 		
 		if(numLiveSockets == -1){
+			DEBUG("IS> Select failed");
 			perror("Select Failed in Inbound Switchboard!");
-			return NULL;
+			continue;
 		}
 		
 		// Check TCP sockets
 		for(i = 0; i < MAX_PLAYERS; ++i){
 			if(tcpConnections[i]){
 				if(FD_ISSET(tcpConnections[i], &fdset)){
-					if(!getInput(tcpConnections[i])){
-						//cleanupSocket(i, connectionSock, outswitchSock);
+					if(!getTcpInput(i)){
+						cleanupSocket(i);
 					}
 				}
 			}
 		}
 		
-		// <<<< TODO CHECK UDP >>>>>
+		// Check master UDP socket
+		if(FD_ISSET(udpConnection, &fdset)){
+			getUdpInput();
+		}
 		
 		// Check for incomming connection
 		if(FD_ISSET(Inswitch_connectionSocket, &fdset)){
-			if(!getInput(Inswitch_connectionSocket)){
-				//Something has gone terribly wrong
-				fprintf(stderr, "Connection lost to connection manager");
-				return NULL;
-			}
+			addNewPlayer();
 		}
-		// This is done last because I'm not sure how FD_ISSET would respond to a query to a
-		//		handle that is not within it's set.
-
+		
 	}
 	
 	return NULL;
