@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 	SOCKET conManParams[2];
 	SOCKET generalParams[2];
 	SOCKET gameplayParams[2];
-	SOCKET outboundParams[1];
+	SOCKET outboundParams[3];
 	SOCKET inboundParams[5];
 	
 	pthread_t controllers[NUM_CONTROLLERS];
@@ -201,7 +201,7 @@ int main(int argc, char* argv[]) {
 	// ----------------------------
 	
 	
-	if(!threadResult){
+	if(threadResult){
 		fprintf(stderr, "One or more controllers failed to launch!\n Terminating.");
 		
 		// Kill all launched threads

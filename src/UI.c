@@ -55,7 +55,7 @@ void* UIController(void* ipSocks) {
 	char servName[MAX_NAME];
 	PKT_SERVER_SETUP pkt;
 	SOCKET outSock;
-	int pType=IPC_PKT_0;
+	packet_t pType=IPC_PKT_0;
 	
 	do {
 		printf("Enter serverName and maxPlayers as %s\n", format);	
@@ -70,7 +70,7 @@ void* UIController(void* ipSocks) {
 	outSock = ((SOCKET*)ipSocks)[0];
 	
 	// send setup packet
-	write(outSock, &pType, 1);
+	write(outSock, &pType, sizeof(packet_t));
 	write(outSock, &pkt, sizeof(pkt));
 
 	/* populate list of commands	
@@ -130,7 +130,7 @@ inline PKT_SERVER_SETUP createSetupPacket(const char* servName, const int maxPla
 
 inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt)
 {
-	printf("Server name:\t%s\nMax Players:\t%d\nPort:\t\t\n", pkt->serverName, pkt->maxPlayers);
+	printf("Server name:\t%s\nMax Players:\t%d\n\n", pkt->serverName, pkt->maxPlayers);
 }
 
 inline void listAllCommands()

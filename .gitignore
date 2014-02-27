@@ -6,3 +6,4 @@ bin/*
 *.gch
 *.geany
 /Debug
+/Release

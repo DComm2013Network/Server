@@ -48,7 +48,7 @@ void relayPacket(void* packet, packet_t type);
 ----------------------------------------------------------------------------------------------------------------------*/
 void inswitchSetup(){
 	struct pktB0 setupPkt;
-	packet_t type = 0xB0;
+	packet_t type = IPC_PKT_0;
 	
 	if(getPacketType(Inswitch_uiSocket) != type){
 		DEBUG("IS> Inswitch setup getting packets it shouldn't be.");
