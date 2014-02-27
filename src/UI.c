@@ -53,17 +53,20 @@ int UI(void* ipSocks) {
 	const char *format = "%s %d";
 	int maxPlayers = 0;
 	char servName[MAX_NAME];
+	PKT_SERVER_SETUP pkt;
+	SOCKET outSock;
+	
 	do {
 		printf("Enter serverName and maxPlayers as %s\n", format);	
 	} while(scanf(format, servName, &maxPlayers) != 2);
 	
 
 	// create setup packet
-	PKT_SERVER_SETUP pkt = createSetupPacket(servName, maxPlayers, port);
+	pkt = createSetupPacket(servName, maxPlayers, port);
 	printSetupPacketInfo(&pkt);
 	
 	// get the socket
-	SOCKET outSock = (SOCKET*)ipcSocks;	
+	outSock = (SOCKET*)ipcSocks;	
 	
 	// send setup packet
 	write(outSock, IPC_PKT_0, 1);
