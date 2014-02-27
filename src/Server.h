@@ -19,6 +19,8 @@
 -- NOTES:
 -- This is unique to the server
 ----------------------------------------------------------------------*/
+#ifndef SERVER
+#define SERVER
 
 #define SOCKET int
 
@@ -94,8 +96,8 @@ SOCKET 				tcpConnections[MAX_PLAYERS];
 SOCKET				udpConnection;
 struct sockaddr_in 	udpAddresses[MAX_PLAYERS];
 
-
 int netPacketSizes[NUM_NET_PACKETS + 1];
 int ipcPacketSizes[NUM_IPC_PACKETS + 1];
 int largestNetPacket, largestIpcPacket, largestPacket;
 
+#endif

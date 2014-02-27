@@ -58,6 +58,9 @@
 // Other Includes
 #include <time.h>
 
+
+#ifndef PACKETS
+#define PACKETS
 // Packet Definitions
 
 typedef struct pkt01{
@@ -135,3 +138,4 @@ typedef struct pkt13{
 	pos_t		yPos;
 } PKT_FLOOR_MOVE;
 
+#endif

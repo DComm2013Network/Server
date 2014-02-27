@@ -21,6 +21,7 @@
 
 #include "Server.h"
 
+
 // Globals
 extern int RUNNING;
 
@@ -183,7 +184,7 @@ void getUdpInput(){
 	void* packet = malloc(sizeof(largestNetPacket + 1));
 	
 	// Get the datagram, we don't care about the client info for now
-	received = recvFrom(udpConnection, &packet, largestNetPacket, NULL, NULL); 
+	received = recvfrom(udpConnection, &packet, largestNetPacket, NULL, NULL, NULL);
 	
 	// The first bit should be the type
 	type = *((int*)packet);
@@ -220,7 +221,7 @@ void getUdpInput(){
 ----------------------------------------------------------------------------------------------------------------------*/
 int getTcpInput(int pos){
 
-	packete_t ctrl = 0;
+	packet_t ctrl = 0;
 	void* packet = malloc(largestPacket);
 	 
 	// Get the packet type

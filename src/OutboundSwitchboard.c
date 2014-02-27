@@ -28,14 +28,14 @@ extern int RUNNING;
 void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 	
 	int i;
-	void* packet = malloc(netPacketSizes[type] + sizeof(packet_t);
+	void* packet = malloc(netPacketSizes[type] + sizeof(packet_t));
 
 
 	if(protocol == SOCK_STREAM){
 		for(i = 0; i < MAX_PLAYERS; ++i){
 			if(OUT_ISSET(to, i) && tcpConnections[i] != 0){
 				send(tcpConnections[i], &type, sizeof(packet_t), 0);
-				send(tcpConnections[i], data, len, 0);
+				send(tcpConnections[i], data, netPacketSizes[type], 0);
 			}
 		}
 	}
@@ -44,7 +44,7 @@ void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 			if(OUT_ISSET(to, i) && tcpConnections[i] != 0){ // check tcp anyways, because will be valid even for udp
 				((packet_t*)packet)[0] = type;
 				memcpy(&(packet[1]), data, netPacketSizes[type]);
-				sendTo(udpConnection, packet, netPacketSizes[type] + sizeof(packet_t), 0, udpAddresses[i], sizeof(udpAddresses[i]));
+				sendto(udpConnection, packet, netPacketSizes[type] + sizeof(packet_t), 0, &(udpAddresses[i]), sizeof(udpAddresses[i]));
 			}
 		}
 	}

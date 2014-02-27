@@ -170,7 +170,7 @@ void* GameplayController(void* ipcSocks) {
 			floorArray[playerFloor].yVel[thisPlayer] = bufPlayerIn->yVel;
 
 			//stamp the time on the packet to make Shane happy  :p
-			floorArray[playerFloor].timestamp = clock();
+			//floorArray[playerFloor].timestamp = clock();
 
 			//set packet type for outbound server
 			outPType = 11;

@@ -24,7 +24,7 @@
 
 extern int RUNNING;
 
-inline PKT_SERVER_SETUP createSetupPacket(const char* servName, const int maxPlayers, const int port);
+inline PKT_SERVER_SETUP createSetupPacket(const char* servName, const int maxPlayers);
 inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt);
 inline void listAllCommands();
 
@@ -47,7 +47,7 @@ inline void listAllCommands();
 -- NOTES:
 -- 
 ----------------------------------------------------------------------------------------------------------------------*/
-int UI(void* ipSocks) {
+void* UIController(void* ipSocks) {
 	
 	// prompt setup info
 	const char *format = "%s %d";
@@ -55,6 +55,7 @@ int UI(void* ipSocks) {
 	char servName[MAX_NAME];
 	PKT_SERVER_SETUP pkt;
 	SOCKET outSock;
+	int pType=IPC_PKT_0;
 	
 	do {
 		printf("Enter serverName and maxPlayers as %s\n", format);	
@@ -62,15 +63,15 @@ int UI(void* ipSocks) {
 	
 
 	// create setup packet
-	pkt = createSetupPacket(servName, maxPlayers, port);
+	pkt = createSetupPacket(servName, maxPlayers);
 	printSetupPacketInfo(&pkt);
 	
 	// get the socket
-	outSock = (SOCKET*)ipcSocks;	
+	outSock = ((SOCKET*)ipSocks)[0];
 	
 	// send setup packet
-	write(outSock, IPC_PKT_0, 1);
-	write(outSock, pkt, sizeof(pkt));
+	write(outSock, &pType, 1);
+	write(outSock, &pkt, sizeof(pkt));
 
 	/* populate list of commands	
 	char commands[3][15];
@@ -116,20 +117,20 @@ int UI(void* ipSocks) {
         // if other
             // other
 	}
-	return 1;
+	return 0;
 }
 
-inline PKT_SERVER_SETUP createSetupPacket(const char* servName, const int maxPlayers, const int port) {
+inline PKT_SERVER_SETUP createSetupPacket(const char* servName, const int maxPlayers) {
 	PKT_SERVER_SETUP pkt;
 	strcpy(pkt.serverName, servName);
 	pkt.maxPlayers = maxPlayers;
-	pkt.port = port;
+//	pkt.port = port;
 	return pkt;
 }
 
 inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt)
 {
-	printf("Server name:\t%s\nMax Players:\t%d\nPort:\t\t%d\n", pkt->serverName, pkt->maxPlayers, pkt->port);
+	printf("Server name:\t%s\nMax Players:\t%d\nPort:\t\t\n", pkt->serverName, pkt->maxPlayers);
 }
 
 inline void listAllCommands()
