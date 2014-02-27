@@ -25,7 +25,7 @@
 extern int RUNNING;
 
 SOCKET Inswitch_uiSocket, Inswitch_connectionSocket, Inswitch_generalSocket, Inswitch_gameplaySocket, Inswitch_outswitchSocket;
-void relayPacket(void* packet, int type);
+void relayPacket(void* packet, packet_t type);
 	
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	In-Switch Setup
@@ -47,7 +47,7 @@ void relayPacket(void* packet, int type);
 ----------------------------------------------------------------------------------------------------------------------*/
 void inswitchSetup(){
 	struct pktB0 setupPkt;
-	int type = 0xB0;
+	packet_t type = 0xB0;
 	
 	if(getPacketType(Inswitch_uiSocket) != type){
 		DEBUG("IS> Inswitch setup getting packets it shouldn't be.");
@@ -82,14 +82,14 @@ void inswitchSetup(){
 void addNewPlayer(){
 	// Socket handling all being done by Con Man. Just get and relay
 	void* packet = malloc(ipcPacketSizes[1]);
-	int type;
+	packet_t type;
 	type = getPacketType(Inswitch_connectionSocket);
 	getPacket(Inswitch_connectionSocket, packet, ipcPacketSizes[1]);
 	relayPacket(packet, type);
 	DEBUG("IS> Added new player");
 }
 
-void writeType(SOCKET sock, void* packet, int type){
+void writeType(SOCKET sock, void* packet, packet_t type){
 	write(sock, &type, 1);
 	if(type >= 0xB0){
 		write(sock, packet, ipcPacketSizes[type - 0xB0]);
@@ -99,7 +99,7 @@ void writeType(SOCKET sock, void* packet, int type){
 	}
 }
 
-void relayPacket(void* packet, int type){
+void relayPacket(void* packet, packet_t type){
 	
 	switch(type){
 		
@@ -178,7 +178,7 @@ void relayPacket(void* packet, int type){
 
 void getUdpInput(){
 	
-	int type = 0;
+	packet_t type = 0;
 	int received;
 	void* packet = malloc(sizeof(largestNetPacket + 1));
 	
@@ -220,7 +220,7 @@ void getUdpInput(){
 ----------------------------------------------------------------------------------------------------------------------*/
 int getTcpInput(int pos){
 
-	int ctrl = 0;
+	packete_t ctrl = 0;
 	void* packet = malloc(largestPacket);
 	 
 	// Get the packet type
