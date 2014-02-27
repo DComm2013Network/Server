@@ -49,8 +49,10 @@ void* GeneralController(void* ipcSocks){
 	bool objCaptured[MAX_OBJECTIVES];
 	status_t status = GAME_STATE_WAITING;
 	size_t 	numPlayers = 0;
-	int inPktType, i;
+	int inPktType, i, outPktType = 8;
 	//TODO: store players into teams
+
+	OUTMASK m;
 	
 	SOCKET generalSock = ((SOCKET*)ipcSocks)[0];
 	SOCKET outswitchSock = ((SOCKET*)ipcSocks)[1];
@@ -148,11 +150,11 @@ void* GeneralController(void* ipcSocks){
 		}
 		
 		
-		int outPktType = 8;
+
 		memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);
 		pktGameStatus->game_status = status;
-
-		OUTMASK m; OUT_ZERO(m); OUT_SETALL(m);
+		 
+		OUT_ZERO(m); OUT_SETALL(m);
 		
 		write(outswitchSock, &outPktType, 1);
 		write(outswitchSock, pktGameStatus, pktGameStatusSize);
