@@ -108,10 +108,6 @@ void* GeneralController(void* ipcSocks){
 				
 				if(numPlayers == MAX_PLAYERS)
 					status = GAME_STATE_ACTIVE;
-					
-				pktGameStatus->game_status = status;
-				memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);
-
 			break;
 			
 			case IPC_PKT_2: // Player lost		
@@ -128,10 +124,6 @@ void* GeneralController(void* ipcSocks){
 					// set game winner
 					status  = GAME_STATE_OVER;
 				}
-					
-				 pktGameStatus->game_status = status;
-				 memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);					
-				// write(outswitchSock, pktGameStatus, pktGameStatusSize);
 			break;
 					
 			case 8: // Game Status
@@ -142,7 +134,7 @@ void* GeneralController(void* ipcSocks){
 					int countCaptured = 0;
 					// Copy the client's objective listing to the server.
 					// May need some better handling; if 2 are received very close to each other
-					memcpy(objCaptured, pktGameStatus->objectives_captured, MAX_OBJECTIVES);
+					 memcpy(objCaptured, pktGameStatus->objectives_captured, MAX_OBJECTIVES);
 
 					//check win
 					for(i = 0; i < MAX_OBJECTIVES; i++)
@@ -152,23 +144,19 @@ void* GeneralController(void* ipcSocks){
 					if(countCaptured >= winRatio)
 						status = GAME_STATE_OVER;
 				}
-				
-				// send pkt8
-				// memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);
-				 pktGameStatus->game_status = status;
-				 write(outswitchSock, pktGameStatus, pktGameStatusSize);
 			break;
 		}
 		
-		OUTMASK m;
+		
 		int outPktType = 8;
+		memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);
+		pktGameStatus->game_status = status;
 
-		OUT_ZERO(m);
-		OUT_SETALL(m);
+		OUTMASK m; OUT_ZERO(m); OUT_SETALL(m);
+		
 		write(outswitchSock, &outPktType, 1);
 		write(outswitchSock, pktGameStatus, pktGameStatusSize);
 		write(outswitchSock, &m, 1);
-		
 	}
 	return NULL;
 }
