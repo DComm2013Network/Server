@@ -80,7 +80,13 @@ void inswitchSetup(){
 -- Opens both a TCP and UDP connection to the new client
 ----------------------------------------------------------------------------------------------------------------------*/
 void addNewPlayer(){
-	
+	// Socket handling all being done by Con Man. Just get and relay
+	void* packet = malloc(ipcPacketSizes[1]);
+	int type;
+	type = getPacketType(Inswitch_connectionSocket);
+	getPacket(Inswitch_connectionSocket, packet, ipcPacketSizes[1]);
+	relayPacket(packet, type);
+	DEBUG("IS> Added new player");
 }
 
 void writeType(SOCKET sock, void* packet, int type){
