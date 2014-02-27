@@ -50,6 +50,7 @@ void* GeneralController(void* ipcSocks){
 	status_t status = GAME_STATE_WAITING;
 	size_t 	numPlayers = 0;
 	int pktType, i;
+	//TODO: store players into teams
 	
 	SOCKET generalSock = ((SOCKET*)ipcSocks)[0];
 	SOCKET outswitchSock = ((SOCKET*)ipcSocks)[1];
@@ -81,7 +82,8 @@ void* GeneralController(void* ipcSocks){
 	memset(pkt2, 			0, pkt2Size 		  );
 	memset(pktServerSetup, 	0, pktServerSetupSize );
 	memset(pktGameStatus, 	0, pktGameStatusSize  );
-				
+	// <--------------------------------------------------------------->			
+	
 	// wait ipc 0	
 	if((pktType = getPacketType(generalSock)) != IPC_PKT_0)
 	{
@@ -89,8 +91,8 @@ void* GeneralController(void* ipcSocks){
 		return NULL;
 	}
 	getPacket(generalSock, pkt0, pkt0Size);
+	//game initialized
 	
-	//while 1
     while(RUNNING)
     {
         pktType = getPacketType(generalSock);
@@ -102,17 +104,34 @@ void* GeneralController(void* ipcSocks){
 
 				getPacket(generalSock, pkt1, pkt1Size);
 				numPlayers++;
-
+				// TODO: add to team
+				
 				if(numPlayers == MAX_PLAYERS)
 					status = GAME_STATE_ACTIVE;
 					
 				pktGameStatus->game_status = status;
 				memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);					
-
 				write(outswitchSock, pktGameStatus, pktGameStatusSize);
 			break;
 			
 			case IPC_PKT_2: // Player lost		
+				if(numPlayers < 1)
+					break;
+				
+				getPacket(generalSock, pkt2, pkt2Size);
+				numPlayers--;
+				
+				//TODO: in comments
+				if(numPlayers < 2) // or last player from a team dropped
+				{
+					// get dropped player/active player team
+					// set game winner
+					status  == GAME_STATE_OVER;
+				}
+					
+				pktGameStatus->game_status = status;
+				memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);					
+				write(outswitchSock, pktGameStatus, pktGameStatusSize);
 			break;
 					
 			case 8: // Game Status
