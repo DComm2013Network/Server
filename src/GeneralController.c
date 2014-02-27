@@ -57,30 +57,31 @@ void* GeneralController(void* ipcSocks){
 	/* Will look into changing this... */
 	PKT_SERVER_SETUP	*pkt0;
 	PKT_NEW_CLIENT		*pkt1;
-	//			*pkt2;
+	PKT_LOST_CLIENT		*pkt2;
 	PKT_SERVER_SETUP	*pktServerSetup;
 	PKT_GAME_STATUS		*pktGameStatus;
+		
 	
 	size_t pkt0Size, pkt1Size, pktServerSetupSize, pktGameStatusSize;
-	pkt0Size 		= sizeof(IPC_PKT_0			);
-	pkt1Size 		= sizeof(IPC_PKT_1			);
-	//pkt2Size 		= sizeof(IPC_PKT_2			);
-	pktServerSetupSize 	= sizeof(PKT_SERVER_SETUP	);
-	pktGameStatusSize 	= sizeof(PKT_GAME_STATUS	);
+	pkt0Size 			= sizeof(IPC_PKT_0		  );
+	pkt1Size 			= sizeof(IPC_PKT_1		  );
+	pkt2Size 			= sizeof(IPC_PKT_2		  );
+	pktServerSetupSize 	= sizeof(PKT_SERVER_SETUP );
+	pktGameStatusSize 	= sizeof(PKT_GAME_STATUS  );
 	
-	pkt0 		= malloc(pkt0Size 		);
-	pkt1 		= malloc(pkt1Size 		);
-	//pkt2 		= malloc(pkt2Size 		);
-	pktServerSetup	= malloc(pktServerSetupSize 	);
+	pkt0 			= malloc(pkt0Size	 		);
+	pkt1 			= malloc(pkt1Size	 		);
+	pkt2 			= malloc(pkt2Size	 		);
+	pktServerSetup	= malloc(pktServerSetupSize	);
 	pktGameStatus	= malloc(pktGameStatusSize 	);
 	
-	memset(objCaptured, 0, MAX_OBJECTIVES	);
-	memset(pkt0, 		0, pkt0Size 		);
-	memset(pkt1, 		0, pkt1Size 		);
-	//memset(pkt2, 		0, pkt2Size 		);
-	memset(pktServerSetup, 	0, pktServerSetupSize 	);
-	memset(pktGameStatus, 	0, pktGameStatusSize 	);
-			
+	memset(objCaptured, 	0, MAX_OBJECTIVES	  );
+	memset(pkt0, 			0, pkt0Size 		  );
+	memset(pkt1, 			0, pkt1Size 		  );
+	memset(pkt2, 			0, pkt2Size 		  );
+	memset(pktServerSetup, 	0, pktServerSetupSize );
+	memset(pktGameStatus, 	0, pktGameStatusSize  );
+				
 	// wait ipc 0	
 	if((pktType = getPacketType(generalSock)) != IPC_PKT_0)
 	{
@@ -109,6 +110,9 @@ void* GeneralController(void* ipcSocks){
 				memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);					
 
 				write(outswitchSock, pktGameStatus, pktGameStatusSize);
+			break;
+			
+			case IPC_PKT_2: // Player lost		
 			break;
 					
 			case 8: // Game Status
