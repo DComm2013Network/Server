@@ -47,23 +47,32 @@ inline void listAllCommands();
 -- NOTES:
 -- 
 ----------------------------------------------------------------------------------------------------------------------*/
-int UI(SOCKET outSock) {
+int UI(void* ipSocks) {
 	
 	// prompt setup info
-	const char *format = "%s %d %d";
-	int maxPlayers = 0, port = 0;
+	const char *format = "%s %d";
+	int maxPlayers = 0;
 	char servName[MAX_NAME];
+	PKT_SERVER_SETUP pkt;
+	SOCKET outSock;
+	
 	do {
-		printf("Enter serverName maxPlayers and port as %s\n", format);	
-	} while(scanf(format, servName, &maxPlayers, &port) != 3);
-	PKT_SERVER_SETUP pkt = createSetupPacket(servName, maxPlayers, port);
+		printf("Enter serverName and maxPlayers as %s\n", format);	
+	} while(scanf(format, servName, &maxPlayers) != 2);
+	
+
+	// create setup packet
+	pkt = createSetupPacket(servName, maxPlayers, port);
 	printSetupPacketInfo(&pkt);
 	
-	// pass IPC packet 0 to Inbound Switchboard
-	send(outSock, &pkt, sizeof(pkt), 0);
-
-	/* populate list of commands
+	// get the socket
+	outSock = (SOCKET*)ipcSocks;	
 	
+	// send setup packet
+	write(outSock, IPC_PKT_0, 1);
+	write(outSock, pkt, sizeof(pkt));
+
+	/* populate list of commands	
 	char commands[3][15];
 	strcpy(commands[0], "quit");
 	strcpy(commands[1], "get-stats");
@@ -81,7 +90,7 @@ int UI(SOCKET outSock) {
 			printf("Error. Try that again..");
 			continue;
 		}
-		
+		        
         // if quit
 		if(strcmp(input, "quit") == 0)
 		{
