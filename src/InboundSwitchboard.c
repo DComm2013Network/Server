@@ -25,6 +25,7 @@
 extern int RUNNING;
 
 SOCKET Inswitch_uiSocket, Inswitch_connectionSocket, Inswitch_generalSocket, Inswitch_gameplaySocket, Inswitch_outswitchSocket;
+void relayPacket(void* packet, int type);
 	
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	In-Switch Setup
@@ -82,29 +83,39 @@ void addNewPlayer(){
 	
 }
 
+void writeType(SOCKET sock, void* packet, int type){
+	write(sock, &type, 1);
+	if(type >= 0xB0){
+		write(sock, packet, ipcPacketSizes[type - 0xB0]);
+	}
+	else{
+		write(sock, packet, netPacketSizes[type]);
+	}
+}
+
 void relayPacket(void* packet, int type){
 	
 	switch(type){
 		
 		// --------------------------IPC--------------------------------
 		case 0xB0:		// Setup Packet
-			write(Inswitch_connectionSocket, 	packet, ipcPacketSizes[0]);
-			write(Inswitch_outswitchSocket,		packet, ipcPacketSizes[0]);
-			write(Inswitch_gameplaySocket,		packet, ipcPacketSizes[0]);
-			write(Inswitch_generalSocket,		packet, ipcPacketSizes[0]);
+			writeType(Inswitch_connectionSocket, 	packet, type);
+			writeType(Inswitch_outswitchSocket,		packet, type);
+			writeType(Inswitch_gameplaySocket,		packet, type);
+			writeType(Inswitch_generalSocket,		packet, type);
 			break;
 			
 		case 0xB1:		// New player added
-			write(Inswitch_outswitchSocket,		packet, ipcPacketSizes[1]);
-			write(Inswitch_gameplaySocket,		packet, ipcPacketSizes[1]);
-			write(Inswitch_generalSocket,		packet, ipcPacketSizes[1]);
+			writeType(Inswitch_outswitchSocket,		packet, type);
+			writeType(Inswitch_gameplaySocket,		packet, type);
+			writeType(Inswitch_generalSocket,		packet, type);
 			break;
 			
 		case 0xB2:		// Client Disconnect
-			write(Inswitch_connectionSocket, 	packet, ipcPacketSizes[2]);
-			write(Inswitch_outswitchSocket,		packet, ipcPacketSizes[2]);
-			write(Inswitch_gameplaySocket,		packet, ipcPacketSizes[2]);
-			write(Inswitch_generalSocket,		packet, ipcPacketSizes[2]);
+			writeType(Inswitch_connectionSocket, 	packet, type);
+			writeType(Inswitch_outswitchSocket,		packet, type);
+			writeType(Inswitch_gameplaySocket,		packet, type);
+			writeType(Inswitch_generalSocket,		packet, type);
 			break;
 		
 		// --------------------------NET--------------------------------
@@ -131,14 +142,14 @@ void relayPacket(void* packet, int type){
 			break;
 		
 		case 0x08:		// Game Status
-			write(Inswitch_generalSocket,		packet, netPacketSizes[8]);
+			writeType(Inswitch_generalSocket,		packet, type);
 			break;
 		
 		case 0x09:
 			break;
 		
 		case 0x10:		// Movement update
-			write(Inswitch_gameplaySocket,		packet, netPacketSizes[10]);
+			writeType(Inswitch_gameplaySocket,		packet, type);
 			break;
 		
 		case 0x11:
