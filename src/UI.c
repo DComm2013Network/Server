@@ -47,7 +47,7 @@ inline void listAllCommands();
 -- NOTES:
 -- 
 ----------------------------------------------------------------------------------------------------------------------*/
-void* UIController(void* ipSocks) {
+void* UIController(void* ipcSocks) {
 	
 	// prompt setup info
 	const char *format = "%s %d";
@@ -67,7 +67,7 @@ void* UIController(void* ipSocks) {
 	printSetupPacketInfo(&pkt);
 	
 	// get the socket
-	outSock = ((SOCKET*)ipSocks)[0];
+	outSock = ((SOCKET*)ipcSocks)[0];
 	
 	// send setup packet
 	write(outSock, &pType, sizeof(packet_t));

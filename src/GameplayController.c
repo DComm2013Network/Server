@@ -65,11 +65,13 @@ extern int RUNNING;
  ----------------------------------------------------------------------------------------------------------------------*/
 void* GameplayController(void* ipcSocks) {
 
+	SOCKET outswitchSock;
+	SOCKET gameplaySock;
 	int i = 0;
-	int pType = -1;
+	packet_t pType = -1;
 	int playerFloor = -1;
 	playerNo_t thisPlayer = -1;
-	int outPType = -1;
+	packet_t outPType = -1;
 	int errPacket = 0;
 	int errFloor = 0;
 	int errOut = 0;
@@ -77,16 +79,22 @@ void* GameplayController(void* ipcSocks) {
 
 	OUTMASK m;
 
-	SOCKET gameplaySock = ((SOCKET*) ipcSocks)[0];
-	SOCKET outswitchSock = ((SOCKET*) ipcSocks)[1];
+	gameplaySock = ((SOCKET*) ipcSocks)[0];
+	outswitchSock = ((SOCKET*) ipcSocks)[1];
 
 	//create structs for buffers
 
 	PKT_POS_UPDATE *bufPlayerIn = malloc(sizeof(PKT_POS_UPDATE));
-	memset(&bufPlayerIn, 0, sizeof(PKT_POS_UPDATE));
+
+	//bzero(bufPlayerIn, sizeof(PKT_POS_UPDATE));
 
 	PKT_ALL_POS_UPDATE *bufPlayerAll = malloc(sizeof(PKT_ALL_POS_UPDATE));
-	memset(&bufPlayerAll, 0, sizeof(PKT_ALL_POS_UPDATE));
+
+	//bzero(bufPlayerAll, sizeof(PKT_ALL_POS_UPDATE));
+
+	PKT_SERVER_SETUP *bufPkt0 = malloc(sizeof(PKT_SERVER_SETUP));
+
+	//memset(bufPkt0, 0, sizeof(PKT_SERVER_SETUP));
 
 	//assign struct lengths before the loop so as not to keep checking
 
@@ -105,6 +113,10 @@ void* GameplayController(void* ipcSocks) {
 		floorArray[i].floor = i;
 	}
 
+	getPacketType(gameplaySock);
+	getPacket(gameplaySock, bufPkt0, ipcPacketSizes[0]);
+	DEBUG("GP> Setup Complete");
+
 	while (RUNNING) {
 
 		//get packet type.  Save to int.
@@ -112,7 +124,7 @@ void* GameplayController(void* ipcSocks) {
 
 		//switch to handle each type of packet
 		switch (pType) {
-		case 0:
+		case -1:
 			break;
 		case 1:
 			break;
@@ -204,10 +216,11 @@ void* GameplayController(void* ipcSocks) {
 
 		default:
 			wrongPacket++;
-			fprintf(stderr, "Gameplay Controller - received unknown packet type.  Count:%d\n", wrongPacket);
+			fprintf(stderr, "Gameplay Controller - received unknown packet type:%d  Count:%d\n", pType, wrongPacket);
 
 			break;
 		}
+		pType=-1;
 	}
 	free(bufPlayerAll);
 	free(bufPlayerIn);

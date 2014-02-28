@@ -48,7 +48,7 @@ void relayPacket(void* packet, packet_t type);
 ----------------------------------------------------------------------------------------------------------------------*/
 void inswitchSetup(){
 	struct pktB0 setupPkt;
-	packet_t type = IPC_PKT_0;
+	packet_t type = 0xB0;
 	
 	if(getPacketType(Inswitch_uiSocket) != type){
 		DEBUG("IS> Inswitch setup getting packets it shouldn't be.");
@@ -56,8 +56,8 @@ void inswitchSetup(){
 	}
 	
 	getPacket(Inswitch_uiSocket, &setupPkt, ipcPacketSizes[0]);
-	
-	relayPacket(&setupPkt, ipcPacketSizes[0]);
+	DEBUG("IS> Got setup packet");
+	relayPacket(&setupPkt, type);
 	DEBUG("IS> Setup Complete");
 }
 
@@ -91,7 +91,7 @@ void addNewPlayer(){
 }
 
 void writeType(SOCKET sock, void* packet, packet_t type){
-	write(sock, &type, 1);
+	write(sock, &type, sizeof(packet_t));
 	if(type >= 0xB0){
 		write(sock, packet, ipcPacketSizes[type - 0xB0]);
 	}

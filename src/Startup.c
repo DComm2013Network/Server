@@ -201,7 +201,7 @@ int main(int argc, char* argv[]) {
 	// ----------------------------
 	
 	
-	if(threadResult){
+	if(threadResult<0){
 		fprintf(stderr, "One or more controllers failed to launch!\n Terminating.");
 		
 		// Kill all launched threads

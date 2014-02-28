@@ -20,6 +20,8 @@
  --
  -----------------------------------------------------------------------------------------------------*/
 
+#include <stdint.h>
+
 #ifndef SOCKET
 #define SOCKET int
 #endif
@@ -27,7 +29,7 @@
 #ifndef SOCKET_FUNC
 #define SOCKET_FUNC
 
-int getPacketType(SOCKET socket);
+uint32_t getPacketType(SOCKET socket);
 int getPacket(SOCKET socket, void* buffer, int sizeOfBuffer);
 
 #endif
