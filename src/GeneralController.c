@@ -22,6 +22,7 @@
 
 extern int RUNNING;
 double winRatio = MAX_OBJECTIVES * 0.75;
+inline void sendGameStatus(SOCKET sock, PKT_GAME_STATUS *pkt);
 
 /*--------------------------------------------------------------------------------------------------------------------
  -- FUNCTION:	GeneralController
@@ -51,53 +52,45 @@ void* GeneralController(void* ipcSocks) {
 	bool objCaptured[MAX_OBJECTIVES];
 	status_t status = GAME_STATE_WAITING;
 	size_t numPlayers = 0;
-	packet_t inPktType, outPktType = 8;
+	packet_t inPktType;
 	int i, maxPlayers;
 	//TODO: store players into teams
-
-	OUTMASK m;
 
 
 	/* Will look into changing this... */
 	PKT_SERVER_SETUP *pkt0;
 	PKT_NEW_CLIENT *pkt1;
 	PKT_LOST_CLIENT *pkt2;
-	//PKT_SERVER_SETUP *pktServerSetup;
 	PKT_GAME_STATUS *pktGameStatus;
-
-	//size_t pkt0Size, pkt1Size, pkt2Size, pktServerSetupSize, pktGameStatusSize;
-	//pkt0Size = sizeof(IPC_PKT_0);
-	//pkt1Size = sizeof(IPC_PKT_1);
-	//pkt2Size = sizeof(IPC_PKT_2);
-	//pktServerSetupSize = sizeof(PKT_SERVER_SETUP);
-	//pktGameStatusSize = sizeof(PKT_GAME_STATUS);
 
 	pkt0 = malloc(ipcPacketSizes[0]);
 	pkt1 = malloc(ipcPacketSizes[1]);
 	pkt2 = malloc(ipcPacketSizes[2]);
-	//pktServerSetup = malloc(netPacketSizes[5]);
 	pktGameStatus = malloc(netPacketSizes[8]);
 
 	SOCKET generalSock   = ((SOCKET*) ipcSocks)[0];
 	SOCKET outswitchSock = ((SOCKET*) ipcSocks)[1];
 
 
-	// <--------------------------------------------------------------->			
+	// <--------------------------------------------------------------->
 
-	// wait ipc 0	
+	// wait ipc 0
 	if ((inPktType = getPacketType(generalSock)) != IPC_PKT_0) {
 		fprintf(stderr, "Expected packet type: %d\nReceived: %d\n", IPC_PKT_0, inPktType);
 		return NULL;
 	}
 	getPacket(generalSock, pkt0, ipcPacketSizes[0]);
 	//game initialized
-	
+
 	maxPlayers = pkt0->maxPlayers;
+
+	DEBUG("GC> Setup Complete");
 
 	while (RUNNING) {
 		inPktType = getPacketType(generalSock);
 		switch (inPktType) {
 		case IPC_PKT_1: // New Player
+            DEBUG("GC> Received IPC_PKT_1 - New Player");
 			if (numPlayers == maxPlayers)
 				break;
 
@@ -110,6 +103,7 @@ void* GeneralController(void* ipcSocks) {
 			break;
 
 		case IPC_PKT_2: // Player lost
+			DEBUG("GC> Received IPC_PKT_2 - Player Lost");
 			if (numPlayers < 1)
 				break;
 
@@ -123,9 +117,15 @@ void* GeneralController(void* ipcSocks) {
 				// set game winner
 				status = GAME_STATE_OVER;
 			}
+
+            memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);
+            pktGameStatus->game_status = status;
+            sendGameStatus(outswitchSock, pktGameStatus);
+
 			break;
 
-		case 8: // Game Status
+		case 0x08: // Game Status
+            DEBUG("GC> Received packet 8 - Game Status");
 			getPacket(generalSock, pktGameStatus, netPacketSizes[8]);
 			if (status == GAME_STATE_ACTIVE) {
 				//update objective listing
@@ -142,22 +142,34 @@ void* GeneralController(void* ipcSocks) {
 				if (countCaptured >= winRatio)
 					status = GAME_STATE_OVER;
 			}
+
+            memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);
+            pktGameStatus->game_status = status;
+            sendGameStatus(outswitchSock, pktGameStatus);
+
 			break;
 		default:
-			DEBUG("GC> Receiving packets it shouldn't")
-			;
+			DEBUG("GC> Receiving packets it shouldn't");
 			break;
 		}
+    }
 
-		memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);
-		pktGameStatus->game_status = status;
+   	free(pkt0);
+	free(pkt1);
+	free(pkt2);
+	free(pktGameStatus);
 
-		OUT_ZERO(m);
-		OUT_SETALL(m);
-
-		write(outswitchSock, &outPktType, 1);
-		write(outswitchSock, pktGameStatus, netPacketSizes[8]);
-		write(outswitchSock, &m, 1);
-	}
 	return NULL;
+}
+
+inline void sendGameStatus(SOCKET sock, PKT_GAME_STATUS *pkt)
+{
+    OUTMASK m;
+    OUT_SETALL(m);
+    packet_t pType = 0x08;
+
+    write(sock, &pType, 1);
+    write(sock, pkt, netPacketSizes[8]);
+    write(sock, &m, 1);
+    DEBUG("GC> Sent network packet 8 - Game Status");
 }

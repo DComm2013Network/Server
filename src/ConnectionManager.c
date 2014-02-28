@@ -62,7 +62,7 @@ void connectionManagerSetup(SOCKET connectionSock, int* maxPlayers, char* gameNa
 	*maxPlayers = setupPkt.maxPlayers;
 	memcpy(gameName, setupPkt.serverName, MAX_NAME);
 	
-	DEBUG("CM> Setup Received");
+	DEBUG("CM> Setup Complete");
 	
 	return;
 }
