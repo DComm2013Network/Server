@@ -7,8 +7,11 @@ LIBS=-lpthread
 
 all: Server
 
-Server: Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o
-	$(CC) $(GDB) Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o -o ../bin/Server $(LIBS)
+Server: Sockets.o Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o
+	$(CC) $(GDB) Sockets.o Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o -o ../bin/Server $(LIBS)
+
+Sockets.o: ../src/Sockets.c
+	$(CC) $(CFLAGS) ../src/Sockets.c
 
 Startup.o: ../src/Startup.c
 	$(CC) $(CFLAGS) ../src/Startup.c 

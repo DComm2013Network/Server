@@ -2,7 +2,7 @@
 
 *~
 *.o
-bin/* 
+bin/*
 *.gch
 *.geany
 /Debug
