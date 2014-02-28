@@ -52,7 +52,7 @@ void* GeneralController(void* ipcSocks) {
 	status_t status = GAME_STATE_WAITING;
 	size_t numPlayers = 0;
 	packet_t inPktType, outPktType = 8;
-	int i;
+	int i, maxPlayers;
 	//TODO: store players into teams
 
 	OUTMASK m;
@@ -62,7 +62,7 @@ void* GeneralController(void* ipcSocks) {
 	PKT_SERVER_SETUP *pkt0;
 	PKT_NEW_CLIENT *pkt1;
 	PKT_LOST_CLIENT *pkt2;
-	PKT_SERVER_SETUP *pktServerSetup;
+	//PKT_SERVER_SETUP *pktServerSetup;
 	PKT_GAME_STATUS *pktGameStatus;
 
 	//size_t pkt0Size, pkt1Size, pkt2Size, pktServerSetupSize, pktGameStatusSize;
@@ -75,7 +75,7 @@ void* GeneralController(void* ipcSocks) {
 	pkt0 = malloc(ipcPacketSizes[0]);
 	pkt1 = malloc(ipcPacketSizes[1]);
 	pkt2 = malloc(ipcPacketSizes[2]);
-	pktServerSetup = malloc(netPacketSizes[5]);
+	//pktServerSetup = malloc(netPacketSizes[5]);
 	pktGameStatus = malloc(netPacketSizes[8]);
 
 	SOCKET generalSock   = ((SOCKET*) ipcSocks)[0];
@@ -91,12 +91,14 @@ void* GeneralController(void* ipcSocks) {
 	}
 	getPacket(generalSock, pkt0, ipcPacketSizes[0]);
 	//game initialized
+	
+	maxPlayers = pkt0->maxPlayers;
 
 	while (RUNNING) {
 		inPktType = getPacketType(generalSock);
 		switch (inPktType) {
 		case IPC_PKT_1: // New Player
-			if (numPlayers == MAX_PLAYERS)
+			if (numPlayers == maxPlayers)
 				break;
 
 			getPacket(generalSock, pkt1, ipcPacketSizes[2]);

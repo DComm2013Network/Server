@@ -43,8 +43,8 @@ void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 		for(i = 0; i < MAX_PLAYERS; ++i){
 			if(OUT_ISSET(to, i) && tcpConnections[i] != 0){ // check tcp anyways, because will be valid even for udp
 				((packet_t*)packet)[0] = type;
-				memcpy(&(packet[1]), data, netPacketSizes[type]);
-				sendto(udpConnection, packet, netPacketSizes[type] + sizeof(packet_t), 0, &(udpAddresses[i]), sizeof(udpAddresses[i]));
+				memcpy(&(((char*)packet)[1]), data, netPacketSizes[type]);
+				sendto(udpConnection, packet, netPacketSizes[type] + sizeof(packet_t), 0, (struct sockaddr*)&(udpAddresses[i]), sizeof(udpAddresses[i]));
 			}
 		}
 	}

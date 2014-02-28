@@ -184,7 +184,7 @@ void getUdpInput(){
 	void* packet = malloc(sizeof(largestNetPacket + 1));
 	
 	// Get the datagram, we don't care about the client info for now
-	received = recvfrom(udpConnection, &packet, largestNetPacket, NULL, NULL, NULL);
+	received = recvfrom(udpConnection, &packet, largestNetPacket, 0, NULL, NULL);
 	
 	// The first bit should be the type
 	type = *((int*)packet);
