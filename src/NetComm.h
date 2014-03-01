@@ -69,7 +69,7 @@ typedef struct pkt01{
 } PKT_PLAYER_JOIN;
 
 typedef struct pkt02{
-	unsigned int 		connect_code;
+	status_t 	connect_code;
 	playerNo_t 	clients_player_number;
 	teamNo_t 	clients_team_number;
 } PKT_JOIN_RESPONSE;
@@ -114,8 +114,8 @@ typedef struct pkt10{
 	playerNo_t 	player_number;
 	pos_t 		xPos;
 	pos_t		yPos;
-	pos_t		xVel;
-	pos_t		yVel;
+	vel_t		xVel;
+	vel_t		yVel;
 } PKT_POS_UPDATE;
 
 typedef struct pkt11{
@@ -123,8 +123,8 @@ typedef struct pkt11{
 	int 		players_on_floor[MAX_PLAYERS];
 	pos_t		xPos[MAX_PLAYERS];
 	pos_t		yPos[MAX_PLAYERS];
-	pos_t		xVel[MAX_PLAYERS];
-	pos_t		yVel[MAX_PLAYERS];
+	vel_t		xVel[MAX_PLAYERS];
+	vel_t		yVel[MAX_PLAYERS];
 } PKT_ALL_POS_UPDATE;
 
 typedef struct pkt12{
