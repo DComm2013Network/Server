@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<ActiveTarget name="Debug" />
+	<File name="src/ConnectionManager.c" open="0" top="0" tabpos="0">
+		<Cursor position="5706" topLine="183" />
+	</File>
+	<File name="src/GeneralController.c" open="0" top="0" tabpos="0">
+		<Cursor position="334" topLine="18" />
+	</File>
+	<File name="src/NetComm.h" open="0" top="0" tabpos="0">
+		<Cursor position="0" topLine="107" />
+	</File>
+	<File name="src/Server.h" open="1" top="0" tabpos="5">
+		<Cursor position="963" topLine="12" />
+	</File>
+	<File name="src/Startup.c" open="0" top="0" tabpos="0">
+		<Cursor position="2167" topLine="87" />
+	</File>
+</CodeBlocks_layout_file>
