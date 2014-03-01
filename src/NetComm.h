@@ -29,14 +29,19 @@
 
 #define NUM_NET_PACKETS 13
 
+
+// Other Includes
+#include <time.h>
+#include <stdint.h>
+
 // Definitions for various game data types
-#define bool			int
-#define floorNo_t 		int
-#define playerNo_t 		unsigned int
-#define teamNo_t		unsigned int
-#define status_t		int
-#define pos_t			unsigned int
-#define packet_t		uint32_t
+typedef uint32_t    floorNo_t;
+typedef uint32_t    playerNo_t;
+typedef uint32_t    teamNo_t;
+typedef uint32_t    status_t;
+typedef uint32_t    pos_t;
+typedef float	    vel_t;
+typedef uint32_t    packet_t;
 
 
 // Connect code Definitions
@@ -55,10 +60,6 @@
 // Special floor Definitions
 #define FLOOR_LOBBY				0x000
 
-// Other Includes
-#include <time.h>
-
-
 #ifndef PACKETS
 #define PACKETS
 // Packet Definitions
@@ -74,7 +75,7 @@ typedef struct pkt02{
 } PKT_JOIN_RESPONSE;
 
 typedef struct pkt03{
-	bool 		player_valid[MAX_PLAYERS];
+	int 		player_valid[MAX_PLAYERS];
 	char 		otherPlayers_name[MAX_PLAYERS][MAX_NAME];
 	teamNo_t 	otherPlayers_teams[MAX_PLAYERS];
 	status_t	readystatus[MAX_PLAYERS];
@@ -101,7 +102,7 @@ typedef struct pkt06{
 //	<< UNPURPOSED >>
 
 typedef struct pkt08{
-	bool		objectives_captured[MAX_OBJECTIVES];
+	int		    objectives_captured[MAX_OBJECTIVES];
 	status_t	game_status;
 } PKT_GAME_STATUS;
 
@@ -119,7 +120,7 @@ typedef struct pkt10{
 
 typedef struct pkt11{
 	floorNo_t 	floor;
-	bool 		players_on_floor[MAX_PLAYERS];
+	int 		players_on_floor[MAX_PLAYERS];
 	pos_t		xPos[MAX_PLAYERS];
 	pos_t		yPos[MAX_PLAYERS];
 	pos_t		xVel[MAX_PLAYERS];

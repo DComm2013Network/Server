@@ -49,7 +49,7 @@ void* GeneralController(void* ipcSocks) {
 	//SOCKET generalSock;
 	//SOCKET outswitchSock;
 
-	bool objCaptured[MAX_OBJECTIVES];
+	int objCaptured[MAX_OBJECTIVES];
 	status_t status = GAME_STATE_WAITING;
 	size_t numPlayers = 0;
 	packet_t inPktType;

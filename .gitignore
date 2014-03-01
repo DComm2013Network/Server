@@ -9,3 +9,4 @@ bin/*
 /Release
 *.cbp
 *.depend
+*.layout

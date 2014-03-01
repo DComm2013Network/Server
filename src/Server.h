@@ -1,4 +1,4 @@
-/*---------------------------------------------------------------------* 
+/*---------------------------------------------------------------------*
 -- HEADER FILE: Server.h 		The definitions and declarations to be
 -- 								to be used to communicate between the
 -- 								components of the Server
@@ -22,8 +22,6 @@
 #ifndef SERVER
 #define SERVER
 
-#define SOCKET int
-
 // Everything you could possibly need
 #include <stdio.h>
 #include <netdb.h>
@@ -42,7 +40,6 @@
 #include <stdint.h>
 
 #include "NetComm.h"
-#include "Sockets.h"
 
 #define NUM_IPC_PACKETS 3
 
@@ -54,7 +51,12 @@
 #define DEBUG_ON 1
 #define DEBUG(msg) if(DEBUG_ON){printf("Debug: %s\n", msg);}
 
+typedef int     SOCKET;
+
 //function prototypes
+packet_t    getPacketType(SOCKET socket);
+int         getPacket(SOCKET socket, void* buffer, int sizeOfBuffer);
+
 void* ConnectionManager(void* ipcSocks);
 void* InboundSwitchboard(void* ipcSocks);
 void* GameplayController(void* ipcSocks);

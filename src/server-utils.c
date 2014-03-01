@@ -1,29 +1,28 @@
 /*---------------------------------------------------------------------------------------------------*
- -- HEADER FILE: Server.h 		A collection of function wrappers for socket I/O
+ -- HEADER FILE: ServerUtils.c 		A collection of function wrappers for socket I/O
  --
  -- PROGRAM:		Game-Server
  --
  -- FUNCTIONS:
- -- 		int getUDPPacket(SOCKET socket, struct UDPReceive* buf, struct sockaddr* addr, int addr_len)
  --		int getPacketType(SOCKET socket)
  --		int getPacket(SOCKET socket, void* buffer, int sizeOfBuffer)
  --
- -- DATE: 		January 27, 2014
+ -- DATE: 		    January 27, 2014
  --
- -- REVISIONS: 	none
+ -- REVISIONS: 	    none
  --
- -- DESIGNER: 	Andrew Burian
+ -- DESIGNER: 	    Andrew Burian
  --
  -- PROGRAMMER: 	Andrew Burian
  --
  -- NOTES:
  --
  -----------------------------------------------------------------------------------------------------*/
-#include "Sockets.h"
+#include "Server.h"
 
-uint32_t getPacketType(SOCKET socket) {
+packet_t getPacketType(SOCKET socket) {
 	int type;
-	int toRead = sizeof(uint32_t);
+	int toRead = sizeof(packet_t);
 	int thisRead;
 	int totalRead = 0;
 
@@ -61,4 +60,5 @@ int getPacket(SOCKET socket, void* buffer, int sizeOfBuffer) {
 
 	return totalRead;
 }
+
 
