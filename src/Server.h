@@ -57,6 +57,8 @@ typedef int     SOCKET;
 packet_t    getPacketType(SOCKET socket);
 int         getPacket(SOCKET socket, void* buffer, int sizeOfBuffer);
 
+void serverAnnounce(struct sockaddr_in* client, socklen_t* clientLen);
+
 void* ConnectionManager(void* ipcSocks);
 void* InboundSwitchboard(void* ipcSocks);
 void* GameplayController(void* ipcSocks);
@@ -102,4 +104,8 @@ int netPacketSizes[NUM_NET_PACKETS + 1];
 int ipcPacketSizes[NUM_IPC_PACKETS + 1];
 int largestNetPacket, largestIpcPacket, largestPacket;
 
+char        serverName[MAX_NAME];
+playerNo_t  serverCurrentPlayers;
+playerNo_t  serverMaxPlayers;
+status_t    serverGameStatus;
 #endif

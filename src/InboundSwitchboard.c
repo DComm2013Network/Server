@@ -1,9 +1,9 @@
 /*-------------------------------------------------------------------------------------------------------------------*
--- SOURCE FILE: InboundSwitchboard.c 	
+-- SOURCE FILE: InboundSwitchboard.c
 --		The Process that will handle all traffic from already established client connections
 --
 -- FUNCTIONS:
--- 		int InboundSwitchboard(SOCKET connectionSockSet, SOCKET generalSockSet, SOCKET gameplaySockSet, 
+-- 		int InboundSwitchboard(SOCKET connectionSockSet, SOCKET generalSockSet, SOCKET gameplaySockSet,
 --					SOCKET outswitchSockSet)
 --
 --
@@ -16,7 +16,7 @@
 -- PROGRAMMER: 	Andrew Burian
 --
 -- NOTES:
--- 
+--
 *-------------------------------------------------------------------------------------------------------------------*/
 
 #include "Server.h"
@@ -27,7 +27,7 @@ extern int RUNNING;
 
 SOCKET Inswitch_uiSocket, Inswitch_connectionSocket, Inswitch_generalSocket, Inswitch_gameplaySocket, Inswitch_outswitchSocket;
 void relayPacket(void* packet, packet_t type);
-	
+
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	In-Switch Setup
 --
@@ -49,12 +49,12 @@ void relayPacket(void* packet, packet_t type);
 void inswitchSetup(){
 	struct pktB0 setupPkt;
 	packet_t type = 0xB0;
-	
+
 	if(getPacketType(Inswitch_uiSocket) != type){
 		DEBUG("IS> Inswitch setup getting packets it shouldn't be.");
 		return;
 	}
-	
+
 	getPacket(Inswitch_uiSocket, &setupPkt, ipcPacketSizes[0]);
 	DEBUG("IS> Got setup packet");
 	relayPacket(&setupPkt, type);
@@ -101,9 +101,9 @@ void writeType(SOCKET sock, void* packet, packet_t type){
 }
 
 void relayPacket(void* packet, packet_t type){
-	
+
 	switch(type){
-		
+
 		// --------------------------IPC--------------------------------
 		case 0xB0:		// Setup Packet
 			writeType(Inswitch_connectionSocket, 	packet, type);
@@ -111,92 +111,97 @@ void relayPacket(void* packet, packet_t type){
 			writeType(Inswitch_gameplaySocket,		packet, type);
 			writeType(Inswitch_generalSocket,		packet, type);
 			break;
-			
+
 		case 0xB1:		// New player added
 			writeType(Inswitch_outswitchSocket,		packet, type);
 			writeType(Inswitch_gameplaySocket,		packet, type);
 			writeType(Inswitch_generalSocket,		packet, type);
 			break;
-			
+
 		case 0xB2:		// Client Disconnect
 			writeType(Inswitch_connectionSocket, 	packet, type);
 			writeType(Inswitch_outswitchSocket,		packet, type);
 			writeType(Inswitch_gameplaySocket,		packet, type);
 			writeType(Inswitch_generalSocket,		packet, type);
 			break;
-		
+
 		// --------------------------NET--------------------------------
-		
+
 		case 0x01:
 			break;
-			
+
 		case 0x02:
 			break;
-		
+
 		case 0x03:
 			break;
-		
+
 		case 0x04:
 			break;
-		
+
 		case 0x05:
 			break;
-		
+
 		case 0x06:
 			break;
-		
+
 		case 0x07:
 			break;
-		
+
 		case 0x08:		// Game Status
 			writeType(Inswitch_generalSocket,		packet, type);
 			break;
-		
+
 		case 0x09:
 			break;
-		
+
 		case 0x10:		// Movement update
 			writeType(Inswitch_gameplaySocket,		packet, type);
 			break;
-		
+
 		case 0x11:
 			break;
-		
+
 		case 0x12:
 			break;
-		
+
 		case 0x13:
 			break;
-		
+
 		default:
 			DEBUG("IS> In Switchboard getting packets it shouldn't be");
 			break;
 	}
-	
+
 }
 
 
 
 void getUdpInput(){
-	
+
 	packet_t type = 0;
 	int received;
 	void* packet = malloc(sizeof(largestNetPacket + 1));
-	
-	// Get the datagram, we don't care about the client info for now
-	received = recvfrom(udpConnection, &packet, largestNetPacket, 0, NULL, NULL);
-	
+	struct sockaddr_in client;
+	socklen_t clientLen;
+
+	// Get the datagram
+	received = recvfrom(udpConnection, &packet, largestNetPacket, 0, (struct sockaddr*)&client, &clientLen);
+
 	// The first bit should be the type
 	type = *((int*)packet);
-	
-	if(received == netPacketSizes[type] + 1){
+
+    if(type == 0x09 && received == netPacketSizes[type] + 1){
+        serverAnnounce(&client, &clientLen);
+    }
+	else if(received == netPacketSizes[type] + 1){
 		relayPacket(packet + 1, type);
 	}
 	else{
 		DEBUG("IS> UDP received incorrectly labled packet");
 	}
-	
-	
+
+
 }
 
 /*--------------------------------------------------------------------------------------------------------------------
@@ -223,20 +228,20 @@ int getTcpInput(int pos){
 
 	packet_t ctrl = 0;
 	void* packet = malloc(largestPacket);
-	 
+
 	// Get the packet type
 	ctrl = getPacketType(tcpConnections[pos]);
-	
-	
+
+
 	if(ctrl == -1){
 		// packet type failed, therefor socket is closed
 		return 0;
 	}
-	
+
 	getPacket(tcpConnections[pos], packet, netPacketSizes[ctrl]);
-	
+
 	relayPacket(packet, ctrl);
-	
+
 	return 1;
 }
 
@@ -261,16 +266,16 @@ int getTcpInput(int pos){
 ----------------------------------------------------------------------------------------------------------------------*/
 void cleanupSocket(int pos){
 	struct pktB2 lost;
-	
+
 	close(tcpConnections[pos]);
-	
+
 	tcpConnections[pos] = 0;
 	bzero(&udpAddresses[pos], sizeof(struct sockaddr_in));
-	
+
 	lost.playerNo = pos;
-	
+
 	relayPacket(&lost, ipcPacketSizes[2]);
-	
+
 	DEBUG("IS> Connection closed");
 }
 
@@ -285,7 +290,7 @@ void cleanupSocket(int pos){
 --
 -- PROGRAMMER: 	Andrew Burian
 --
--- INTERFACE: 	int InboundSwitchboard(SOCKET connectionSockSet, SOCKET generalSockSet, SOCKET gameplaySockSet, 
+-- INTERFACE: 	int InboundSwitchboard(SOCKET connectionSockSet, SOCKET generalSockSet, SOCKET gameplaySockSet,
 --					SOCKET outswitchSockSet)
 --
 -- RETURNS: 	int
@@ -295,7 +300,7 @@ void cleanupSocket(int pos){
 --					success: 	 0
 --
 -- NOTES:
--- 
+--
 ----------------------------------------------------------------------------------------------------------------------*/
 void* InboundSwitchboard(void* ipcSocks){
 
@@ -303,28 +308,28 @@ void* InboundSwitchboard(void* ipcSocks){
 	fd_set fdset;
 	int numLiveSockets;
 	SOCKET highSocket;
-	
+
 	int i;
-	
+
 	// Assign the global Sockets to make life so much easier
 	Inswitch_uiSocket = ((SOCKET*)ipcSocks)[2];
-	Inswitch_connectionSocket = ((SOCKET*)ipcSocks)[4]; 
-	Inswitch_generalSocket = ((SOCKET*)ipcSocks)[0]; 
+	Inswitch_connectionSocket = ((SOCKET*)ipcSocks)[4];
+	Inswitch_generalSocket = ((SOCKET*)ipcSocks)[0];
 	Inswitch_gameplaySocket = ((SOCKET*)ipcSocks)[1];
 	Inswitch_outswitchSocket = ((SOCKET*)ipcSocks)[3];
-	
+
 	DEBUG("IS> Inbound Switchboard started");
 	inswitchSetup();
-	
+
 	// Switchboard Functionallity
 	while(RUNNING){
-		
+
 		FD_ZERO(&fdset);
-		
+
 		// Add Connection Socket
 		FD_SET(Inswitch_connectionSocket, &fdset);
 		highSocket = Inswitch_connectionSocket;
-		
+
 		// Add TCP connections to select
 		for(i = 0; i < MAX_PLAYERS; ++i){
 			if(tcpConnections[i]){
@@ -332,21 +337,21 @@ void* InboundSwitchboard(void* ipcSocks){
 				highSocket = (tcpConnections[i] > highSocket) ? tcpConnections[i] : highSocket;
 			}
 		}
-		
+
 		// Add the master UPD socket
 		FD_SET(udpConnection, &fdset);
 		highSocket = (udpConnection > highSocket) ? udpConnection : highSocket;
-		
-		
+
+
 		// Find all active Sockets
 		numLiveSockets = select(highSocket + 1, &fdset, NULL, NULL, NULL);
-		
+
 		if(numLiveSockets == -1){
 			DEBUG("IS> Select failed");
 			perror("Select Failed in Inbound Switchboard!");
 			continue;
 		}
-		
+
 		// Check TCP sockets
 		for(i = 0; i < MAX_PLAYERS; ++i){
 			if(tcpConnections[i]){
@@ -357,18 +362,18 @@ void* InboundSwitchboard(void* ipcSocks){
 				}
 			}
 		}
-		
+
 		// Check master UDP socket
 		if(FD_ISSET(udpConnection, &fdset)){
 			getUdpInput();
 		}
-		
+
 		// Check for incomming connection
 		if(FD_ISSET(Inswitch_connectionSocket, &fdset)){
 			addNewPlayer();
 		}
-		
+
 	}
-	
+
 	return NULL;
 }

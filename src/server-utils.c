@@ -61,4 +61,19 @@ int getPacket(SOCKET socket, void* buffer, int sizeOfBuffer) {
 	return totalRead;
 }
 
+void serverAnnounce(struct sockaddr_in* client, socklen_t* clientLen) {
+    PKT_SERVER_DISCOVER reply;
+    void* packet = malloc(netPacketSizes[0x09] + sizeof(packet_t));
 
+    // populate server name
+    memcpy(reply.serverName, serverName, MAX_NAME);
+
+    reply.playersCurrent = serverCurrentPlayers;
+    reply.playersMax = serverMaxPlayers;
+    reply.gameStatus = serverGameStatus;
+
+    *((int*)packet) = 0x09;
+    memcpy(&((PKT_SERVER_DISCOVER*)packet)[1], &reply, netPacketSizes[0x09]);
+
+    sendto(udpConnection, packet, netPacketSizes[0x09] + sizeof(packet_t), 0, (struct sockaddr*)client, *clientLen);
+}

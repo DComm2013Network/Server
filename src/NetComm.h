@@ -72,10 +72,6 @@ typedef uint32_t    objective_t;
 #define PACKETS
 // Packet Definitions
 
-typedef struct pkt00{
-    int         udpPortNo;
-} PKT_SERVER_DISCOVER;
-
 typedef struct pkt01{
 	char 		client_player_name[MAX_NAME];
 } PKT_PLAYER_JOIN;
@@ -120,8 +116,12 @@ typedef struct pkt08{
 	status_t	game_status;
 } PKT_GAME_STATUS;
 
-//Packet 9: 0x0009
-//	<< UNPURPOSED >>
+typedef struct pkt09{
+    char        serverName[MAX_NAME];
+    status_t    gameStatus;
+    playerNo_t  playersCurrent;
+    playerNo_t  playersMax;
+} PKT_SERVER_DISCOVER;
 
 typedef struct pkt10{
 	floorNo_t 	floor;

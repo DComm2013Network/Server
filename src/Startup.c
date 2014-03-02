@@ -46,9 +46,9 @@ void setupPacketInfo(){
 	netPacketSizes[4] = sizeof(struct pkt04);
 	netPacketSizes[5] = sizeof(struct pkt05);
 	netPacketSizes[6] = sizeof(struct pkt06);
-	netPacketSizes[7] = 0;
+	netPacketSizes[7] = sizeof(struct pkt07);
 	netPacketSizes[8] = sizeof(struct pkt08);
-	netPacketSizes[9] = 0;
+	netPacketSizes[9] = sizeof(struct pkt09);
 	netPacketSizes[10] = sizeof(struct pkt10);
 	netPacketSizes[11] = sizeof(struct pkt11);
 	netPacketSizes[12] = sizeof(struct pkt12);
