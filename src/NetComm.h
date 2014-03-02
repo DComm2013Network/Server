@@ -10,7 +10,13 @@
 --
 -- DATE: 		January 27, 2014
 --
--- REVISIONS: 	none
+-- REVISIONS: 	Shane Spoor
+--              Feb 28, 2014
+--              Replace all defines for typedefs, changed some types
+--
+--              Andrew Burian
+--              March 1, 2014
+--              Added new packets for floor and objective data
 --
 -- DESIGNER: 	Andrew Burian
 --
@@ -21,11 +27,12 @@
 ----------------------------------------------------------------------*/
 
 // Limits
-#define MAX_PLAYERS 	32
-#define MAX_FLOORS		8
-#define MAX_NAME	 	80
-#define MAX_MESSAGE		180
-#define MAX_OBJECTIVES	16
+#define MAX_PLAYERS 	    32
+#define MAX_FLOORS		    8
+#define MAX_NAME	 	    80
+#define MAX_MESSAGE		    180
+#define MAX_OBJECTIVES	    16
+#define MAX_OBJ_PER_FLOOR   4
 
 #define NUM_NET_PACKETS 13
 
@@ -42,6 +49,7 @@ typedef uint32_t    status_t;
 typedef uint32_t    pos_t;
 typedef float	    vel_t;
 typedef uint32_t    packet_t;
+typedef uint32_t    objective_t;
 
 
 // Connect code Definitions
@@ -94,12 +102,14 @@ typedef struct pkt05{
 } PKT_READY_STATUS;
 
 typedef struct pkt06{
-	floorNo_t	map_data[MAX_FLOORS];
-	int			objective_locations[MAX_OBJECTIVES];
-} PKT_OBJECTIVES_DATA;
+    floorNo_t   floorsNeeded;
+	floorNo_t	floorData[MAX_FLOORS];
+} PKT_FLOOR_DATA;
 
-//Packet 7: 0x0007
-//	<< UNPURPOSED >>
+typedef struct pkt07{
+    floorNo_t   floor;
+    objective_t objectives[MAX_OBJ_PER_FLOOR];
+} PKT_OBJECTIVE_DATA;
 
 typedef struct pkt08{
 	int		    objectives_captured[MAX_OBJECTIVES];
