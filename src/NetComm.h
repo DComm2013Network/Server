@@ -72,6 +72,10 @@ typedef uint32_t    objective_t;
 #define PACKETS
 // Packet Definitions
 
+typedef struct pkt00{
+    int         udpPortNo;
+} PKT_SERVER_DISCOVER;
+
 typedef struct pkt01{
 	char 		client_player_name[MAX_NAME];
 } PKT_PLAYER_JOIN;
