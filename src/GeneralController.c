@@ -91,10 +91,10 @@ void* GeneralController(void* ipcSocks) {
 		switch (inPktType) {
 		case IPC_PKT_1: // New Player
             DEBUG("GC> Received IPC_PKT_1 - New Player");
-			if (numPlayers == maxPlayers)
-				break;
+			//if (numPlayers == maxPlayers)
+			//	break;  // this check is done in connection manager
 
-			getPacket(generalSock, pkt1, ipcPacketSizes[2]);
+			getPacket(generalSock, pkt1, ipcPacketSizes[1]);
 			numPlayers++;
 			// TODO: add to team
 

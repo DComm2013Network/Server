@@ -42,6 +42,7 @@ typedef uint32_t    status_t;
 typedef uint32_t    pos_t;
 typedef float	    vel_t;
 typedef uint32_t    packet_t;
+typedef uint64_t    timestamp_t;
 
 
 // Connect code Definitions
