@@ -32,6 +32,7 @@ extern int RUNNING;
  --				March 11, 2014
  --				Added code to handle IPC packets 0xB1 and 0xB2
  --				Cleaned up IPC packet IPC 0xB0
+ --				Initialized floor array to 0
  --
  -- DESIGNER:	Andrew Burian / Chris Holisky
  --
@@ -109,8 +110,10 @@ void* GameplayController(void* ipcSocks) {
 
 	//Create array of floor structures
 	PKT_ALL_POS_UPDATE floorArray[MAX_FLOORS + 1];
+	bzero(floorArray, sizeof(PKT_ALL_POS_UPDATE)*(MAX_FLOORS+1));
 	for (i = 0; i <= MAX_FLOORS; i++) {
 		floorArray[i].floor = i;
+
 	}
 
 	getPacketType(gameplaySock);
