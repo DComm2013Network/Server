@@ -92,15 +92,15 @@ void handleOut(SOCKET liveSock){
 		case 0x06:
 		case 0x07:
 		case 0x09:
-		case 0x12:
-		case 0x13:
+		case 0x0c:
+		case 0x0d:
 			sendToPlayers(SOCK_STREAM, mask, packet, type);
 			break;
 		
 		// UDP cases
 		case 0x08:
-		case 0x10:
-		case 0x11:
+		case 0x0a:
+		case 0x0b:
 			sendToPlayers(SOCK_DGRAM, mask, packet, type);
 			break;
 	}
