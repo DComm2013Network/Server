@@ -28,7 +28,11 @@ extern int RUNNING;
  --
  -- DATE:  February 20, 2014
  --
- -- REVISIONS: 	none
+ -- REVISIONS: 	Chris Holisky
+ --				March 11, 2014
+ --				Added code to handle IPC packets 0xB1 and 0xB2
+ --				Cleaned up IPC packet IPC 0xB0
+ --				Initialized floor array to 0
  --
  -- DESIGNER:	Andrew Burian / Chris Holisky
  --
@@ -77,6 +81,8 @@ void* GameplayController(void* ipcSocks) {
 	int errOut = 0;
 	int wrongPacket = 0;
 
+	int maxPlayers = 0;
+
 	OUTMASK m;
 
 	gameplaySock = ((SOCKET*) ipcSocks)[0];
@@ -84,7 +90,7 @@ void* GameplayController(void* ipcSocks) {
 
 	//create structs for buffers
 
-	PKT_POS_UPDATE *bufPlayerIn = (PKT_POS_UPDATE*)malloc(sizeof(PKT_POS_UPDATE));
+	PKT_POS_UPDATE *bufPlayerIn = (PKT_POS_UPDATE*) malloc(sizeof(PKT_POS_UPDATE));
 
 	//bzero(bufPlayerIn, sizeof(PKT_POS_UPDATE));
 
@@ -92,29 +98,27 @@ void* GameplayController(void* ipcSocks) {
 
 	//bzero(bufPlayerAll, sizeof(PKT_ALL_POS_UPDATE));
 
-	PKT_SERVER_SETUP *bufPkt0 = malloc(sizeof(PKT_SERVER_SETUP));
+	PKT_SERVER_SETUP *bufipcPkt0 = malloc(sizeof(PKT_SERVER_SETUP));
+	PKT_NEW_CLIENT *bufipcPkt1 = malloc(sizeof(PKT_NEW_CLIENT));
+	PKT_LOST_CLIENT *bufipcPkt2 = malloc(sizeof(PKT_LOST_CLIENT));
 
 	//memset(bufPkt0, 0, sizeof(PKT_SERVER_SETUP));
 
 	//assign struct lengths before the loop so as not to keep checking
-
-	/*
-	 * set up other struct lengths:
-	 * 	incoming IPC_PKT_0 0xB0
-	 * 	incoming IPC_PKT_1 0xB1
-	 */
-
 	size_t lenPktIn = sizeof(struct pkt10);
 	size_t lenPktAll = sizeof(struct pkt11);
 
 	//Create array of floor structures
 	PKT_ALL_POS_UPDATE floorArray[MAX_FLOORS + 1];
+	bzero(floorArray, sizeof(PKT_ALL_POS_UPDATE)*(MAX_FLOORS+1));
 	for (i = 0; i <= MAX_FLOORS; i++) {
 		floorArray[i].floor = i;
+
 	}
 
 	getPacketType(gameplaySock);
-	getPacket(gameplaySock, bufPkt0, ipcPacketSizes[0]);
+	getPacket(gameplaySock, bufipcPkt0, ipcPacketSizes[0]);
+	maxPlayers = bufipcPkt0->maxPlayers + 1;
 	DEBUG("GP> Setup Complete");
 
 	while (RUNNING) {
@@ -126,14 +130,37 @@ void* GameplayController(void* ipcSocks) {
 		switch (pType) {
 		case -1:
 			break;
+		case 0xB1:
+			bzero(bufipcPkt1, sizeof(ipcPacketSizes[1]));
+			if (getPacket(gameplaySock, bufipcPkt1, ipcPacketSizes[1]) == -1) {
+				//couldn't read packet
+				errPacket++;
+				fprintf(stderr, "Gameplay Controller - error reading packet 0xB1.  Count:%d\n", errPacket);
+
+				break;
+			}
+			floorArray[0].players_on_floor[bufPlayerIn->player_number] = 1;
+			break;
+		case 0xB2:
+			bzero(bufipcPkt2, sizeof(ipcPacketSizes[2]));
+			if (getPacket(gameplaySock, bufipcPkt2, ipcPacketSizes[2]) == -1) {
+				//couldn't read packet
+				errPacket++;
+				fprintf(stderr, "Gameplay Controller - error reading packet 0xB2.  Count:%d\n", errPacket);
+				break;
+			}
+			for (i = 0; i < MAX_FLOORS + 1; i++) {
+				floorArray[i].players_on_floor[bufipcPkt2->playerNo] = 0;
+			}
+			break;
 		case 1:
 			break;
 		case 10:
-            bzero(bufPlayerIn, sizeof(*bufPlayerIn));
+			bzero(bufPlayerIn, sizeof(*bufPlayerIn));
 			if (getPacket(gameplaySock, bufPlayerIn, lenPktIn) == -1) {
 				//couldn't read packet
 				errPacket++;
-				fprintf(stderr, "Gameplay Controller - error reading packet.  Count:%d\n", errPacket);
+				fprintf(stderr, "Gameplay Controller - error reading packet 10.  Count:%d\n", errPacket);
 
 				/*
 				 *  handle error here.  Perhaps check the size of the packet as well?
@@ -141,7 +168,6 @@ void* GameplayController(void* ipcSocks) {
 				break;
 			}
 			//get floor number from incoming packet
-
 			playerFloor = (bufPlayerIn->floor);
 
 			//check to see if the floor number falls in the valid range
@@ -153,7 +179,7 @@ void* GameplayController(void* ipcSocks) {
 			thisPlayer = (*bufPlayerIn).player_number;
 
 			//check to see if the player number falls in the valid range
-			if (thisPlayer < 0 || thisPlayer > 31) {
+			if (thisPlayer < 0 || thisPlayer > maxPlayers) {
 				//break;
 			}
 
@@ -220,7 +246,8 @@ void* GameplayController(void* ipcSocks) {
 
 			break;
 		}
-		pType=-1;
+
+		pType = -1;
 	}
 	free(bufPlayerAll);
 	free(bufPlayerIn);
