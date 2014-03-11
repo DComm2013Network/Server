@@ -140,6 +140,8 @@ void* GameplayController(void* ipcSocks) {
 			break;
 			//new player packet
 		case 0xB1:
+			DEBUG("GP> Receive packet 0xB1");
+
 			bzero(bufipcPkt1, sizeof(ipcPacketSizes[1]));
 			if (getPacket(gameplaySock, bufipcPkt1, ipcPacketSizes[1]) == -1) {
 				//couldn't read packet
@@ -164,6 +166,7 @@ void* GameplayController(void* ipcSocks) {
 			OUT_ZERO(m);
 			OUT_SET(m, thisPlayer);
 			outPType = 13;
+			DEBUG("GP> Sending packet 13");
 			if (write(outswitchSock, &outPType, sizeof(outPType)) == -1) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
@@ -179,6 +182,8 @@ void* GameplayController(void* ipcSocks) {
 
 			//send packet type and then packet to outbound switchboard
 			//set packet type for outbound server
+			DEBUG("GP> Sending packet 11 to floor 0");
+
 			outPType = 11;
 			//put position and velocity in update packet
 			floorArray[playerFloor].xPos[thisPlayer] = bufFloorMove->xPos;
@@ -211,6 +216,8 @@ void* GameplayController(void* ipcSocks) {
 
 			break;
 		case 0xB2:
+			DEBUG("GP> Received packet 0xB2 - setting up floorArray");
+
 			bzero(bufipcPkt2, sizeof(ipcPacketSizes[2]));
 			if (getPacket(gameplaySock, bufipcPkt2, ipcPacketSizes[2]) == -1) {
 				//couldn't read packet
@@ -225,6 +232,8 @@ void* GameplayController(void* ipcSocks) {
 		case 1:
 			break;
 		case 10:
+			DEBUG("GP> Received packet 10");
+
 			bzero(bufPlayerIn, sizeof(*bufPlayerIn));
 			if (getPacket(gameplaySock, bufPlayerIn, lenPktIn) == -1) {
 				//couldn't read packet
@@ -281,6 +290,7 @@ void* GameplayController(void* ipcSocks) {
 
 			//set packet type for outbound server
 			outPType = 11;
+			DEBUG("GP> Sending packet 11 to all players on floor");
 
 			//set outbound mask for outbound server
 			OUT_ZERO(m);
@@ -309,6 +319,8 @@ void* GameplayController(void* ipcSocks) {
 
 			break;
 		case 12: //floor change
+			DEBUG("GP> Received packet 12");
+
 			bzero(bufFloorMoveReq, sizeof(*bufFloorMoveReq));
 			if (getPacket(gameplaySock, bufFloorMoveReq, lenPktFloorReq) == -1) {
 				//couldn't read packet
@@ -332,6 +344,7 @@ void* GameplayController(void* ipcSocks) {
 
 			OUT_ZERO(m);
 			OUT_SET(m, thisPlayer);
+			DEBUG("GP> Sending packet 13");
 			outPType = 13;
 			if (write(outswitchSock, &outPType, sizeof(outPType)) == -1) {
 				errOut++;
@@ -352,6 +365,7 @@ void* GameplayController(void* ipcSocks) {
 			 *
 			 */
 			outPType = 11;
+			DEBUG("GP> Sending packet 11 to old floor");
 			//put position and velocity in update packet
 			floorArray[playerFloor].players_on_floor[thisPlayer]=0;
 			//set outbound mask for outbound server
@@ -397,6 +411,8 @@ void* GameplayController(void* ipcSocks) {
 					OUT_SET(m, i);
 				}
 			}
+			DEBUG("GP> Sending packet 11 to new floor");
+
 			/*
 			 * Remove this from the switch, perhaps put it into an if block
 			 * with a goodToSend boolean or something
