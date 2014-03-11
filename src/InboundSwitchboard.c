@@ -111,12 +111,14 @@ void relayPacket(void* packet, packet_t type){
 			writeType(Inswitch_outswitchSocket,		packet, type);
 			writeType(Inswitch_gameplaySocket,		packet, type);
 			writeType(Inswitch_generalSocket,		packet, type);
+			DEBUG("IS> Routed pkt B0");
 			break;
 
 		case 0xB1:		// New player added
 			writeType(Inswitch_outswitchSocket,		packet, type);
-			//writeType(Inswitch_gameplaySocket,		packet, type);
+			writeType(Inswitch_gameplaySocket,		packet, type);
 			writeType(Inswitch_generalSocket,		packet, type);
+			DEBUG("IS> Routed pkt B1");
 			break;
 
 		case 0xB2:		// Client Disconnect
@@ -124,6 +126,7 @@ void relayPacket(void* packet, packet_t type){
 			writeType(Inswitch_outswitchSocket,		packet, type);
 			writeType(Inswitch_gameplaySocket,		packet, type);
 			writeType(Inswitch_generalSocket,		packet, type);
+			DEBUG("IS> Routed pkt B2");
 			break;
  		// --------------------------NET--------------------------------
 
@@ -140,6 +143,7 @@ void relayPacket(void* packet, packet_t type){
 			break;
 
 		case 5:
+            writeType(Inswitch_generalSocket,       packet, type);
 			break;
 
 		case 6:
@@ -163,7 +167,8 @@ void relayPacket(void* packet, packet_t type){
 			break;
 
 		case 12:
-			break;
+            writeType(Inswitch_gameplaySocket,      packet, type);
+            break;
 
 		case 13:
 			break;
