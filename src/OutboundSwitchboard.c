@@ -26,9 +26,9 @@ extern int RUNNING;
 
 
 void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
-	
+
 	int i;
-	void* packet = malloc(netPacketSizes[type] + sizeof(packet_t));
+	void* packet = malloc(sizeof(packet_t) + netPacketSizes[type] + sizeof(timestamp_t));
 
 
 	if(protocol == SOCK_STREAM){
@@ -42,9 +42,11 @@ void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 	else if(protocol == SOCK_DGRAM){
 		for(i = 0; i < MAX_PLAYERS; ++i){
 			if(OUT_ISSET(to, i) && tcpConnections[i] != 0){ // check tcp anyways, because will be valid even for udp
-				((packet_t*)packet)[0] = type;
-				memcpy(&(((char*)packet)[1]), data, netPacketSizes[type]);
-				sendto(udpConnection, packet, netPacketSizes[type] + sizeof(packet_t), 0, (struct sockaddr*)&(udpAddresses[i]), sizeof(udpAddresses[i]));
+				*((packet_t*)packet) = type;
+				memcpy((packet + sizeof(packet_t)), data, netPacketSizes[type]);
+				*((timestamp_t*)packet + sizeof(packet_t) + netPacketSizes[type]) = clock();
+				sendto(udpConnection, packet, sizeof(packet_t) + netPacketSizes[type] + sizeof(timestamp_t), 0,
+                        (struct sockaddr*)&(udpAddresses[i]), sizeof(udpAddresses[i]));
 			}
 		}
 	}
@@ -55,14 +57,14 @@ void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 
 
 void handleOut(SOCKET liveSock){
-	
+
 	OUTMASK mask;
 	int type;
 	void* packet = malloc(largestPacket);
-	
+
 	// Get the type
 	type = getPacketType(liveSock);
-	
+
 	// Get the data
 	if(type >= 0xB0){
  		read(liveSock, packet, ipcPacketSizes[type - 0xB0]);
@@ -70,7 +72,7 @@ void handleOut(SOCKET liveSock){
  	else{
  		read(liveSock, packet, netPacketSizes[type]);
 	}
-	
+
 	// get the mask
 	read(liveSock, &mask, sizeof(OUTMASK));
 
@@ -82,7 +84,7 @@ void handleOut(SOCKET liveSock){
 		case 0xB2:
 			// no need to do anything anymore. All handles are global.
 			break;
-		
+
 		// TCP cases
 		case 0x01:
 		case 0x02:
@@ -92,15 +94,15 @@ void handleOut(SOCKET liveSock){
 		case 0x06:
 		case 0x07:
 		case 0x09:
-		case 0x12:
-		case 0x13:
+		case 0x0c:
+		case 0x0d:
 			sendToPlayers(SOCK_STREAM, mask, packet, type);
 			break;
-		
+
 		// UDP cases
 		case 0x08:
-		case 0x10:
-		case 0x11:
+		case 0x0a:
+		case 0x0b:
 			sendToPlayers(SOCK_DGRAM, mask, packet, type);
 			break;
 	}
@@ -132,7 +134,7 @@ void* OutboundSwitchboard(void* ipcSocks){
 	SOCKET inSw = ((SOCKET*)ipcSocks)[0];
 	SOCKET game = ((SOCKET*)ipcSocks)[1];
 	SOCKET genr = ((SOCKET*)ipcSocks)[2];
-	
+
 	int type;
 	void* setup = malloc(ipcPacketSizes[0]);
 
@@ -141,31 +143,31 @@ void* OutboundSwitchboard(void* ipcSocks){
 	SOCKET highSocket = (inSw>game)?((inSw>genr)?inSw:genr):((game>genr)?game:genr);
 
 	DEBUG("OS> Outbound Switchboard started");
-	
+
 	// wait for IPC packet 0 - This is the server startup packet
 	type = getPacketType(inSw);
 	if(type != 0xB0){
 		DEBUG("OS> setup getting packets it shouldn't be");
 	}
 	getPacket(inSw, setup, ipcPacketSizes[0]);
-	
+
 	DEBUG("OS> Setup Complete");
-	
+
 	while (RUNNING) {
-		
+
 		FD_ZERO(&fdset);
-		
+
 		FD_SET(inSw, &fdset);
 		FD_SET(game, &fdset);
 		FD_SET(genr, &fdset);
-		
+
 		numLiveSockets = select(highSocket + 1, &fdset, NULL, NULL, NULL);
-		
+
 		if(numLiveSockets == -1){
 			DEBUG("OS> Select failed");
 			continue;
 		}
-		
+
 		if(FD_ISSET(inSw, &fdset)){
 			handleOut(inSw);
 		}
@@ -175,9 +177,9 @@ void* OutboundSwitchboard(void* ipcSocks){
 		if(FD_ISSET(genr, &fdset)){
 			handleOut(genr);
 		}
-		
+
 	}
-	
+
 	DEBUG("OS> Finished");
 
 	return NULL;
