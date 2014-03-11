@@ -125,48 +125,47 @@ void relayPacket(void* packet, packet_t type){
 			writeType(Inswitch_gameplaySocket,		packet, type);
 			writeType(Inswitch_generalSocket,		packet, type);
 			break;
+ 		// --------------------------NET--------------------------------
 
-		// --------------------------NET--------------------------------
-
-		case 0x01:
+		case 1:
 			break;
 
-		case 0x02:
+		case 2:
 			break;
 
-		case 0x03:
+		case 3:
 			break;
 
-		case 0x04:
+		case 4:
 			break;
 
-		case 0x05:
+		case 5:
 			break;
 
-		case 0x06:
+		case 6:
 			break;
 
-		case 0x07:
+		case 7:
 			break;
 
-		case 0x08:		// Game Status
+		case 8:		// Game Status
 			writeType(Inswitch_generalSocket,		packet, type);
 			break;
 
-		case 0x09:
+		case 9:
 			break;
 
-		case 0x10:		// Movement update
+		case 10:		// Movement update
 			writeType(Inswitch_gameplaySocket,		packet, type);
 			break;
 
-		case 0x11:
+		case 11:
 			break;
 
-		case 0x12:
+		case 12:
 			break;
 
-		case 0x13:
+		case 13:
 			break;
 
 		default:
@@ -191,7 +190,7 @@ void getUdpInput(){
 	type = *((packet_t*)packet);
 
 	if(received == netPacketSizes[type] + sizeof(packet_t)){
-		relayPacket(packet + 1, type);
+		relayPacket(packet + sizeof(packet_t), type);
 	}
 	else{
 		DEBUG("IS> UDP received incorrectly labled packet");

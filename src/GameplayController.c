@@ -69,9 +69,9 @@ void* GameplayController(void* ipcSocks) {
 	SOCKET gameplaySock;
 	int i = 0;
 	packet_t pType = -1;
-	int playerFloor = -1;
-	playerNo_t thisPlayer = -1;
-	packet_t outPType = -1;
+	floorNo_t playerFloor = 0;
+	playerNo_t thisPlayer = 0;
+	packet_t outPType = 0;
 	int errPacket = 0;
 	int errFloor = 0;
 	int errOut = 0;
@@ -84,7 +84,7 @@ void* GameplayController(void* ipcSocks) {
 
 	//create structs for buffers
 
-	PKT_POS_UPDATE *bufPlayerIn = malloc(sizeof(PKT_POS_UPDATE));
+	PKT_POS_UPDATE *bufPlayerIn = (PKT_POS_UPDATE*)malloc(sizeof(PKT_POS_UPDATE));
 
 	//bzero(bufPlayerIn, sizeof(PKT_POS_UPDATE));
 
@@ -129,7 +129,7 @@ void* GameplayController(void* ipcSocks) {
 		case 1:
 			break;
 		case 10:
-
+            bzero(bufPlayerIn, sizeof(*bufPlayerIn));
 			if (getPacket(gameplaySock, bufPlayerIn, lenPktIn) == -1) {
 				//couldn't read packet
 				errPacket++;
@@ -142,19 +142,19 @@ void* GameplayController(void* ipcSocks) {
 			}
 			//get floor number from incoming packet
 
-			playerFloor = bufPlayerIn->floor;
+			playerFloor = (bufPlayerIn->floor);
 
 			//check to see if the floor number falls in the valid range
-			if (playerFloor < 0 || playerFloor > 8) {
-				break;
+			if (playerFloor < 0 || playerFloor > MAX_FLOORS) {
+				//break;
 			}
 
 			//get player number from incoming packet
-			thisPlayer = bufPlayerIn->player_number;
+			thisPlayer = (*bufPlayerIn).player_number;
 
 			//check to see if the player number falls in the valid range
 			if (thisPlayer < 0 || thisPlayer > 31) {
-				break;
+				//break;
 			}
 
 			//is this player supposed to be on this floor?
