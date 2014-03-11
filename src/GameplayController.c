@@ -28,7 +28,10 @@ extern int RUNNING;
  --
  -- DATE:  February 20, 2014
  --
- -- REVISIONS: 	none
+ -- REVISIONS: 	Chris Holisky
+ --				March 11, 2014
+ --				Added code to handle IPC packets 0xB1 and 0xB2
+ --				Cleaned up IPC packet IPC 0xB0
  --
  -- DESIGNER:	Andrew Burian / Chris Holisky
  --
