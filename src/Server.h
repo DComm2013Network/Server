@@ -49,7 +49,7 @@
 #define UDP_PORT 42338
 
 #define DEBUG_ON 1
-#define DEBUG(msg) if(DEBUG_ON){printf("Debug: %s\n", msg);}
+#define DEBUG(msg) if(DEBUG_ON){printf("Debug: %s\n", msg);fflush(stdout);}
 
 typedef int     SOCKET;
 
