@@ -88,10 +88,10 @@ typedef struct pktB2{
 
 // Outbound masking
 #define OUTMASK int_fast32_t
-#define OUT_SET(mask, pos) mask|=(1<<(pos-1))
+#define OUT_SET(mask, pos) mask|=(1<<(pos))
 #define OUT_SETALL(mask) mask=0xFFFFFFFF
 #define OUT_ZERO(mask) mask=0x00000000
-#define OUT_ISSET(mask, pos) ((mask&(1<<(pos-1)))==(1<<(pos-1)))
+#define OUT_ISSET(mask, pos) ((mask&(1<<(pos)))==(1<<(pos)))
 
 // global data stores
 SOCKET 				tcpConnections[MAX_PLAYERS];

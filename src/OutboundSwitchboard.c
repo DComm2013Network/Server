@@ -71,10 +71,9 @@ void handleOut(SOCKET liveSock){
  	}
  	else{
  		read(liveSock, packet, netPacketSizes[type]);
+        // get the mask
+        read(liveSock, &mask, sizeof(OUTMASK));
 	}
-
-	// get the mask
-	read(liveSock, &mask, sizeof(OUTMASK));
 
 	// switch statement to deal with packets
 	switch (type) {
