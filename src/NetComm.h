@@ -62,6 +62,8 @@ typedef uint64_t    timestamp_t;
 // Special floor Definitions
 #define FLOOR_LOBBY				0x000
 
+#define KEEP_ALIVE              0xFFFFFFFF
+
 #ifndef PACKETS
 #define PACKETS
 // Packet Definitions

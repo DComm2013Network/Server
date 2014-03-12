@@ -240,7 +240,13 @@ int getTcpInput(int pos){
 
 	if(ctrl == -1){
 		// packet type failed, therefor socket is closed
+		free(packet);
 		return 0;
+	}
+	if(ctrl == KEEP_ALIVE){
+        // ignore
+        free(packet);
+        return 1;
 	}
 
 	getPacket(tcpConnections[pos], packet, netPacketSizes[ctrl]);

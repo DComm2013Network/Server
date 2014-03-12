@@ -102,4 +102,7 @@ int netPacketSizes[NUM_NET_PACKETS + 1];
 int ipcPacketSizes[NUM_IPC_PACKETS + 1];
 int largestNetPacket, largestIpcPacket, largestPacket;
 
+timestamp_t heartbeats[MAX_PLAYERS];
+void pulse(playerNo_t plyr);
+
 #endif
