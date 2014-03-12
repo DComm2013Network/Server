@@ -76,6 +76,7 @@ void* GameplayController(void* ipcSocks) {
 	SOCKET outswitchSock;
 	SOCKET gameplaySock;
 	int i = 0;
+	int j = 0;
 	packet_t pType = -1;
 	floorNo_t playerFloor = 0;
 	floorNo_t newFloor = 0;
@@ -101,6 +102,7 @@ void* GameplayController(void* ipcSocks) {
 	PKT_SERVER_SETUP *bufipcPkt0 = malloc(sizeof(PKT_SERVER_SETUP));
 	PKT_NEW_CLIENT *bufipcPkt1 = malloc(sizeof(PKT_NEW_CLIENT));
 	PKT_LOST_CLIENT *bufipcPkt2 = malloc(sizeof(PKT_LOST_CLIENT));
+	PKT_FORCE_MOVE *bufipcPkt3 = malloc(sizeof(PKT_FORCE_MOVE));
 
 	//bzero(bufPlayerIn, sizeof(PKT_POS_UPDATE));
 	//bzero(bufPlayerAll, sizeof(PKT_ALL_POS_UPDATE));
@@ -214,7 +216,7 @@ void* GameplayController(void* ipcSocks) {
 			DEBUG("GP> Received packet 0xB2")
 			;
 
-			bzero(bufipcPkt2, sizeof(ipcPacketSizes[2]));
+			bzero(bufipcPkt2, ipcPacketSizes[2]);
 			if (getPacket(gameplaySock, bufipcPkt2, ipcPacketSizes[2]) == -1) {
 				//couldn't read packet
 				errPacket++;
@@ -225,6 +227,86 @@ void* GameplayController(void* ipcSocks) {
 				floorArray[i].players_on_floor[bufipcPkt2->playerNo] = 0;
 			}
 			break;
+
+        case 0xB3:  // Force floor change
+
+            DEBUG("GP> Received packet 0xB3");
+
+            bzero(bufipcPkt3, ipcPacketSizes[3]);
+
+            if (getPacket(gameplaySock, bufipcPkt3, ipcPacketSizes[3]) == -1) {
+				//couldn't read packet
+				errPacket++;
+				fprintf(stderr, "Gameplay Controller - error reading packet 0xB3.  Count:%d\n", errPacket);
+				break;
+			}
+
+			// Find the player's floor
+			for(i = 0; i < MAX_FLOORS; ++i){
+                if(floorArray[i].players_on_floor[bufipcPkt3->playerNo]){
+                    // found player
+                    break;
+                }
+			}
+
+			if(i == bufipcPkt3->newFloor){
+                // player is already on target floor
+                // do nothing
+                break;
+			}
+
+			// remove player from floor
+			floorArray[i].players_on_floor[bufipcPkt3->playerNo] = 0;
+
+			// add them to the lobby floor
+			floorArray[FLOOR_LOBBY].players_on_floor[bufipcPkt3->playerNo] = 1;
+
+            // prepare outbound packet
+            bufFloorMove->new_floor = bufipcPkt3->newFloor;
+
+            // put them in their lobby location
+            bufFloorMove->xPos = getLobbyX();
+            bufFloorMove->yPos = getLobbyY();
+
+            // send the player floor move
+            outPType = 13;
+            OUT_ZERO(m);
+            OUT_SET(bufipcPkt3->playerNo);
+            write(outswitchSock, &outPType, sizeof(packet_t));
+            write(outswitchSock, &bufFloorMove, net);
+            write(outswitchSock, &m, sizeof(OUTMASK));
+            DEBUG("CP> Sending packet 13");
+
+
+            //send updated data to all players on old flor
+			outPType = 11;
+
+			//set outbound mask for outbound server
+			OUT_ZERO(m);
+			for (j = 0; j < MAX_PLAYERS; j++) {
+				if (floorArray[i].players_on_floor[j] == 1) {
+					OUT_SET(m, j);
+				}
+			}
+			write(outswitchSock, &outPType, sizeof(packet_t));
+			write(outswitchSock, &floorArray[i], netPacketSizes[11]);
+			write(outswitchSock, &m, sizeof(OUTMASK));
+			DEBUG("CP> Sending packet 11");
+
+			//send updated data to all players on new flor
+			//set outbound mask for outbound server
+			OUT_ZERO(m);
+			for (j = 0; j < MAX_PLAYERS; j++) {
+				if (floorArray[bufipcPkt3->newFloor].players_on_floor[j] == 1) {
+					OUT_SET(m, j);
+				}
+			}
+			write(outswitchSock, &outPType, sizeof(packet_t));
+			write(outswitchSock, &floorArray[bufipcPkt3->newFloor], netPacketSizes[11]);
+			write(outswitchSock, &m, sizeof(OUTMASK));
+			DEBUG("CP> Sending packet 11");
+
+            break;
 
 		case 10: //player position update
 			DEBUG("GP> Received packet 10")
