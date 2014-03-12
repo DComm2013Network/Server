@@ -41,7 +41,7 @@
 
 #include "NetComm.h"
 
-#define NUM_IPC_PACKETS 3
+#define NUM_IPC_PACKETS 4
 
 #define SERVER_VERSION 0.2
 
@@ -84,6 +84,13 @@ typedef struct pktB2{
 } PKT_LOST_CLIENT;
 
 #define IPC_PKT_2 0xB2
+
+typedef struct pktB3{
+    playerNo_t          playerNo;
+    floorNo_t           newFloor;
+} PKT_FORCE_MOVE;
+
+#define IPC_PKT_3 0xB3
 
 
 // Outbound masking

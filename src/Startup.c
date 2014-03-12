@@ -62,6 +62,7 @@ void setupPacketInfo(){
 	ipcPacketSizes[0] = sizeof(struct pktB0);
 	ipcPacketSizes[1] = sizeof(struct pktB1);
 	ipcPacketSizes[2] = sizeof(struct pktB2);
+	ipcPacketSizes[3] = sizeof(struct pktB3);
 
 	for(i = 0; i < NUM_IPC_PACKETS + 1; ++i){
 		largestIpcPacket = (ipcPacketSizes[i] > largestIpcPacket) ? ipcPacketSizes[i] : largestIpcPacket;
