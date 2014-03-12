@@ -58,9 +58,15 @@ typedef uint64_t    timestamp_t;
 #define GAME_TEAM1_WIN			0x006
 #define GAME_TEAM2_WIN			0x007
 #define PLAYER_STATE_DROPPED    0x008
+#define PLAYER_STATE_OUT        0x009
 
 // Special floor Definitions
 #define FLOOR_LOBBY				0x000
+
+// Team Definitions
+#define TEAM_NONE       0
+#define TEAM_COPS       1
+#define TEAM_ROBBERS    2
 
 #ifndef PACKETS
 #define PACKETS
