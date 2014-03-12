@@ -66,6 +66,7 @@ void* GeneralController(void* ipcSocks) {
 	teamNo_t    playerTeams[MAX_PLAYERS];              // stores the players team in the player number's spot
 	int         objCaptured[MAX_OBJECTIVES];           //
 	int         playerStatus[MAX_PLAYERS];
+	int         needCheckWin = 0;
 
     status_t status = GAME_STATE_WAITING;              //
 	size_t numPlayers = 0;                             // actual players connected count
