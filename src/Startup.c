@@ -24,7 +24,7 @@
 #define READ 0
 #define WRITE 1
 
-#define NUM_CONTROLLERS 6
+#define NUM_CONTROLLERS 7
 
 // Super Global
 int RUNNING = 1;
@@ -39,7 +39,7 @@ void setupPacketInfo(){
 	largestNetPacket = 0;
 	largestIpcPacket = 0;
 
-	netPacketSizes[0] = 0;
+	netPacketSizes[0] = 0;  // leave 0 for keep-alive
 	netPacketSizes[1] = sizeof(struct pkt01);
 	netPacketSizes[2] = sizeof(struct pkt02);
 	netPacketSizes[3] = sizeof(struct pkt03);
@@ -90,13 +90,15 @@ int main(int argc, char* argv[]) {
 	SOCKET out_in[2];
 	SOCKET out_gen[2];
 	SOCKET out_game[2];
+	SOCKET out_keepal[2];
 
 	SOCKET uiParams[1];
 	SOCKET conManParams[2];
 	SOCKET generalParams[2];
 	SOCKET gameplayParams[2];
-	SOCKET outboundParams[3];
+	SOCKET outboundParams[4];
 	SOCKET inboundParams[5];
+	SOCKET keepAliveParams[1];
 
 	pthread_t controllers[NUM_CONTROLLERS];
 	int threadResult = 0;
@@ -128,6 +130,10 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, out_gen) == -1) {
+		fprintf(stderr, "Socket pair error: outswitchSockSet");
+		return -1;
+	}
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, out_keepal) == -1) {
 		fprintf(stderr, "Socket pair error: outswitchSockSet");
 		return -1;
 	}
@@ -182,9 +188,15 @@ int main(int argc, char* argv[]) {
 	outboundParams[0] = out_in[READ];
 	outboundParams[1] = out_game[READ];
 	outboundParams[2] = out_gen[READ];
+	outboundParams[3] = out_keepal[READ];
 	threadResult += pthread_create(&controllers[4], NULL, OutboundSwitchboard, (void*)outboundParams);
 	// ----------------------------
 
+
+    // Start the Keep Alive Cleaner
+	keepAliveParams[0] = out_keepal[WRITE];
+	threadResult += pthread_create(&controllers[5], NULL, KeepAlive, (void*)keepAliveParams);
+	// ----------------------------
 
 
 	// Start the Inbound Switchboard
@@ -193,7 +205,7 @@ int main(int argc, char* argv[]) {
 	inboundParams[2] = uiSockSet[READ];
 	inboundParams[3] = out_in[WRITE];
 	inboundParams[4] = connectionSockSet[READ];
-	threadResult += pthread_create(&controllers[5], NULL, InboundSwitchboard, (void*)inboundParams);
+	threadResult += pthread_create(&controllers[6], NULL, InboundSwitchboard, (void*)inboundParams);
 	// ----------------------------
 
 

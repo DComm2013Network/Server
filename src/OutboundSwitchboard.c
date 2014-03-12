@@ -65,11 +65,21 @@ void handleOut(SOCKET liveSock){
 	// Get the type
 	type = getPacketType(liveSock);
 
-	// Get the data
 	if(type >= 0xB0){
+	    // get data
  		read(liveSock, packet, ipcPacketSizes[type - 0xB0]);
+
+ 		// no mask
  	}
- 	else{
+ 	else if (type == KEEP_ALIVE){
+        // don't read any packet data
+        // keep alive has no data
+
+        // it does need a mask though
+        read(liveSock, &mask, sizeof(OUTMASK));
+    }
+    else{
+        // get the data
  		read(liveSock, packet, netPacketSizes[type]);
         // get the mask
         read(liveSock, &mask, sizeof(OUTMASK));
@@ -104,6 +114,11 @@ void handleOut(SOCKET liveSock){
 		case 0x0b:
 			sendToPlayers(SOCK_DGRAM, mask, packet, type);
 			break;
+
+        // Special case for keep alive
+        case KEEP_ALIVE:
+            sendToPlayers(SOCK_STREAM, mask, NULL, 0);
+            break;
 	}
 }
 
@@ -130,16 +145,26 @@ void handleOut(SOCKET liveSock){
  ----------------------------------------------------------------------------------------------------------------------*/
 void* OutboundSwitchboard(void* ipcSocks){
 
-	SOCKET inSw = ((SOCKET*)ipcSocks)[0];
-	SOCKET game = ((SOCKET*)ipcSocks)[1];
-	SOCKET genr = ((SOCKET*)ipcSocks)[2];
+	SOCKET inSw;
+	SOCKET game;
+	SOCKET genr;
+	SOCKET kpal;
 
 	int type;
+	int highSocket = 0;
 	void* setup = malloc(ipcPacketSizes[0]);
 
 	fd_set fdset;
 	int numLiveSockets;
-	SOCKET highSocket = (inSw>game)?((inSw>genr)?inSw:genr):((game>genr)?game:genr);
+
+    inSw = ((SOCKET*)ipcSocks)[0];
+    highSocket = (inSw > highSocket) ? inSw : highSocket
+	game = ((SOCKET*)ipcSocks)[1];
+	highSocket = (game > highSocket) ? game : highSocket
+	genr = ((SOCKET*)ipcSocks)[2];
+	highSocket = (genr > highSocket) ? genr : highSocket
+	kpal = ((SOCKET*)ipcSocks)[3];
+	highSocket = (kpal > highSocket) ? kpal : highSocket;
 
 	DEBUG("OS> Outbound Switchboard started");
 
@@ -159,6 +184,7 @@ void* OutboundSwitchboard(void* ipcSocks){
 		FD_SET(inSw, &fdset);
 		FD_SET(game, &fdset);
 		FD_SET(genr, &fdset);
+		FS_SET(kpal, &fdset);
 
 		numLiveSockets = select(highSocket + 1, &fdset, NULL, NULL, NULL);
 
@@ -175,6 +201,9 @@ void* OutboundSwitchboard(void* ipcSocks){
 		}
 		if(FD_ISSET(genr, &fdset)){
 			handleOut(genr);
+		}
+		if(FD_ISSET(kpal, &fdset)){
+
 		}
 
 	}
