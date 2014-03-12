@@ -26,7 +26,7 @@ inline void sendGameStatus(SOCKET sock, PKT_GAME_STATUS *pkt);
 teamNo_t findTeam(const int maxPlayers, const teamNo_t playerTeams[MAX_PLAYERS]);
 void writePacket(SOCKET sock, void* packet, packet_t type);
 int areRobbersLeft(const int maxPlayers, const teamNo_t playerTeams[MAX_PLAYERS]);
-int areObjectivesCaptured(const int maxPlayers, const objCaptured[MAX_OBJECTIVES]);
+int areObjectivesCaptured(const int maxPlayers, const int objCaptured[MAX_OBJECTIVES]);
 
 /*--------------------------------------------------------------------------------------------------------------------
  -- FUNCTION:	GeneralController
@@ -307,7 +307,7 @@ void* GeneralController(void* ipcSocks) {
 //  - 2 - players captured
 //  - 0 if no winner yet
 //  - -1 error
-int areObjectivesCaptured(const int maxPlayers, const objCaptured[MAX_OBJECTIVES])
+int areObjectivesCaptured(const int maxPlayers, const int objCaptured[MAX_OBJECTIVES])
 {
     int i, objCount = 0;
     for(i = 0; i < MAX_OBJECTIVES; i++) {
