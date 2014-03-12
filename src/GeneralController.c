@@ -21,8 +21,12 @@
 #include "Server.h"
 
 extern int RUNNING;
-double winRatio = MAX_OBJECTIVES * 0.75;
+double WIN_RATIO = MAX_OBJECTIVES * 0.75;
 inline void sendGameStatus(SOCKET sock, PKT_GAME_STATUS *pkt);
+teamNo_t findTeam(const int maxPlayers, const teamNo_t playerTeams[MAX_PLAYERS]);
+void writePacket(SOCKET sock, void* packet, packet_t type);
+int areRobbersLeft(const int maxPlayers, const teamNo_t playerTeams[MAX_PLAYERS]);
+int areObjectivesCaptured(const int maxPlayers, const objCaptured[MAX_OBJECTIVES]);
 
 /*--------------------------------------------------------------------------------------------------------------------
  -- FUNCTION:	GeneralController
@@ -65,10 +69,9 @@ void* GeneralController(void* ipcSocks) {
 
     status_t status = GAME_STATE_WAITING;              //
 	size_t numPlayers = 0;                             // actual players connected count
-	packet_t inPktType, pType;                                // value of the packet expected to read
+	packet_t inPktType;
 	int i, j, maxPlayers;                                 // max players specified for teh game session
-    int team1Count, team2Count;                        // number of players in the team
-    teamNo_t addToTeam = 0, val;                            // the team to add a new player to
+    teamNo_t val;
 
 	/* Will look into changing this... */
 	PKT_SERVER_SETUP    *pkt0;
@@ -109,7 +112,7 @@ void* GeneralController(void* ipcSocks) {
 	{
         // Set the extra space that will not hold players to -1
         val = (i < maxPlayers) ? 0 : -1;
-        playerTeams[i] = val;
+        playerTeams[i] = validPlayers[i] = playerStatus [i] = val;
         for(j = 0; j < MAX_NAME; j++)
             playerNames[i][j] = '\0';
 	}
@@ -211,7 +214,7 @@ void* GeneralController(void* ipcSocks) {
 					if (objCaptured[i] == 1)
 						countCaptured++;
 
-				if (countCaptured >= winRatio)
+				if (countCaptured >= WIN_RATIO)
 					status = GAME_STATE_OVER;
 			}
 
@@ -229,9 +232,10 @@ void* GeneralController(void* ipcSocks) {
             write(generalSock, pkt3, ipcPacketSizes[3]);
             DEBUG("GC> Sent IPC packet 3 - Force move");
 
-            playerTeams[pktTagging->taggee_id] = 0;
+            playerTeams[pktTagging->taggee_id] = TEAM_NONE;
             playerStatus[pktTagging->taggee_id] = PLAYER_STATE_OUT;
 
+            // Overwrite potential garbage
             memcpy(pktPlayersUpdate->readystatus, playerStatus, sizeof(playerStatus));
             memcpy(pktPlayersUpdate->otherPlayers_teams, playerTeams, sizeof(playerTeams));
             memcpy(pktPlayersUpdate->otherPlayers_name, playerNames, sizeof(playerNames));
@@ -246,6 +250,38 @@ void* GeneralController(void* ipcSocks) {
 		default:
 			DEBUG("GC> Receiving packets it shouldn't");
         break;
+		}
+
+		if(needCheckWin)
+		{
+		// TEAM 1 is cops
+            if(!areRobbersLeft(maxPlayers, playerTeams))
+                status = GAME_TEAM1_WIN;
+
+            if(areObjectivesCaptured(maxPlayers, objCaptured))
+                status = GAME_TEAM2_WIN;
+
+            status = GAME_STATE_ACTIVE;
+
+            pktGameStatus->game_status = status;
+            memcpy(pktGameStatus->objectives_captured, objCaptured, sizeof(objCaptured));
+            writePacket(outswitchSock, pktGameStatus, 8);
+
+
+            memset(playerTeams, TEAM_NONE, sizeof(playerTeams));
+            memcpy(pktPlayersUpdate->otherPlayers_teams, playerTeams, sizeof(playerTeams));
+            memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(validPlayers));
+            memcpy(pktPlayersUpdate->otherPlayers_name, playerNames, sizeof(playerNames));
+            memcpy(pktPlayersUpdate->readystatus, playerStatus, sizeof(playerStatus));
+            writePacket(outswitchSock, pktPlayersUpdate, 3);
+
+            for(i = 0; i < maxPlayers; i++)
+            {
+                pkt3->newFloor = FLOOR_LOBBY;
+                pkt3->playerNo = i;
+                write(outswitchSock, pkt3, ipcPacketSizes[3]);
+            }
+            DEBUG("GC> Sent pkt3 - moving all to lobby; game is over");
 		}
     }
 
@@ -265,9 +301,33 @@ void* GeneralController(void* ipcSocks) {
 // Checks for a winner
 //  - objectives captured
 //  - enough players in team
-int checkGameCondition()
+// Returns
+//  - 1 - objectives captured
+//  - 2 - players captured
+//  - 0 if no winner yet
+//  - -1 error
+int areObjectivesCaptured(const int maxPlayers, const objCaptured[MAX_OBJECTIVES])
 {
+    int i, objCount = 0;
+    for(i = 0; i < MAX_OBJECTIVES; i++) {
+        objCount++;
+    }
 
+    if(objCount > WIN_RATIO * maxPlayers)
+        return 1;
+
+    return 0;
+}
+
+// Returns number of robbers left
+int areRobbersLeft(const int maxPlayers, const teamNo_t playerTeams[MAX_PLAYERS])
+{
+    int i, robberCount = 0;
+    for(i = 0; i < maxPlayers; i++)
+        if(playerTeams[i] == TEAM_ROBBERS)
+            robberCount++;
+
+    return robberCount;
 }
 
 void writePacket(SOCKET sock, void* packet, packet_t type){
@@ -288,7 +348,8 @@ void writePacket(SOCKET sock, void* packet, packet_t type){
 
 teamNo_t findTeam(const int maxPlayers, const teamNo_t playerTeams[MAX_PLAYERS])
 {
-    teamNo_t team1Count = 0; team2Count = 0;
+    int i;
+    int team1Count = 0, team2Count = 0;
     for (i = 0; i < maxPlayers; i++)
     {
         if(playerTeams[i] == 1)

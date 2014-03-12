@@ -63,6 +63,11 @@ typedef uint64_t    timestamp_t;
 // Special floor Definitions
 #define FLOOR_LOBBY				0x000
 
+// Team Definitions
+#define TEAM_NONE       0
+#define TEAM_COPS       1
+#define TEAM_ROBBERS    2
+
 #ifndef PACKETS
 #define PACKETS
 // Packet Definitions
