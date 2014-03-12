@@ -340,7 +340,7 @@ void* GameplayController(void* ipcSocks) {
 			DEBUG("GP> Sending packet 13")
 						;
 
-//set outbound mask to send only to this player
+			//set outbound mask to send only to this player
 			OUT_ZERO(m);
 			OUT_SET(m, thisPlayer);
 
@@ -407,7 +407,7 @@ void* GameplayController(void* ipcSocks) {
 			}
 			DEBUG("GP> Sending packet 11 to new floor")
 			;
-//writeType(outswitchSock, &bufFloorMove,outPType);
+			//writeType(outswitchSock, &bufFloorMove,outPType, m);
 
 			if (write(outswitchSock, &outPType, sizeof(outPType)) == -1) {
 				errOut++;
@@ -437,12 +437,13 @@ void* GameplayController(void* ipcSocks) {
 	return 0;
 }
 
-void writeType2(SOCKET sock, void* packet, packet_t type, OUTMASK m){
+void writeType2(SOCKET sock, void* packet, packet_t type, OUTMASK m) {
 	write(sock, &type, sizeof(packet_t));
 	if(type >= 0xB0){
-		write(sock, packet, ipcPacketSizes[type - 0xB0]);
+		write(sock, packet, sizeof(packet));
 	}
 	else{
 		write(sock, packet, netPacketSizes[type]);
 	}
+	write(sock, &m, sizeof(OUTMASK));
 }
