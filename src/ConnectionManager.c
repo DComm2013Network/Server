@@ -134,12 +134,13 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 		replyToClient.connect_code = CONNECT_CODE_ACCEPTED;
 		replyToClient.clients_player_number = i;
 
-		// This is just for milestone 1, where first player is team 1, second is team 2
-		replyToClient.clients_team_number = i;
+		// The client's inital team number is 0. This will be later assigned by the Conn Man
+		replyToClient.clients_team_number = 0;
 
 		// Send accept to client with their player and team number
 		send(acceptSock, &replyType, sizeof(packet_t), 0);
 		send(acceptSock, &replyToClient, sizeof(struct pkt02), 0);
+		DEBUG("CM> Sent pkt 2");
 
 		newClientInfo.playerNo = i;
 		memcpy(&newClientInfo.client_player_name, &clientReg.client_player_name, MAX_NAME);
