@@ -415,8 +415,8 @@ void* GameplayController(void* ipcSocks) {
 			//set information for floor move
 			bzero(bufFloorMove, sizeof(*bufFloorMove));
 			bufFloorMove->new_floor = newFloor;
-			bufFloorMove->xPos = 50;
-			bufFloorMove->yPos = 50;
+			bufFloorMove->xPos = bufFloorMoveReq->desired_xPos;
+			bufFloorMove->yPos = bufFloorMoveReq->desired_yPos;
 
 			DEBUG("GP> Sending packet 13")
 						;
