@@ -51,6 +51,7 @@ inline void sendGameStatus(SOCKET sock, PKT_GAME_STATUS *pkt);
  -- IPC_PKT_2 -> PKT3
  -- PKT5 -> PKT3
  -- PKT8 -> PKT8
+ -- PKT14 -> PKT3 | IPC3 -> check win
 
  --------------------------------------------------------------------------------------------------------------------*/
 
@@ -65,54 +66,58 @@ void* GeneralController(void* ipcSocks) {
     status_t status = GAME_STATE_WAITING;              //
 	size_t numPlayers = 0;                             // actual players connected count
 	packet_t inPktType, pType;                                // value of the packet expected to read
-	int i, maxPlayers;                                 // max players specified for teh game session
+	int i, j, maxPlayers;                                 // max players specified for teh game session
     int team1Count, team2Count;                        // number of players in the team
     teamNo_t addToTeam = 0, val;                            // the team to add a new player to
-
-    OUTMASK m;
 
 	/* Will look into changing this... */
 	PKT_SERVER_SETUP    *pkt0;
 	PKT_NEW_CLIENT      *pkt1;
 	PKT_LOST_CLIENT     *pkt2;
-	PKT_GAME_STATUS     *pktGameStatus;     // net pkt 8
+	PKT_FORCE_MOVE      *pkt3;
 	PKT_PLAYERS_UPDATE  *pktPlayersUpdate;  // net pkt 3
-	PKT_READY_STATUS    *pktReadyStatus;
+	PKT_READY_STATUS    *pktReadyStatus;    // net pkt 5
+	PKT_GAME_STATUS     *pktGameStatus;     // net pkt 8
+	PKT_FLOOR_MOVE      *pktFloorMove;      // net pkt 13
+	PKT_TAGGING         *pktTagging;        // net pkt 14
 
 	pkt0              = malloc(ipcPacketSizes[0]);
 	pkt1              = malloc(ipcPacketSizes[1]);
 	pkt2              = malloc(ipcPacketSizes[2]);
+	pkt3              = malloc(ipcPacketSizes[3]);
 	pktPlayersUpdate  = malloc(netPacketSizes[3]);
 	pktReadyStatus    = malloc(netPacketSizes[5]);
 	pktGameStatus     = malloc(netPacketSizes[8]);
+	pktFloorMove      = malloc(netPacketSizes[13]);
+	pktTagging        = malloc(netPacketSizes[14]);
 
 	SOCKET generalSock   = ((SOCKET*) ipcSocks)[0];
 	SOCKET outswitchSock = ((SOCKET*) ipcSocks)[1];
     /***** END GAME INIT *******/
 
 
-	// wait ipc 0
+	// Wait for IPC_PKT_0
 	if ((inPktType = getPacketType(generalSock)) != IPC_PKT_0) {
 		fprintf(stderr, "Expected packet type: %d\nReceived: %d\n", IPC_PKT_0, inPktType);
 		return NULL;
 	}
 	getPacket(generalSock, pkt0, ipcPacketSizes[0]);
-
 	maxPlayers = pkt0->maxPlayers;
 
-	// Set the extra space that will not hold players to -1
+	// Zero out player teams and player names
 	for(i = 0; i < MAX_PLAYERS; ++i)
 	{
+        // Set the extra space that will not hold players to -1
         val = (i < maxPlayers) ? 0 : -1;
         playerTeams[i] = val;
-        playerNames[i][0] = '\0';
+        for(j = 0; j < MAX_NAME; j++)
+            playerNames[i][j] = '\0';
 	}
 	DEBUG("GC> Setup Complete");
 
 	while (RUNNING) {
 		inPktType = getPacketType(generalSock);
 		switch (inPktType) {
-
 		case IPC_PKT_1: // New Player
             DEBUG("GC> Received IPC_PKT_1 - New Player");
 
@@ -133,12 +138,6 @@ void* GeneralController(void* ipcSocks) {
 
             // Send Players Update Packet 3
             writePacket(outswitchSock, pktPlayersUpdate, 0x03);
-//            OUT_SETALL(m);
-//            pType = 0x03;
-//            write(outswitchSock, &pType, sizeof(packet_t));
-//            write(outswitchSock, pktPlayersUpdate, netPacketSizes[3]);
-//            write(outswitchSock, &m, sizeof(OUTMASK));
-//            DEBUG("GC> Sent network packet 3 - Players Update");
 
             // TO-DO: Change game status?
 
@@ -148,11 +147,6 @@ void* GeneralController(void* ipcSocks) {
 
             // Send the Game Status Packet 8
             writePacket(outswitchSock, pktGameStatus, 0x08);
-//            pType = 0x08;
-//            write(outswitchSock, &pType, sizeof(packet_t));
-//            write(outswitchSock, pktGameStatus, netPacketSizes[8]);
-//            write(outswitchSock, &m, sizeof(OUTMASK));
-//            DEBUG("GC> Sent network packet 8 - Game Status");
         break;
 		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
 			DEBUG("GC> Received IPC_PKT_2 - Player Lost");
@@ -179,12 +173,6 @@ void* GeneralController(void* ipcSocks) {
 
             // Send packet 3 - player update
             writePacket(outswitchSock, pktPlayersUpdate, 0x03);
-//            OUT_SETALL(m);
-//            pType = 0x03;
-//            write(outswitchSock, &pType, sizeof(packet_t));
-//            write(outswitchSock, pktPlayersUpdate, netPacketSizes[3]);
-//            write(outswitchSock, &m, sizeof(OUTMASK));
-//            DEBUG("GC> Sent packet 3 - Players Update");
         break;
         case 0x05: // Ready Status change
             DEBUG("GC> Received packet 5 - Ready Status");
@@ -204,14 +192,9 @@ void* GeneralController(void* ipcSocks) {
             memcpy(pktPlayersUpdate->otherPlayers_teams, playerTeams, sizeof(playerTeams));
             memcpy(pktPlayersUpdate->readystatus, playerStatus, sizeof(playerStatus));
 
-            writePacket(outswitchSock, pktPlayersUpdate, 0x03);
             // Send Players Update Packet 3 to everyone
-//            OUT_SETALL(m);
-//            packet_t pType = 0x03;
-//            write(outswitchSock, &pType, sizeof(packet_t));
-//            write(outswitchSock, pktPlayersUpdate, netPacketSizes[3]);
-//            write(outswitchSock, &m, sizeof(OUTMASK));
-//            DEBUG("GC> Sent packet 3 - Players Update");
+            writePacket(outswitchSock, pktPlayersUpdate, 0x03);
+
         break;
 		case 0x08: // Game Status
             DEBUG("GC> Received packet 8 - Game Status");
@@ -235,8 +218,30 @@ void* GeneralController(void* ipcSocks) {
             memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);
             pktGameStatus->game_status = status;
             writePacket(outswitchSock, pktPlayersUpdate, 0x08);
-            //sendGameStatus(outswitchSock, pktGameStatus);
-            //DEBUG("GC> Sent packet 8 - Game Status");
+        break;
+        case 14:
+            DEBUG("GC> Received packet 14 - Player Tagged");
+            getPacket(generalSock, pktTagging, netPacketSizes[14]);
+
+            pkt3->playerNo = pktTagging->taggee_id;
+            pkt3->newFloor = FLOOR_LOBBY;
+
+            write(generalSock, pkt3, ipcPacketSizes[3]);
+            DEBUG("GC> Sent IPC packet 3 - Force move");
+
+            playerTeams[pktTagging->taggee_id] = 0;
+            playerStatus[pktTagging->taggee_id] = PLAYER_STATE_OUT;
+
+            memcpy(pktPlayersUpdate->readystatus, playerStatus, sizeof(playerStatus));
+            memcpy(pktPlayersUpdate->otherPlayers_teams, playerTeams, sizeof(playerTeams));
+            memcpy(pktPlayersUpdate->otherPlayers_name, playerNames, sizeof(playerNames));
+            memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(validPlayers));
+
+            writePacket(outswitchSock, pktPlayersUpdate, 3);
+            DEBUG("GC> Sent packet 3 - Players update");
+
+
+            //DEBUG("GC> Triggered game condition");
         break;
 		default:
 			DEBUG("GC> Receiving packets it shouldn't");
@@ -247,11 +252,22 @@ void* GeneralController(void* ipcSocks) {
    	free(pkt0);
 	free(pkt1);
 	free(pkt2);
+	free(pkt3);
     free(pktPlayersUpdate);
     free(pktReadyStatus);
 	free(pktGameStatus);
+	free(pktFloorMove);
+	free(pktTagging);
 
 	return NULL;
+}
+
+// Checks for a winner
+//  - objectives captured
+//  - enough players in team
+int checkGameCondition()
+{
+
 }
 
 void writePacket(SOCKET sock, void* packet, packet_t type){
