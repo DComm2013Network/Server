@@ -27,7 +27,7 @@
 #define MAX_MESSAGE		180
 #define MAX_OBJECTIVES	16
 
-#define NUM_NET_PACKETS 13
+#define NUM_NET_PACKETS 14
 
 
 // Other Includes
@@ -57,6 +57,7 @@ typedef uint64_t    timestamp_t;
 #define PLAYER_STATE_WAITING	0x005
 #define GAME_TEAM1_WIN			0x006
 #define GAME_TEAM2_WIN			0x007
+#define PLAYER_STATE_DROPPED    0x008
 
 // Special floor Definitions
 #define FLOOR_LOBBY				0x000
@@ -139,5 +140,10 @@ typedef struct pkt13{
 	pos_t		xPos;
 	pos_t		yPos;
 } PKT_FLOOR_MOVE;
+
+typedef struct pkt14 {
+    playerNo_t  tagger_id; /* the person who tagged */
+    playerNo_t  taggee_id; /* the person who got tagged */
+} PKT_TAGGING;
 
 #endif

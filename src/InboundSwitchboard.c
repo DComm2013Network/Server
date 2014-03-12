@@ -91,6 +91,20 @@ void addNewPlayer(){
 	free(packet);
 }
 
+void getIPC(SOCKET sock){
+    packet_t ctrl = 0;
+	void* packet = malloc(largestIpcPacket);
+
+	// Get the packet type
+	ctrl = getPacketType(sock);
+
+	getPacket(sock, packet, ipcPacketSizes[ctrl]);
+
+	relayPacket(packet, ctrl);
+
+	free(packet);
+}
+
 void writeType(SOCKET sock, void* packet, packet_t type){
 	write(sock, &type, sizeof(packet_t));
 	if(type >= 0xB0){
@@ -111,12 +125,14 @@ void relayPacket(void* packet, packet_t type){
 			writeType(Inswitch_outswitchSocket,		packet, type);
 			writeType(Inswitch_gameplaySocket,		packet, type);
 			writeType(Inswitch_generalSocket,		packet, type);
+			DEBUG("IS> Routed pkt B0");
 			break;
 
 		case 0xB1:		// New player added
 			writeType(Inswitch_outswitchSocket,		packet, type);
-			//writeType(Inswitch_gameplaySocket,		packet, type);
+			writeType(Inswitch_gameplaySocket,		packet, type);
 			writeType(Inswitch_generalSocket,		packet, type);
+			DEBUG("IS> Routed pkt B1");
 			break;
 
 		case 0xB2:		// Client Disconnect
@@ -124,7 +140,13 @@ void relayPacket(void* packet, packet_t type){
 			writeType(Inswitch_outswitchSocket,		packet, type);
 			writeType(Inswitch_gameplaySocket,		packet, type);
 			writeType(Inswitch_generalSocket,		packet, type);
+			DEBUG("IS> Routed pkt B2");
 			break;
+
+        case 0xB3:      // Forced floor change
+            writeType(Inswitch_gameplaySocket,      packet, type);
+            DEBUG("IS> Routed pkt B3");
+            break;
  		// --------------------------NET--------------------------------
 
 		case 1:
@@ -140,6 +162,8 @@ void relayPacket(void* packet, packet_t type){
 			break;
 
 		case 5:
+            writeType(Inswitch_generalSocket,       packet, type);
+            DEBUG("IS> Routed pkt 5");
 			break;
 
 		case 6:
@@ -150,6 +174,7 @@ void relayPacket(void* packet, packet_t type){
 
 		case 8:		// Game Status
 			writeType(Inswitch_generalSocket,		packet, type);
+			DEBUG("IS> Routed pkt 8");
 			break;
 
 		case 9:
@@ -157,13 +182,16 @@ void relayPacket(void* packet, packet_t type){
 
 		case 10:		// Movement update
 			writeType(Inswitch_gameplaySocket,		packet, type);
+			DEBUG("IS> Routed pkt 10");
 			break;
 
 		case 11:
 			break;
 
 		case 12:
-			break;
+            writeType(Inswitch_gameplaySocket,      packet, type);
+            DEBUG("IS> Routed pkt 12");
+            break;
 
 		case 13:
 			break;
@@ -326,7 +354,8 @@ void* InboundSwitchboard(void* ipcSocks){
 
 		// Add Connection Socket
 		FD_SET(Inswitch_connectionSocket, &fdset);
-		highSocket = Inswitch_connectionSocket;
+		FD_SET(Inswitch_generalSocket, &fdset);
+		highSocket = (Inswitch_connectionSocket > Inswitch_generalSocket) ? Inswitch_connectionSocket: Inswitch_generalSocket;
 
 		// Add TCP connections to select
 		for(i = 0; i < MAX_PLAYERS; ++i){
@@ -369,6 +398,10 @@ void* InboundSwitchboard(void* ipcSocks){
 		// Check for incomming connection
 		if(FD_ISSET(Inswitch_connectionSocket, &fdset)){
 			addNewPlayer();
+		}
+
+		if(FD_ISSET(Inswitch_generalSocket, &fdset)){
+            getIPC(Inswitch_generalSocket);
 		}
 
 	}

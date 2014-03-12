@@ -140,6 +140,7 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 		// Send accept to client with their player and team number
 		send(acceptSock, &replyType, sizeof(packet_t), 0);
 		send(acceptSock, &replyToClient, sizeof(struct pkt02), 0);
+		DEBUG("CM> Sent pkt 2");
 
 		newClientInfo.playerNo = i;
 		memcpy(&newClientInfo.client_player_name, &clientReg.client_player_name, MAX_NAME);
