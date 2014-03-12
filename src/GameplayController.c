@@ -271,9 +271,9 @@ void* GameplayController(void* ipcSocks) {
             // send the player floor move
             outPType = 13;
             OUT_ZERO(m);
-            OUT_SET(bufipcPkt3->playerNo);
+            OUT_SET(m, bufipcPkt3->playerNo);
             write(outswitchSock, &outPType, sizeof(packet_t));
-            write(outswitchSock, &bufFloorMove, net);
+            write(outswitchSock, &bufFloorMove, netPacketSizes[13]);
             write(outswitchSock, &m, sizeof(OUTMASK));
             DEBUG("CP> Sending packet 13");
 
