@@ -133,6 +133,8 @@ typedef struct pkt12{
 	playerNo_t 	player_number;
 	floorNo_t 	current_floor;
 	floorNo_t 	desired_floor;
+	pos_t       desired_Xpos;
+	pos_t       desired_Ypos;
 } PKT_FLOOR_MOVE_REQUEST;
 
 typedef struct pkt13{
