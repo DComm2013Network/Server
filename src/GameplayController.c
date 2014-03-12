@@ -134,8 +134,7 @@ void* GameplayController(void* ipcSocks) {
 			break;
 
 		case 0xB1: //new player packet
-			DEBUG("GP> Receive packet 0xB1")
-			;
+			DEBUG("GP> Receive packet 0xB1");
 
 			bzero(bufipcPkt1, sizeof(ipcPacketSizes[1]));
 			if (getPacket(gameplaySock, bufipcPkt1, ipcPacketSizes[1]) == -1) {
@@ -147,6 +146,7 @@ void* GameplayController(void* ipcSocks) {
 			}
 
 			//get player information, set to position 50,50 on floor 0
+			bzero(bufFloorMove, netPacketSizes[13]);
 			thisPlayer = bufipcPkt1->playerNo;
 			playerFloor = 0;
 			bufFloorMove->new_floor = playerFloor;
@@ -178,8 +178,7 @@ void* GameplayController(void* ipcSocks) {
 			}
 
 			//send packet 11 to players on floor
-			DEBUG("GP> Sending packet 11 to floor 0")
-			;
+			DEBUG("GP> Sending packet 11 to floor 0");
 
 			outPType = 11;
 			floorArray[playerFloor].xPos[thisPlayer] = bufFloorMove->xPos;
