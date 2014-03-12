@@ -287,9 +287,31 @@ void cleanupSocket(int pos){
 
 	lost.playerNo = pos;
 
-	relayPacket(&lost, ipcPacketSizes[2]);
+	relayPacket(&lost, IPC_PKT_2);
 
 	DEBUG("IS> Connection closed");
+}
+
+void removePlayer(SOCKET sock){
+    struct pktB2 lost;
+
+    if(getPacketType(sock) != IPC_PKT_2){
+        DEBUG("IS> Remove Player getting packets from outSwitch it shouldn't.");
+        return;
+    }
+
+    getPacket(sock, &lost, ipcPacketSizes[2]);
+
+	close(tcpConnections[lost.playerNo]);
+
+	tcpConnections[lost.playerNo] = 0;
+	bzero(&udpAddresses[lost.playerNo], sizeof(struct sockaddr_in));
+
+	lost.playerNo = lost.playerNo;
+
+	relayPacket(&lost, IPC_PKT_2);
+
+	DEBUG("IS> Connection closed by outbound switch");
 }
 
 /*--------------------------------------------------------------------------------------------------------------------
@@ -384,6 +406,10 @@ void* InboundSwitchboard(void* ipcSocks){
 		// Check for incomming connection
 		if(FD_ISSET(Inswitch_connectionSocket, &fdset)){
 			addNewPlayer();
+		}
+
+		if(FD_ISSET(Inswitch_outswitchSocket, &fdset)){
+            removePlayer(Inswitch_outswitchSocket);
 		}
 
 	}

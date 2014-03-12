@@ -21,8 +21,8 @@
 #include "Server.h"
 
 extern int RUNNING;
-
-
+void lostConnection(int pos);
+SOCKET inSw;
 
 
 void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
@@ -34,7 +34,9 @@ void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 	if(protocol == SOCK_STREAM){
 		for(i = 0; i < MAX_PLAYERS; ++i){
 			if(OUT_ISSET(to, i) && tcpConnections[i] != 0){
-				send(tcpConnections[i], &type, sizeof(packet_t), 0);
+				if(send(tcpConnections[i], &type, sizeof(packet_t), 0) == -1){
+                    lostConnection(i);
+                }
 				send(tcpConnections[i], data, netPacketSizes[type], 0);
 			}
 		}
@@ -102,7 +104,6 @@ void handleOut(SOCKET liveSock){
 		case 0x05:
 		case 0x06:
 		case 0x07:
-		case 0x09:
 		case 0x0c:
 		case 0x0d:
 			sendToPlayers(SOCK_STREAM, mask, packet, type);
@@ -145,7 +146,6 @@ void handleOut(SOCKET liveSock){
  ----------------------------------------------------------------------------------------------------------------------*/
 void* OutboundSwitchboard(void* ipcSocks){
 
-	SOCKET inSw;
 	SOCKET game;
 	SOCKET genr;
 	SOCKET kpal;
@@ -158,11 +158,11 @@ void* OutboundSwitchboard(void* ipcSocks){
 	int numLiveSockets;
 
     inSw = ((SOCKET*)ipcSocks)[0];
-    highSocket = (inSw > highSocket) ? inSw : highSocket
+    highSocket = (inSw > highSocket) ? inSw : highSocket;
 	game = ((SOCKET*)ipcSocks)[1];
-	highSocket = (game > highSocket) ? game : highSocket
+	highSocket = (game > highSocket) ? game : highSocket;
 	genr = ((SOCKET*)ipcSocks)[2];
-	highSocket = (genr > highSocket) ? genr : highSocket
+	highSocket = (genr > highSocket) ? genr : highSocket;
 	kpal = ((SOCKET*)ipcSocks)[3];
 	highSocket = (kpal > highSocket) ? kpal : highSocket;
 
@@ -184,7 +184,7 @@ void* OutboundSwitchboard(void* ipcSocks){
 		FD_SET(inSw, &fdset);
 		FD_SET(game, &fdset);
 		FD_SET(genr, &fdset);
-		FS_SET(kpal, &fdset);
+		FD_SET(kpal, &fdset);
 
 		numLiveSockets = select(highSocket + 1, &fdset, NULL, NULL, NULL);
 
@@ -203,7 +203,7 @@ void* OutboundSwitchboard(void* ipcSocks){
 			handleOut(genr);
 		}
 		if(FD_ISSET(kpal, &fdset)){
-
+            handleOut(kpal);
 		}
 
 	}
@@ -211,4 +211,17 @@ void* OutboundSwitchboard(void* ipcSocks){
 	DEBUG("OS> Finished");
 
 	return NULL;
+}
+
+
+void lostConnection(int pos){
+    PKT_LOST_CLIENT lost;
+    packet_t lostType = IPC_PKT_2;
+
+    bzero(&lost, ipcPacketSizes[2]);
+
+    lost.playerNo = pos;
+
+    write(inSw, &lostType, sizeof(packet_t));
+    write(inSw, &lost, ipcPacketSizes[2]);
 }

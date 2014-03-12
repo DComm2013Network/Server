@@ -39,7 +39,7 @@ void setupPacketInfo(){
 	largestNetPacket = 0;
 	largestIpcPacket = 0;
 
-	netPacketSizes[0] = 0;  // leave 0 for keep-alive
+	netPacketSizes[0] = 0;
 	netPacketSizes[1] = sizeof(struct pkt01);
 	netPacketSizes[2] = sizeof(struct pkt02);
 	netPacketSizes[3] = sizeof(struct pkt03);
@@ -48,7 +48,7 @@ void setupPacketInfo(){
 	netPacketSizes[6] = sizeof(struct pkt06);
 	netPacketSizes[7] = 0;
 	netPacketSizes[8] = sizeof(struct pkt08);
-	netPacketSizes[9] = 0;
+	netPacketSizes[9] = 0; // keep alive data is 0
 	netPacketSizes[10] = sizeof(struct pkt10);
 	netPacketSizes[11] = sizeof(struct pkt11);
 	netPacketSizes[12] = sizeof(struct pkt12);

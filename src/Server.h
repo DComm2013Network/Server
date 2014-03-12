@@ -63,6 +63,7 @@ void* GameplayController(void* ipcSocks);
 void* GeneralController(void* ipcSocks);
 void* UIController(void* ipcSocks);
 void* OutboundSwitchboard(void* ipcSocks);
+void* KeepAlive(void* outSock);
 
 // structures
 typedef struct pktB0{
