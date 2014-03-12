@@ -53,9 +53,13 @@
 
 typedef int     SOCKET;
 
-//function prototypes
+//function prototypes for server-utils
 packet_t    getPacketType(SOCKET socket);
 int         getPacket(SOCKET socket, void* buffer, int sizeOfBuffer);
+
+//function prototypes for game-utils
+pos_t       getLobbyX();
+pos_t       getLobbyY();
 
 void* ConnectionManager(void* ipcSocks);
 void* InboundSwitchboard(void* ipcSocks);
