@@ -8,7 +8,7 @@ void* KeepAlive(void* outSock){
     packet_t check = KEEP_ALIVE;
     OUTMASK m;
     int send = 0;
-    while(RUNNING){
+    while(RUNNING && CHECK_CONNECTIONS){
         sleep(CLEANUP_FREQUENCY);
         OUT_ZERO(m);
         send = 0;
