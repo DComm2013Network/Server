@@ -115,8 +115,7 @@ typedef struct pkt08{
 	status_t	game_status;
 } PKT_GAME_STATUS;
 
-//Packet 9: 0x0009
-//	<< UNPURPOSED >>
+#define KEEP_ALIVE              0x9
 
 typedef struct pkt10{
 	floorNo_t 	floor;

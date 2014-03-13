@@ -67,6 +67,7 @@ void* GameplayController(void* ipcSocks);
 void* GeneralController(void* ipcSocks);
 void* UIController(void* ipcSocks);
 void* OutboundSwitchboard(void* ipcSocks);
+void* KeepAlive(void* outSock);
 
 // structures
 typedef struct pktB0{
@@ -113,5 +114,10 @@ int                 connectedPlayers;
 int netPacketSizes[NUM_NET_PACKETS + 1];
 int ipcPacketSizes[NUM_IPC_PACKETS + 1];
 int largestNetPacket, largestIpcPacket, largestPacket;
+
+#define CHECK_CONNECTIONS 0
+#define CLEANUP_FREQUENCY 2
+timestamp_t heartbeats[MAX_PLAYERS];
+void pulse(playerNo_t plyr);
 
 #endif
