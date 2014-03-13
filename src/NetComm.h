@@ -111,7 +111,7 @@ typedef struct pkt06{
 //	<< UNPURPOSED >>
 
 typedef struct pkt08{
-	int		    objectives_captured[MAX_OBJECTIVES];
+	bool_t		    objectives_captured[MAX_OBJECTIVES];
 	status_t	game_status;
 } PKT_GAME_STATUS;
 
