@@ -265,8 +265,8 @@ void* GameplayController(void* ipcSocks) {
             bufFloorMove->new_floor = bufipcPkt3->newFloor;
 
             // put them in their lobby location
-            bufFloorMove->xPos = getLobbyX();
-            bufFloorMove->yPos = getLobbyY();
+            bufFloorMove->xPos = getLobbyX(bufipcPkt3->playerNo);
+            bufFloorMove->yPos = getLobbyY(bufipcPkt3->playerNo);
 
             // send the player floor move
             outPType = 13;
