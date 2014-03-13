@@ -91,6 +91,20 @@ void addNewPlayer(){
 	free(packet);
 }
 
+void getIPC(SOCKET sock){
+    packet_t ctrl = 0;
+	void* packet = malloc(largestIpcPacket);
+
+	// Get the packet type
+	ctrl = getPacketType(sock);
+
+	getPacket(sock, packet, ipcPacketSizes[ctrl]);
+
+	relayPacket(packet, ctrl);
+
+	free(packet);
+}
+
 void writeType(SOCKET sock, void* packet, packet_t type){
 	write(sock, &type, sizeof(packet_t));
 	if(type >= 0xB0){
@@ -128,6 +142,11 @@ void relayPacket(void* packet, packet_t type){
 			writeType(Inswitch_generalSocket,		packet, type);
 			DEBUG("IS> Routed pkt B2");
 			break;
+
+        case 0xB3:      // Forced floor change
+            writeType(Inswitch_gameplaySocket,      packet, type);
+            DEBUG("IS> Routed pkt B3");
+            break;
  		// --------------------------NET--------------------------------
 
 		case 1:
@@ -363,7 +382,8 @@ void* InboundSwitchboard(void* ipcSocks){
 
 		// Add Connection Socket
 		FD_SET(Inswitch_connectionSocket, &fdset);
-		highSocket = Inswitch_connectionSocket;
+		FD_SET(Inswitch_generalSocket, &fdset);
+		highSocket = (Inswitch_connectionSocket > Inswitch_generalSocket) ? Inswitch_connectionSocket: Inswitch_generalSocket;
 
 		// Add TCP connections to select
 		for(i = 0; i < MAX_PLAYERS; ++i){
@@ -408,8 +428,13 @@ void* InboundSwitchboard(void* ipcSocks){
 			addNewPlayer();
 		}
 
+
 		if(FD_ISSET(Inswitch_outswitchSocket, &fdset)){
             removePlayer(Inswitch_outswitchSocket);
+		}
+
+		if(FD_ISSET(Inswitch_generalSocket, &fdset)){
+            getIPC(Inswitch_generalSocket);
 		}
 
 	}
