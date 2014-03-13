@@ -106,11 +106,11 @@ void* GeneralController(void* ipcSocks) {
 	SOCKET outswitchSock = ((SOCKET*) ipcSocks)[1];
     /***** END GAME INIT *******/
 
-    bzero(validPlayers, sizeof(validPlayers));
-    bzero(playerNames, sizeof(playerNames));
-    bzero(playerTeams, sizeof(playerTeams));
-    bzero(objCaptured, sizeof(objCaptured));
-    bzero(playerStatus, sizeof(playerStatus));
+    bzero(validPlayers, sizeof(status_t)*MAX_PLAYERS);
+    bzero(playerNames, sizeof(char)*MAX_PLAYERS*MAX_NAME);
+    bzero(playerTeams, sizeof(teamNo_t)*MAX_PLAYERS);
+    bzero(objCaptured, sizeof(bool_t)*MAX_OBJECTIVES);
+    bzero(playerStatus, sizeof(status_t)*MAX_PLAYERS);
 
 	// Wait for IPC_PKT_0
 	if ((inPktType = getPacketType(generalSock)) != IPC_PKT_0) {
