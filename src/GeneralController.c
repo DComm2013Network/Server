@@ -30,8 +30,8 @@ int areObjectivesCaptured(const int maxPlayers, const int objCaptured[MAX_OBJECT
 void writePacket(SOCKET sock, void* packet, packet_t type);
 
 // Sending
-void sendPlayerUpdate(const SOCKET sock, const int validities[MAX_PLAYERS], const teamNo_t teams[MAX_PLAYERS],
-     const int statuses[MAX_PLAYERS], const char names[MAX_PLAYERS][MAX_NAME]);
+void sendPlayerUpdate(const SOCKET sock, const int* validities, const teamNo_t* teams,
+     const int* statuses, const char** names);
 
 inline void sendGameStatus(SOCKET sock, PKT_GAME_STATUS *pkt);
 
@@ -100,7 +100,7 @@ void* GeneralController(void* ipcSocks) {
 	pktReadyStatus    = malloc(netPacketSizes[5]);
 	pktGameStatus     = malloc(netPacketSizes[8]);
 	pktFloorMove      = malloc(netPacketSizes[13]);
-	pktTagging        = malloc(netPacketSizes[14]);
+    pktTagging        = malloc(netPacketSizes[14]);
 
 	SOCKET generalSock   = ((SOCKET*) ipcSocks)[0];
 	SOCKET outswitchSock = ((SOCKET*) ipcSocks)[1];
@@ -131,6 +131,11 @@ void* GeneralController(void* ipcSocks) {
 		switch (inPktType) {
 		case IPC_PKT_1: // New Player
             DEBUG("GC> Received IPC_PKT_1 - New Player");
+            if(numPlayers == maxPlayers)
+            {
+                DEBUG("GC> Game is full... player not added");
+                break;
+            }
 
 			getPacket(generalSock, pkt1, ipcPacketSizes[1]);
 			numPlayers++;
@@ -175,7 +180,6 @@ void* GeneralController(void* ipcSocks) {
             *playerNames[pkt2->playerNo] = '\0';
             playerTeams[pkt2->playerNo] = 0;
             playerStatus[pkt2->playerNo] = PLAYER_STATE_DROPPED;
-
 
             sendPlayerUpdate(outswitchSock, validPlayers, playerTeams, playerStatus, playerNames);
 
@@ -375,19 +379,17 @@ inline void sendGameStatus(SOCKET sock, PKT_GAME_STATUS *pkt)
     DEBUG("GC> Sent network packet 8 - Game Status");
 }
 
-
-
-void sendPlayerUpdate(const SOCKET sock, const int validities[MAX_PLAYERS], const teamNo_t teams[MAX_PLAYERS],
-     const int statuses[MAX_PLAYERS], const char names[MAX_PLAYERS][MAX_NAME])
+void sendPlayerUpdate(const SOCKET sock, const int* validities, const teamNo_t* teams,
+     const int* statuses, const char** names)
 {
     const int pType = 3;
     PKT_PLAYERS_UPDATE *pkt = malloc(netPacketSizes[pType]);
 
     // Overwrite potential garbage
-    memcpy(pkt->player_valid, validities, sizeof(validities));
-    memcpy(pkt->otherPlayers_name, names, sizeof(names));
-    memcpy(pkt->otherPlayers_teams, teams, sizeof(teams));
-    memcpy(pkt->readystatus, statuses, sizeof(statuses));
+    memcpy(pkt->player_valid, validities, sizeof(pkt->player_valid));
+    memcpy(pkt->otherPlayers_name, names, sizeof(pkt->otherPlayers_name));
+    memcpy(pkt->otherPlayers_teams, teams, sizeof(pkt->otherPlayers_teams));
+    memcpy(pkt->readystatus, statuses, sizeof(pkt->readystatus));
 
     // Send packet 3 - player update
     writePacket(sock, pkt, pType);
