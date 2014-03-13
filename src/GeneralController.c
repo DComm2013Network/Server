@@ -248,7 +248,7 @@ void* GeneralController(void* ipcSocks) {
             playerStatus[pktTagging->taggee_id] = PLAYER_STATE_OUT;
 
             // Overwrite potential garbage
-            memcpy(pktPlayersUpdate->readystatus, playerStatus, sizeof(status_t)MAX_PLAYERS));
+            memcpy(pktPlayersUpdate->readystatus, playerStatus, sizeof(status_t)*MAX_PLAYERS);
             memcpy(pktPlayersUpdate->otherPlayers_teams, playerTeams, sizeof(teamNo_t)*MAX_PLAYERS);
             memcpy(pktPlayersUpdate->otherPlayers_name, playerNames, sizeof(char)*MAX_PLAYERS*MAX_NAME);
             memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(status_t)*MAX_PLAYERS);
