@@ -43,6 +43,7 @@ typedef uint32_t    pos_t;
 typedef float	    vel_t;
 typedef uint32_t    packet_t;
 typedef uint64_t    timestamp_t;
+typedef int         bool_t;
 
 
 // Connect code Definitions
@@ -83,7 +84,7 @@ typedef struct pkt02{
 } PKT_JOIN_RESPONSE;
 
 typedef struct pkt03{
-	int 		player_valid[MAX_PLAYERS];
+	bool_t 	    player_valid[MAX_PLAYERS];
 	char 		otherPlayers_name[MAX_PLAYERS][MAX_NAME];
 	teamNo_t 	otherPlayers_teams[MAX_PLAYERS];
 	status_t	readystatus[MAX_PLAYERS];
@@ -128,7 +129,7 @@ typedef struct pkt10{
 
 typedef struct pkt11{
 	floorNo_t 	floor;
-	int 		players_on_floor[MAX_PLAYERS];
+	bool_t	    players_on_floor[MAX_PLAYERS];
 	pos_t		xPos[MAX_PLAYERS];
 	pos_t		yPos[MAX_PLAYERS];
 	vel_t		xVel[MAX_PLAYERS];
@@ -139,6 +140,8 @@ typedef struct pkt12{
 	playerNo_t 	player_number;
 	floorNo_t 	current_floor;
 	floorNo_t 	desired_floor;
+	pos_t       desired_xPos;
+	pos_t       desired_yPos;
 } PKT_FLOOR_MOVE_REQUEST;
 
 typedef struct pkt13{
