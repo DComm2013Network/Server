@@ -432,7 +432,7 @@ void* GameplayController(void* ipcSocks) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
-			if (write(outswitchSock, &bufFloorMove, lenPktFloor) == -1) {
+			if (write(outswitchSock, bufFloorMove, lenPktFloor) == -1) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
@@ -473,10 +473,10 @@ void* GameplayController(void* ipcSocks) {
 			//Send updated player position to all players on the new floor
 
 			//put position and velocity in update packet
-			floorArray[playerFloor].xPos[thisPlayer] = bufFloorMove->xPos;
-			floorArray[playerFloor].yPos[thisPlayer] = bufFloorMove->yPos;
-			floorArray[playerFloor].xVel[thisPlayer] = 0;
-			floorArray[playerFloor].yVel[thisPlayer] = 0;
+			floorArray[newFloor].xPos[thisPlayer] = bufFloorMove->xPos;
+			floorArray[newFloor].yPos[thisPlayer] = bufFloorMove->yPos;
+			floorArray[newFloor].xVel[thisPlayer] = 0;
+			floorArray[newFloor].yVel[thisPlayer] = 0;
 
 			//add this player to the new floor
 			floorArray[newFloor].players_on_floor[thisPlayer] = 1;
