@@ -306,7 +306,7 @@ void* ConnectionManager(void* ipcSocks){
 		FD_ZERO(&fdset);
 		FD_SET(connectionSock, &fdset);
 		FD_SET(listenSock, &fdset);
-		highSocket = (connectionSock > outswitchSock) ? connectionSock : outswitchSock;
+		highSocket = (connectionSock > listenSock) ? connectionSock : listenSock;
 
 		// Find all active Sockets
 		numLiveSockets = select(highSocket + 1, &fdset, NULL, NULL, NULL);

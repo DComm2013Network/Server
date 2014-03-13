@@ -152,8 +152,8 @@ void* GameplayController(void* ipcSocks) {
 			thisPlayer = bufipcPkt1->playerNo;
 			playerFloor = 0;
 			bufFloorMove->new_floor = playerFloor;
-			bufFloorMove->xPos = 50;
-			bufFloorMove->yPos = 50;
+			bufFloorMove->xPos = getLobbyX(bufipcPkt1->playerNo);
+			bufFloorMove->yPos = getLobbyY(bufipcPkt1->playerNo);
 
 			//add player to floor array
 			floorArray[0].players_on_floor[thisPlayer] = 1;

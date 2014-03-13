@@ -224,7 +224,7 @@ int main(int argc, char* argv[]) {
 		DEBUG("All controllers launched");
 
 		// Wait on the inbound switchboard to terminate process
-		pthread_join(controllers[5], NULL);
+		pthread_join(controllers[6], NULL);
 	}
 
 
