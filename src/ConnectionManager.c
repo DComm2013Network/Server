@@ -26,7 +26,6 @@
 
 // Globals
 SOCKET listenSock;
-int connectedPlayers[MAX_PLAYERS];
 extern int RUNNING;
 
 
@@ -121,7 +120,7 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 	getPacket(acceptSock, &clientReg, netPacketSizes[1]);
 
 	for(i = 0; i < maxPlayers; ++i){
-		if(connectedPlayers[i] == 0){
+		if(tcpConnections[i] == 0){
 			break;
 		}
 	}
@@ -130,7 +129,8 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 	if(i < maxPlayers){
 		DEBUG("CM> Space available, adding player");
 
-		connectedPlayers[i] = acceptSock;
+        connectedPlayers++;
+        printf("Added player %d to game.\n", i);
 		replyToClient.connect_code = CONNECT_CODE_ACCEPTED;
 		replyToClient.clients_player_number = i;
 
@@ -207,7 +207,7 @@ void removeConnection(SOCKET connectionSock){
 
 	getPacket(connectionSock, &lostClient, ipcPacketSizes[2]);
 
-	connectedPlayers[lostClient.playerNo] = 0;
+	connectedPlayers--;
 
 	DEBUG("CM> Removed player from game");
 
@@ -265,7 +265,7 @@ void* ConnectionManager(void* ipcSocks){
 	udpConnection = socket(AF_INET, SOCK_DGRAM, 0);
 
 	// No clients yet joined
-	bzero(connectedPlayers, 	sizeof(SOCKET) * MAX_PLAYERS);
+	connectedPlayers = 0;
 	bzero(tcpConnections, 		sizeof(SOCKET) * MAX_PLAYERS);
 	bzero(udpAddresses, 		sizeof(struct sockaddr_in) * MAX_PLAYERS);
 

@@ -108,6 +108,7 @@ typedef struct pktB3{
 SOCKET 				tcpConnections[MAX_PLAYERS];
 SOCKET				udpConnection;
 struct sockaddr_in 	udpAddresses[MAX_PLAYERS];
+int                 connectedPlayers;
 
 int netPacketSizes[NUM_NET_PACKETS + 1];
 int ipcPacketSizes[NUM_IPC_PACKETS + 1];
