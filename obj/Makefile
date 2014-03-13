@@ -3,11 +3,15 @@
 CC=gcc
 CFLAGS=-c -Wall
 GBD=-g
+LIBS=-lpthread
 
 all: Server
 
-Server: Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o
-	$(CC) $(GDB) Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o -o ../bin/Server
+Server: server-utils.o Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o
+	$(CC) $(GDB) server-utils.o Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o -o ../bin/Server $(LIBS)
+
+server-utils.o: ../src/server-utils.c
+	$(CC) $(CFLAGS) ../src/server-utils.c
 
 Startup.o: ../src/Startup.c
 	$(CC) $(CFLAGS) ../src/Startup.c 

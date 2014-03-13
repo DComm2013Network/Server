@@ -2,6 +2,11 @@
 
 *~
 *.o
-bin/* 
+bin/*
 *.gch
 *.geany
+/Debug
+/Release
+*.cbp
+*.depend
+*.layout

@@ -27,16 +27,23 @@
 #define MAX_MESSAGE		180
 #define MAX_OBJECTIVES	16
 
-#define NUM_NET_PACKETS 13
+#define NUM_NET_PACKETS 14
+
+
+// Other Includes
+#include <time.h>
+#include <stdint.h>
 
 // Definitions for various game data types
-#define bool			int
-#define floorNo_t 		int
-#define playerNo_t 		unsigned int
-#define teamNo_t		unsigned int
-#define status_t		int
-#define pos_t			unsigned int
-#define packet_t		uint32_t
+typedef uint32_t    floorNo_t;
+typedef uint32_t    playerNo_t;
+typedef uint32_t    teamNo_t;
+typedef uint32_t    status_t;
+typedef uint32_t    pos_t;
+typedef float	    vel_t;
+typedef uint32_t    packet_t;
+typedef uint64_t    timestamp_t;
+typedef int         bool_t;
 
 
 // Connect code Definitions
@@ -51,13 +58,19 @@
 #define PLAYER_STATE_WAITING	0x005
 #define GAME_TEAM1_WIN			0x006
 #define GAME_TEAM2_WIN			0x007
+#define PLAYER_STATE_DROPPED    0x008
+#define PLAYER_STATE_OUT        0x009
 
 // Special floor Definitions
 #define FLOOR_LOBBY				0x000
 
-// Other Includes
-#include <time.h>
+// Team Definitions
+#define TEAM_NONE       0
+#define TEAM_COPS       1
+#define TEAM_ROBBERS    2
 
+#ifndef PACKETS
+#define PACKETS
 // Packet Definitions
 
 typedef struct pkt01{
@@ -65,13 +78,13 @@ typedef struct pkt01{
 } PKT_PLAYER_JOIN;
 
 typedef struct pkt02{
-	unsigned int 		connect_code;
+	status_t 	connect_code;
 	playerNo_t 	clients_player_number;
 	teamNo_t 	clients_team_number;
 } PKT_JOIN_RESPONSE;
 
 typedef struct pkt03{
-	bool 		player_valid[MAX_PLAYERS];
+	bool_t 	    player_valid[MAX_PLAYERS];
 	char 		otherPlayers_name[MAX_PLAYERS][MAX_NAME];
 	teamNo_t 	otherPlayers_teams[MAX_PLAYERS];
 	status_t	readystatus[MAX_PLAYERS];
@@ -98,7 +111,7 @@ typedef struct pkt06{
 //	<< UNPURPOSED >>
 
 typedef struct pkt08{
-	bool		objectives_captured[MAX_OBJECTIVES];
+	int		    objectives_captured[MAX_OBJECTIVES];
 	status_t	game_status;
 } PKT_GAME_STATUS;
 
@@ -110,23 +123,25 @@ typedef struct pkt10{
 	playerNo_t 	player_number;
 	pos_t 		xPos;
 	pos_t		yPos;
-	pos_t		xVel;
-	pos_t		yVel;
+	vel_t		xVel;
+	vel_t		yVel;
 } PKT_POS_UPDATE;
 
 typedef struct pkt11{
 	floorNo_t 	floor;
-	bool 		players_on_floor[MAX_PLAYERS];
+	bool_t	    players_on_floor[MAX_PLAYERS];
 	pos_t		xPos[MAX_PLAYERS];
 	pos_t		yPos[MAX_PLAYERS];
-	pos_t		xVel[MAX_PLAYERS];
-	pos_t		yVel[MAX_PLAYERS];
+	vel_t		xVel[MAX_PLAYERS];
+	vel_t		yVel[MAX_PLAYERS];
 } PKT_ALL_POS_UPDATE;
 
 typedef struct pkt12{
 	playerNo_t 	player_number;
 	floorNo_t 	current_floor;
 	floorNo_t 	desired_floor;
+	pos_t       desired_xPos;
+	pos_t       desired_yPos;
 } PKT_FLOOR_MOVE_REQUEST;
 
 typedef struct pkt13{
@@ -135,3 +150,9 @@ typedef struct pkt13{
 	pos_t		yPos;
 } PKT_FLOOR_MOVE;
 
+typedef struct pkt14 {
+    playerNo_t  tagger_id; /* the person who tagged */
+    playerNo_t  taggee_id; /* the person who got tagged */
+} PKT_TAGGING;
+
+#endif
