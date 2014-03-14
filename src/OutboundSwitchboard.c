@@ -54,6 +54,8 @@ void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 			}
 		}
 	}
+
+	free(packet);
 	return;
 }
 
@@ -106,6 +108,7 @@ void handleOut(SOCKET liveSock){
 		case 0x05:
 		case 0x06:
 		case 0x07:
+		case 0x09:
 		case 0x0c:
 		case 0x0d:
 			sendToPlayers(SOCK_STREAM, mask, packet, type);
@@ -118,10 +121,6 @@ void handleOut(SOCKET liveSock){
 			sendToPlayers(SOCK_DGRAM, mask, packet, type);
 			break;
 
-        // Special case for keep alive
-        case KEEP_ALIVE:
-            sendToPlayers(SOCK_STREAM, mask, NULL, 0);
-            break;
 	}
 }
 
