@@ -260,8 +260,8 @@ void* GameplayController(void* ipcSocks) {
 			// remove player from floor
 			floorArray[i].players_on_floor[bufipcPkt3->playerNo] = 0;
 
-			// add them to the lobby floor
-			floorArray[FLOOR_LOBBY].players_on_floor[bufipcPkt3->playerNo] = 1;
+			// add them to the new floor
+			floorArray[bufipcPkt3->newFloor].players_on_floor[bufipcPkt3->playerNo] = 1;
 
             // prepare outbound packet
             bufFloorMove->new_floor = bufipcPkt3->newFloor;
