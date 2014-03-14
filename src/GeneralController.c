@@ -26,11 +26,12 @@ double WIN_RATIO = MAX_OBJECTIVES * 0.75;
 int MIN_PLAYERS = 2;   // min players to trigger GAME_STATE_ACTIVE
 
 // Utils
-size_t getTeamCount(teamNo_t *playerTeams, size_t *team1, size_t *team2);
+size_t getTeamCount(const teamNo_t *playerTeams, size_t *team1, size_t *team2);
 teamNo_t findTeam(const int maxPlayers, const teamNo_t playerTeams[MAX_PLAYERS]);
 int areRobbersLeft(const int maxPlayers, const teamNo_t playerTeams[MAX_PLAYERS]);
 int areObjectivesCaptured(const int maxPlayers, const int objCaptured[MAX_OBJECTIVES]);
 void writePacket(SOCKET sock, void* packet, packet_t type);
+void balanceTeams(const teamNo_t *teamIn, teamNo_t *teamOut);
 
 // Sending
 void sendPlayerUpdate(const SOCKET sock, const bool_t* validities, const teamNo_t* teams,
@@ -79,11 +80,11 @@ void* GeneralController(void* ipcSocks) {
 	teamNo_t    desiredTeams[MAX_PLAYERS];              // stores the team chosen by players in lobby
 	bool_t      objCaptured[MAX_OBJECTIVES];           //
 	status_t    playerStatus[MAX_PLAYERS];
-	bool_t      needCheckWin = FALSE, playerStatusChange = FALSE;
+	bool_t      needCheckWin = FALSE;
 
     status_t status = GAME_STATE_WAITING;              //
 
-	size_t numPlayers = 0, team1Count, team2Count;                             // actual players connected count                           // actual players connected count
+	size_t numPlayers = 0;                          // actual players connected count                           // actual players connected count
 	packet_t inPktType, outPktType;
 
 	int i, j, maxPlayers = -1;                                 // max players specified for teh game session
@@ -237,61 +238,8 @@ void* GeneralController(void* ipcSocks) {
                 break;
             }
 
-            // Loop through players, count if enough are ready
-            if(playerStatus[pktReadyStatus->player_number] != playerStatus[pktReadyStatus->player_number])
-            {
-                for(i =0; i < MAX_PLAYERS; i++)
-                {
-                    if(playerStatus[i] == PLAYER_STATE_INVALID)
-                        break;
-
-                    if(playerStatus[i] == PLAYER_STATE_READY)
-                        j++;
-                }
-                if(j == MIN_PLAYERS)
-                {   // Start the game
-                    memcpy(playerTeams, desiredTeams, sizeof(playerTeams));
-
-                    // Check balance
-                    getTeamCount(desiredTeams, &team1Count, &team2Count);
-                    while(team1Count < team2Count)
-                    {
-                        for(j = 0; j < MAX_PLAYERS; j++)
-                        {
-                            if(desiredTeams[i] == 2)
-                            {
-                                desiredTeams[i] == 1;
-                                break;
-                            }
-                        }
-                    }
-
-                    if(abs(team1Count - team2Count) > 1)
-                    {
-                        while(team1Count > team2Count)
-                        {
-                            for(j = 0; j < MAX_PLAYERS; j++)
-                            {
-                                if(desiredTeams[i] == 1)
-                                {
-                                    desiredTeams[i] == 2;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    for(i = 0; i < MAX_PLAYERS; i++)
-                    {
-                        if(playerStatus[i] == PLAYER_STATE_INVALID)
-                            break;
-
-                        playerStatus[i] = PLAYER_STATE_ACTIVE;
-                        pkt3->playerNo = i;
-                        pkt3->newFloor = 1;
-                    }
-                    status = GAME_STATE_ACTIVE;
-                }
+            if(status == GAME_STATE_ACTIVE){
+                break;
             }
 
             // Overwrite server data
@@ -300,6 +248,18 @@ void* GeneralController(void* ipcSocks) {
 
             // Store his desired team
             desiredTeams[pktReadyStatus->player_number] = pktReadyStatus->team_number;
+
+            status = getGameStatus(validPlayers, playerTeams);
+            if(status == GAME_STATE_ACTIVE)
+            {
+                balanceTeams(desiredTeams, playerTeams);
+                for(i = 0; validPlayers[i] == PLAYER_STATE_INVALID; i++)
+                {
+                    playerStatus[i] = PLAYER_STATE_ACTIVE;
+                    pkt3->playerNo = i;
+                    pkt3->newFloor = 1;
+                }
+            }
 
             //Overwrite potential garbage
             memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(status_t)*MAX_PLAYERS);
@@ -315,6 +275,7 @@ void* GeneralController(void* ipcSocks) {
 			getPacket(generalSock, pktGameStatus, netPacketSizes[8]);
 			if (status == GAME_STATE_ACTIVE) {
 				//update objective listing
+
 				int countCaptured = 0;
 				// Copy the client's objective listing to the server.
 				// May need some better handling; if 2 are received very close to each other
@@ -331,7 +292,7 @@ void* GeneralController(void* ipcSocks) {
 
             memcpy(pktGameStatus->objectives_captured, objCaptured, sizeof(bool_t)*MAX_OBJECTIVES);
             pktGameStatus->game_status = status;
-            writePacket(outswitchSock, pktPlayersUpdate, 8);
+            writePacket(outswitchSock, pktGameStatus, 8);
         break;
         case 14:
             DEBUG("GC> Received packet 14 - Player Tagged");
@@ -346,6 +307,8 @@ void* GeneralController(void* ipcSocks) {
             pkt3->playerNo = pktTagging->taggee_id;
             pkt3->newFloor = FLOOR_LOBBY;
 
+            outPktType = 0xB3;
+            write(generalSock, &outPktType, sizeof(packet_t));
             write(generalSock, pkt3, ipcPacketSizes[3]);
             DEBUG("GC> Sent IPC packet 3 - Force move");
 
@@ -358,9 +321,7 @@ void* GeneralController(void* ipcSocks) {
             memcpy(pktPlayersUpdate->otherPlayers_name, playerNames, sizeof(char)*MAX_PLAYERS*MAX_NAME);
             memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(status_t)*MAX_PLAYERS);
 
-            outPktType = 0xB3;
-            write(generalSock, &outPktType, sizeof(packet_t));
-            write(generalSock, pkt3, ipcPacketSizes[3]);
+            writePacket(outswitchSock, pktPlayersUpdate, 3);
             DEBUG("GC> Sent packet 3 - Players update");
 
             needCheckWin = TRUE;
@@ -477,7 +438,7 @@ void writePacket(SOCKET sock, void* packet, packet_t type){
 // params [out] team1 - number of players in team1
 //        [out] team2 - number of players in team2
 // returns total number of players in the game
-size_t getTeamCount(teamNo_t *playerTeams, size_t *team1, size_t *team2)
+size_t getTeamCount(const teamNo_t *playerTeams, size_t *team1, size_t *team2)
 {
     size_t i, state;
     *team1 = *team2 = 0;
@@ -511,23 +472,46 @@ teamNo_t findTeam(const int maxPlayers, const teamNo_t playerTeams[MAX_PLAYERS])
     return (team1Count < team2Count) ? 1 : 2;
 }
 
+void balanceTeams(const teamNo_t *teamIn, teamNo_t *teamOut)
+{
+    size_t team1Count = 0, team2Count = 0, i = 0;
+    memcpy(teamOut, teamIn, sizeof(teamNo_t)*MAX_PLAYERS);
+    getTeamCount(teamIn, &team1Count, &team2Count);
+    while(team1Count < team2Count)
+    {
+        if(*(teamOut+i) == TEAM_ROBBERS){
+            *(teamOut+i) = TEAM_COPS;
+            team1Count++;
+            team2Count--;
+        }
+        i++;
+    }
+}
+
+
 // counts ready players
 // if enough players ready; returns GAME_STATE_ACTIVE
 //      // else GAME_STATE_WAITING
 status_t getGameStatus(const bool_t *validPlayers, const teamNo_t *playerTeams)
 {
     status_t s = GAME_STATE_WAITING;
-    size_t i, readyCount = 0;
+    size_t i;
+    int playerCount = 0;
+    int readyCount = 0;
+
     for(i = 0; i < MAX_PLAYERS; i++)
     {
-        if(*(validPlayers+i) == PLAYER_STATE_INVALID)
-            break;
-        if(*(validPlayers+i) == PLAYER_STATE_READY)
+        if(*(validPlayers+i) != PLAYER_STATE_INVALID){
+            playerCount++;
+        }
+        if(!(validPlayers+i) == PLAYER_STATE_READY){
             readyCount++;
+        }
     }
 
-    if(readyCount == MIN_PLAYERS)
+    if(playerCount >= MIN_PLAYERS && readyCount == playerCount){
         s = GAME_STATE_ACTIVE;
+    }
 
     return s;
 }

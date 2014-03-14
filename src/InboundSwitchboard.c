@@ -97,8 +97,7 @@ void getIPC(SOCKET sock){
 
 	// Get the packet type
 	ctrl = getPacketType(sock);
-
-	getPacket(sock, packet, ipcPacketSizes[ctrl]);
+	getPacket(sock, packet, ipcPacketSizes[ctrl-0xB0]);
 
 	relayPacket(packet, ctrl);
 
@@ -196,6 +195,11 @@ void relayPacket(void* packet, packet_t type){
 		case 13:
 			break;
 
+        case 14:
+            writeType(Inswitch_generalSocket,       packet, type);
+            DEBUG("IS> Routed pkt 14");
+            break;
+
 		default:
 			DEBUG("IS> In Switchboard getting packets it shouldn't be");
 			break;
@@ -209,7 +213,7 @@ void getUdpInput(){
 
 	packet_t type = 0;
 	int received;
-	void* packet = malloc(largestNetPacket + 1);
+	void* packet = malloc(largestNetPacket + sizeof(packet_t));
 
 	// Get the datagram, we don't care about the client info for now
 	received = recvfrom(udpConnection, packet, largestNetPacket, 0, NULL, NULL);
@@ -408,7 +412,7 @@ void* InboundSwitchboard(void* ipcSocks){
 		}
 
 		// Check TCP sockets
-		for(i = 0; i < MAX_PLAYERS; ++i){
+        for(i = 0; i < MAX_PLAYERS; ++i){
 			if(tcpConnections[i]){
 				if(FD_ISSET(tcpConnections[i], &fdset)){
 					if(!getTcpInput(i)){
