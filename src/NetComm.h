@@ -62,11 +62,14 @@ typedef int         bool_t;
 #define GAME_TEAM2_WIN			0x007
 
 // Player Status Definitions
-#define PLAYER_STATE_WAITING	0x005   // Available slot for player to join
-#define PLAYER_STATE_READY		0x004   // Ready to join a game
+#define PLAYER_STATE_WAITING	0x005   // Player just joined in lobby
+#define PLAYER_STATE_READY		0x004   // Ready to join game - player chosen team
 #define PLAYER_STATE_DROPPED    0x008   // Joined and disconnected
-#define PLAYER_STATE_OUT        0x009   // Tagged
+#define PLAYER_STATE_OUT        0x009   // Tagged sent to lobby
 #define PLAYER_STATE_INVALID    0x010   // Not a player - used when MAX_PLAYERS > number of players allowed to join a game
+#define PLAYER_STATE_ACTIVE     0x011   // Player is in the game world running around
+#define PLAYER_STATE_AVAILABLE  0x012   // Available slot for player to join - value cannot be defined to 1 or 2!!
+
 
 // Special floor Definitions
 #define FLOOR_LOBBY				0x000
