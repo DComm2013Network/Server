@@ -97,8 +97,7 @@ void getIPC(SOCKET sock){
 
 	// Get the packet type
 	ctrl = getPacketType(sock);
-
-	getPacket(sock, packet, ipcPacketSizes[ctrl]);
+	getPacket(sock, packet, ipcPacketSizes[ctrl-0xB0]);
 
 	relayPacket(packet, ctrl);
 
@@ -195,6 +194,11 @@ void relayPacket(void* packet, packet_t type){
 
 		case 13:
 			break;
+
+        case 14:
+            writeType(Inswitch_generalSocket,       packet, type);
+            DEBUG("IS> Routed pkt 14");
+            break;
 
 		default:
 			DEBUG("IS> In Switchboard getting packets it shouldn't be");

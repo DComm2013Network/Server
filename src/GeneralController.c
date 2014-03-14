@@ -241,6 +241,8 @@ void* GeneralController(void* ipcSocks) {
             pkt3->playerNo = pktTagging->taggee_id;
             pkt3->newFloor = FLOOR_LOBBY;
 
+            outPktType = 0xB3;
+            write(generalSock, &outPktType, sizeof(packet_t));
             write(generalSock, pkt3, ipcPacketSizes[3]);
             DEBUG("GC> Sent IPC packet 3 - Force move");
 
@@ -253,9 +255,7 @@ void* GeneralController(void* ipcSocks) {
             memcpy(pktPlayersUpdate->otherPlayers_name, playerNames, sizeof(char)*MAX_PLAYERS*MAX_NAME);
             memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(status_t)*MAX_PLAYERS);
 
-            outPktType = 0xB3;
-            write(generalSock, &outPktType, sizeof(packet_t));
-            write(generalSock, pkt3, ipcPacketSizes[3]);
+            writePacket(outswitchSock, pktPlayersUpdate, 3);
             DEBUG("GC> Sent packet 3 - Players update");
 
 
