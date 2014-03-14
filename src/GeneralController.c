@@ -176,6 +176,8 @@ void* GeneralController(void* ipcSocks) {
             playerStatus[pkt1->playerNo] = PLAYER_STATE_WAITING;
             validPlayers[pkt1->playerNo] = TRUE;
 
+
+
             // Overwrite potential garbage
             memcpy(pktPlayersUpdate->otherPlayers_name, playerNames, sizeof(char)*MAX_PLAYERS*MAX_NAME);
             memcpy(pktPlayersUpdate->otherPlayers_teams, playerTeams, sizeof(teamNo_t)*MAX_PLAYERS);
@@ -183,6 +185,8 @@ void* GeneralController(void* ipcSocks) {
             memcpy(pktPlayersUpdate->readystatus, playerStatus, sizeof(status_t)*MAX_PLAYERS);
 
             // Send Players Update Packet 3
+
+
             writePacket(outswitchSock, pktPlayersUpdate, 3);
 
             // Overwrite potential garbge
@@ -218,8 +222,11 @@ void* GeneralController(void* ipcSocks) {
             sendPlayerUpdate(outswitchSock, validPlayers, playerTeams, playerStatus, playerNames);
             //DEBUG statement is in the function
 
-            needCheckWin = TRUE;
-            DEBUG("GC> Triggered win check - player lost");
+            if(status == GAME_STATE_ACTIVE)
+            {
+                needCheckWin = TRUE;
+                DEBUG("GC> Triggered win check - player lost");
+            }
         break;
         case 5: // Ready Status change
             DEBUG("GC> Received packet 5 - Ready Status");
@@ -241,7 +248,6 @@ void* GeneralController(void* ipcSocks) {
                     if(playerStatus[i] == PLAYER_STATE_READY)
                         j++;
                 }
-
                 if(j == MIN_PLAYERS)
                 {   // Start the game
                     memcpy(playerTeams, desiredTeams, sizeof(playerTeams));
@@ -381,9 +387,11 @@ void* GeneralController(void* ipcSocks) {
             memcpy(pktGameStatus->objectives_captured, objCaptured, sizeof(bool_t)*MAX_OBJECTIVES);
             writePacket(outswitchSock, pktGameStatus, 8);
 
-
-            memset(playerTeams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
-            memset(playerStatus, PLAYER_STATE_WAITING, sizeof(teamNo_t)*MAX_PLAYERS);
+            for(i =0; i < MAX_PLAYERS; i++)
+            {
+                playerTeams[i] = TEAM_NONE;
+                playerStatus[i] = PLAYER_STATE_WAITING;
+            }
 
             memcpy(pktPlayersUpdate->otherPlayers_teams, playerTeams, sizeof(teamNo_t)*MAX_PLAYERS);
             memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(status_t)*MAX_PLAYERS);
@@ -391,8 +399,11 @@ void* GeneralController(void* ipcSocks) {
             memcpy(pktPlayersUpdate->readystatus, playerStatus, sizeof(status_t)*MAX_PLAYERS);
             writePacket(outswitchSock, pktPlayersUpdate, 3);
 
-            for(i = 0; i < maxPlayers; i++)
+            for(i = 0; i < MAX_PLAYERS; i++)
             {
+                if(validPlayers[i] == PLAYER_STATE_INVALID)
+                    break;
+
                 pkt3->newFloor = FLOOR_LOBBY;
                 pkt3->playerNo = i;
                 outPktType = 0xB3;
@@ -541,10 +552,10 @@ void sendPlayerUpdate(const SOCKET sock, const bool_t* validities, const teamNo_
     PKT_PLAYERS_UPDATE *pkt = malloc(netPacketSizes[pType]);
 
     // Overwrite potential garbage
-    memcpy(pkt->player_valid, validities, sizeof(pkt->player_valid));
-    memcpy(pkt->otherPlayers_name, names, sizeof(pkt->otherPlayers_name));
-    memcpy(pkt->otherPlayers_teams, teams, sizeof(pkt->otherPlayers_teams));
-    memcpy(pkt->readystatus, statuses, sizeof(pkt->readystatus));
+    memcpy(pkt->player_valid,       validities, sizeof(pkt->player_valid));
+    memcpy(pkt->otherPlayers_name,  names,      sizeof(pkt->otherPlayers_name));
+    memcpy(pkt->otherPlayers_teams, teams,      sizeof(pkt->otherPlayers_teams));
+    memcpy(pkt->readystatus,        statuses,   sizeof(pkt->readystatus));
 
     // Send packet 3 - player update
     writePacket(sock, pkt, pType);
