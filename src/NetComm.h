@@ -46,7 +46,7 @@ typedef uint64_t    timestamp_t;
 typedef int         bool_t;
 
 #define TRUE    1
-#define FALSE   2
+#define FALSE   0
 
 
 // Connect code Definitions
