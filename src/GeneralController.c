@@ -76,9 +76,10 @@ void* GeneralController(void* ipcSocks) {
     bool_t      validPlayers[MAX_PLAYERS];             // 1 in playerNo position notes player is valid
 	char        playerNames[MAX_PLAYERS][MAX_NAME];   // stores the players name in the player number's spot
 	teamNo_t    playerTeams[MAX_PLAYERS];              // stores the players team in the player number's spot
+	teamNo_t    desiredTeams[MAX_PLAYERS];              // stores the team chosen by players in lobby
 	bool_t      objCaptured[MAX_OBJECTIVES];           //
 	status_t    playerStatus[MAX_PLAYERS];
-	bool_t      needCheckWin = 0;
+	bool_t      needCheckWin = FALSE, playerStatusChange = FALSE;
 
     status_t status = GAME_STATE_WAITING;              //
 
@@ -131,7 +132,9 @@ void* GeneralController(void* ipcSocks) {
 	for(i = 0; i < MAX_PLAYERS; ++i)
 	{
         // Set array space that will not hold players to invalid
-        val = (i < maxPlayers) ? PLAYER_STATE_WAITING : PLAYER_STATE_INVALID;
+
+        // STATE FOR OPEN PLAYER SLOT
+        val = (i < maxPlayers) ? PLAYER_STATE_AVAILABLE: PLAYER_STATE_INVALID;
         playerTeams[i] = validPlayers[i] = playerStatus [i] = val;
         for(j = 0; j < MAX_NAME; j++)
             playerNames[i][j] = '\0';
@@ -152,8 +155,8 @@ void* GeneralController(void* ipcSocks) {
 
 			getPacket(generalSock, pkt1, ipcPacketSizes[1]);
 
-            // Overwrite server data
-            if(validPlayers[pkt1->playerNo] != PLAYER_STATE_WAITING)
+            // Check if player slot is available
+            if(validPlayers[pkt1->playerNo] != PLAYER_STATE_AVAILABLE)
             {
                 #if DEBUG_ON
                     char buff[32];
@@ -167,13 +170,11 @@ void* GeneralController(void* ipcSocks) {
             // Overwrite server data
             numPlayers++;
 
-            // Assign a team
-            getTeamCount(playerTeams, &team1Count, &team2Count);
-            playerTeams[pkt1->playerNo] = (team1Count < team2Count) ? 1 : 2;
-
+            // Assign no team (LOBBY!)
+            playerTeams[pkt1->playerNo] = TEAM_NONE;
             strcpy(playerNames[pkt1->playerNo], pkt1->client_player_name);
-            playerStatus[pkt1->playerNo] = PLAYER_STATE_READY;
-            validPlayers[pkt1->playerNo] = 1;
+            playerStatus[pkt1->playerNo] = PLAYER_STATE_WAITING;
+            validPlayers[pkt1->playerNo] = TRUE;
 
             // Overwrite potential garbage
             memcpy(pktPlayersUpdate->otherPlayers_name, playerNames, sizeof(char)*MAX_PLAYERS*MAX_NAME);
@@ -183,8 +184,6 @@ void* GeneralController(void* ipcSocks) {
 
             // Send Players Update Packet 3
             writePacket(outswitchSock, pktPlayersUpdate, 3);
-
-            status = getGameStatus(validPlayers, playerTeams);
 
             // Overwrite potential garbge
             pktGameStatus->game_status = status;
@@ -231,8 +230,70 @@ void* GeneralController(void* ipcSocks) {
                 break;
             }
 
+            // Loop through players, count if enough are ready
+            if(playerStatus[pktReadyStatus->player_number] != playerStatus[pktReadyStatus->player_number])
+            {
+                for(i =0; i < MAX_PLAYERS; i++)
+                {
+                    if(playerStatus[i] == PLAYER_STATE_INVALID)
+                        break;
+
+                    if(playerStatus[i] == PLAYER_STATE_READY)
+                        j++;
+                }
+
+                if(j == MIN_PLAYERS)
+                {   // Start the game
+                    memcpy(playerTeams, desiredTeams, sizeof(playerTeams));
+
+                    // Check balance
+                    getTeamCount(desiredTeams, &team1Count, &team2Count);
+                    while(team1Count < team2Count)
+                    {
+                        for(j = 0; j < MAX_PLAYERS; j++)
+                        {
+                            if(desiredTeams[i] == 2)
+                            {
+                                desiredTeams[i] == 1;
+                                break;
+                            }
+                        }
+                    }
+
+                    if(abs(team1Count - team2Count) > 1)
+                    {
+                        while(team1Count > team2Count)
+                        {
+                            for(j = 0; j < MAX_PLAYERS; j++)
+                            {
+                                if(desiredTeams[i] == 1)
+                                {
+                                    desiredTeams[i] == 2;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    for(i = 0; i < MAX_PLAYERS; i++)
+                    {
+                        if(playerStatus[i] == PLAYER_STATE_INVALID)
+                            break;
+
+                        playerStatus[i] = PLAYER_STATE_ACTIVE;
+                        pkt3->playerNo = i;
+                        pkt3->newFloor = 1;
+                    }
+                    status = GAME_STATE_ACTIVE;
+                }
+            }
+
             // Overwrite server data
             playerStatus[pktReadyStatus->player_number] = pktReadyStatus->ready_status;
+            strcpy(playerNames[pktReadyStatus->player_number], pktReadyStatus->player_name);
+
+            // Store his desired team
+            desiredTeams[pktReadyStatus->player_number] = pktReadyStatus->team_number;
 
             //Overwrite potential garbage
             memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(status_t)*MAX_PLAYERS);
@@ -242,7 +303,6 @@ void* GeneralController(void* ipcSocks) {
 
             // Send Players Update Packet 3 to everyone
             writePacket(outswitchSock, pktPlayersUpdate, 3);
-
         break;
 		case 8: // Game Status
             DEBUG("GC> Received packet 8 - Game Status");
@@ -263,9 +323,9 @@ void* GeneralController(void* ipcSocks) {
 					status = GAME_STATE_OVER;
 			}
 
-            memcpy(pktGameStatus->objectives_captured, objCaptured, MAX_OBJECTIVES);
+            memcpy(pktGameStatus->objectives_captured, objCaptured, sizeof(bool_t)*MAX_OBJECTIVES);
             pktGameStatus->game_status = status;
-            writePacket(outswitchSock, pktPlayersUpdate, 0x08);
+            writePacket(outswitchSock, pktPlayersUpdate, 8);
         break;
         case 14:
             DEBUG("GC> Received packet 14 - Player Tagged");
@@ -323,6 +383,8 @@ void* GeneralController(void* ipcSocks) {
 
 
             memset(playerTeams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
+            memset(playerStatus, PLAYER_STATE_WAITING, sizeof(teamNo_t)*MAX_PLAYERS);
+
             memcpy(pktPlayersUpdate->otherPlayers_teams, playerTeams, sizeof(teamNo_t)*MAX_PLAYERS);
             memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(status_t)*MAX_PLAYERS);
             memcpy(pktPlayersUpdate->otherPlayers_name, playerNames, sizeof(char)*MAX_PLAYERS*MAX_NAME);
@@ -399,7 +461,6 @@ void writePacket(SOCKET sock, void* packet, packet_t type){
         sprintf(buff, "GC> Sent packet: %d", type);
         DEBUG(buff);
     #endif
-
 }
 
 // params [out] team1 - number of players in team1
@@ -417,7 +478,7 @@ size_t getTeamCount(teamNo_t *playerTeams, size_t *team1, size_t *team2)
             case PLAYER_STATE_INVALID: return (*team1) + (*team2);
             case TEAM_COPS:     (*team1)++; break;
             case TEAM_ROBBERS:  (*team2)++; break;
-            default: DEBUG("GC> Error getting team count"); break;
+            default: DEBUG("GC> Error getting player's team"); break;
         }
 
     }
