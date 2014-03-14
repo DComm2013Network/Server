@@ -35,8 +35,8 @@ void writePacket(SOCKET sock, void* packet, packet_t type);
 // Sending
 void sendPlayerUpdate(const SOCKET sock, const bool_t* validities, const teamNo_t* teams,
      const status_t* statuses, char names[MAX_PLAYERS][MAX_NAME]);
-
 status_t getGameStatus(const bool_t *validPlayers, const teamNo_t *playerTeams);
+
 
 inline void sendGameStatus(SOCKET sock, PKT_GAME_STATUS *pkt);
 
@@ -81,8 +81,10 @@ void* GeneralController(void* ipcSocks) {
 	bool_t      needCheckWin = 0;
 
     status_t status = GAME_STATE_WAITING;              //
-	size_t numPlayers = 0, team1Count, team2Count;                             // actual players connected count
-	packet_t inPktType;
+
+	size_t numPlayers = 0, team1Count, team2Count;                             // actual players connected count                           // actual players connected count
+	packet_t inPktType, outPktType;
+
 	int i, j, maxPlayers = -1;                                 // max players specified for teh game session
     teamNo_t val;
 
@@ -290,7 +292,9 @@ void* GeneralController(void* ipcSocks) {
             memcpy(pktPlayersUpdate->otherPlayers_name, playerNames, sizeof(char)*MAX_PLAYERS*MAX_NAME);
             memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(status_t)*MAX_PLAYERS);
 
-            writePacket(outswitchSock, pktPlayersUpdate, 3);
+            outPktType = 0xB3;
+            write(generalSock, &outPktType, sizeof(packet_t));
+            write(generalSock, pkt3, ipcPacketSizes[3]);
             DEBUG("GC> Sent packet 3 - Players update");
 
             needCheckWin = TRUE;
@@ -329,7 +333,9 @@ void* GeneralController(void* ipcSocks) {
             {
                 pkt3->newFloor = FLOOR_LOBBY;
                 pkt3->playerNo = i;
-                write(outswitchSock, pkt3, ipcPacketSizes[3]);
+                outPktType = 0xB3;
+                write(generalSock, &outPktType, sizeof(packet_t));
+                write(generalSock, pkt3, ipcPacketSizes[3]);
             }
             DEBUG("GC> Sent pkt3 - moving all to lobby; game is over");
 		}
@@ -465,6 +471,7 @@ inline void sendGameStatus(SOCKET sock, PKT_GAME_STATUS *pkt)
     write(sock, &m, sizeof(OUTMASK));
     DEBUG("GC> Sent network packet 8 - Game Status");
 }
+
 
 void sendPlayerUpdate(const SOCKET sock, const bool_t* validities, const teamNo_t* teams,
      const status_t* statuses, char names[MAX_PLAYERS][MAX_NAME])
