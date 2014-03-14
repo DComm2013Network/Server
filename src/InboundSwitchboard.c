@@ -412,7 +412,7 @@ void* InboundSwitchboard(void* ipcSocks){
 		}
 
 		// Check TCP sockets
-		for(i = 0; i < MAX_PLAYERS; ++i){
+        for(i = 0; i < MAX_PLAYERS; ++i){
 			if(tcpConnections[i]){
 				if(FD_ISSET(tcpConnections[i], &fdset)){
 					if(!getTcpInput(i)){

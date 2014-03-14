@@ -22,6 +22,7 @@
 
 extern int RUNNING;
 void lostConnection(int pos);
+timestamp_t seq = 0;
 SOCKET inSw;
 
 
@@ -48,7 +49,7 @@ void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 			if(OUT_ISSET(to, i) && tcpConnections[i] != 0){ // check tcp anyways, because will be valid even for udp
 				*((packet_t*)packet) = type;
 				memcpy((packet + sizeof(packet_t)), data, netPacketSizes[type]);
-				*((timestamp_t*)packet + sizeof(packet_t) + netPacketSizes[type]) = clock();
+				*((timestamp_t*)(packet + sizeof(packet_t) + netPacketSizes[type])) = ++seq;
 				sendto(udpConnection, packet, sizeof(packet_t) + netPacketSizes[type] + sizeof(timestamp_t), 0,
                         (struct sockaddr*)&(udpAddresses[i]), sizeof(udpAddresses[i]));
 			}

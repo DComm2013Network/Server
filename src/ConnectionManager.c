@@ -312,7 +312,7 @@ void* ConnectionManager(void* ipcSocks){
 		numLiveSockets = select(highSocket + 1, &fdset, NULL, NULL, NULL);
 
 		if(numLiveSockets == -1){
-			perror("Select Failed in Inbound Switchboard!");
+			perror("Select Failed in Connection Manager!");
 			continue;
 		}
 
