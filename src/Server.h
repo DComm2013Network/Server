@@ -58,8 +58,8 @@ packet_t    getPacketType(SOCKET socket);
 int         getPacket(SOCKET socket, void* buffer, int sizeOfBuffer);
 
 //function prototypes for game-utils
-pos_t       getLobbyX();
-pos_t       getLobbyY();
+pos_t       getLobbyX(playerNo_t plyr);
+pos_t       getLobbyY(playerNo_t plyr);
 
 void* ConnectionManager(void* ipcSocks);
 void* InboundSwitchboard(void* ipcSocks);
@@ -67,6 +67,7 @@ void* GameplayController(void* ipcSocks);
 void* GeneralController(void* ipcSocks);
 void* UIController(void* ipcSocks);
 void* OutboundSwitchboard(void* ipcSocks);
+void* KeepAlive(void* outSock);
 
 // structures
 typedef struct pktB0{
@@ -108,9 +109,15 @@ typedef struct pktB3{
 SOCKET 				tcpConnections[MAX_PLAYERS];
 SOCKET				udpConnection;
 struct sockaddr_in 	udpAddresses[MAX_PLAYERS];
+int                 connectedPlayers;
 
 int netPacketSizes[NUM_NET_PACKETS + 1];
 int ipcPacketSizes[NUM_IPC_PACKETS + 1];
 int largestNetPacket, largestIpcPacket, largestPacket;
+
+#define CHECK_CONNECTIONS 0
+#define CLEANUP_FREQUENCY 2
+timestamp_t heartbeats[MAX_PLAYERS];
+void pulse(playerNo_t plyr);
 
 #endif

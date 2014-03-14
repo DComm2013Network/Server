@@ -7,8 +7,8 @@ LIBS=-lpthread
 
 all: Server
 
-Server: server-utils.o Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o
-	$(CC) $(GDB) server-utils.o Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o -o ../bin/Server $(LIBS)
+Server: server-utils.o Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o game-utils.o
+	$(CC) $(GDB) server-utils.o Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o  UI.o game-utils.o -o ../bin/Server $(LIBS)
 
 server-utils.o: ../src/server-utils.c
 	$(CC) $(CFLAGS) ../src/server-utils.c
@@ -33,6 +33,9 @@ OutboundSwitchboard.o: ../src/OutboundSwitchboard.c
 	
 UI.o: ../src/UI.c
 	$(CC) $(CFLAGS) ../src/UI.c
+
+game-utils.o: ../src/game-utils.c
+	$(CC) $(CFLAGS) ../src/game-utils.c
 
 clean:
 	rm -rf *o ../bin/Server

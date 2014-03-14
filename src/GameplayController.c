@@ -99,6 +99,7 @@ void* GameplayController(void* ipcSocks) {
 	PKT_ALL_POS_UPDATE *bufPlayerAll = malloc(sizeof(PKT_ALL_POS_UPDATE));
 	PKT_FLOOR_MOVE_REQUEST *bufFloorMoveReq = malloc(sizeof(PKT_FLOOR_MOVE_REQUEST));
 	PKT_FLOOR_MOVE *bufFloorMove = malloc(sizeof(PKT_FLOOR_MOVE));
+
 	PKT_SERVER_SETUP *bufipcPkt0 = malloc(sizeof(PKT_SERVER_SETUP));
 	PKT_NEW_CLIENT *bufipcPkt1 = malloc(sizeof(PKT_NEW_CLIENT));
 	PKT_LOST_CLIENT *bufipcPkt2 = malloc(sizeof(PKT_LOST_CLIENT));
@@ -113,6 +114,7 @@ void* GameplayController(void* ipcSocks) {
 	size_t lenPktAll = sizeof(struct pkt11);
 	size_t lenPktFloorReq = sizeof(struct pkt12);
 	size_t lenPktFloor = sizeof(struct pkt13);
+
 
 	//Create array of floor structures
 	PKT_ALL_POS_UPDATE floorArray[MAX_FLOORS + 1];
@@ -152,8 +154,8 @@ void* GameplayController(void* ipcSocks) {
 			thisPlayer = bufipcPkt1->playerNo;
 			playerFloor = 0;
 			bufFloorMove->new_floor = playerFloor;
-			bufFloorMove->xPos = 50;
-			bufFloorMove->yPos = 50;
+			bufFloorMove->xPos = getLobbyX(bufipcPkt1->playerNo);
+			bufFloorMove->yPos = getLobbyY(bufipcPkt1->playerNo);
 
 			//add player to floor array
 			floorArray[0].players_on_floor[thisPlayer] = 1;
@@ -258,15 +260,15 @@ void* GameplayController(void* ipcSocks) {
 			// remove player from floor
 			floorArray[i].players_on_floor[bufipcPkt3->playerNo] = 0;
 
-			// add them to the lobby floor
-			floorArray[FLOOR_LOBBY].players_on_floor[bufipcPkt3->playerNo] = 1;
+			// add them to the new floor
+			floorArray[bufipcPkt3->newFloor].players_on_floor[bufipcPkt3->playerNo] = 1;
 
             // prepare outbound packet
             bufFloorMove->new_floor = bufipcPkt3->newFloor;
 
             // put them in their lobby location
-            bufFloorMove->xPos = getLobbyX();
-            bufFloorMove->yPos = getLobbyY();
+            bufFloorMove->xPos = getLobbyX(bufipcPkt3->playerNo);
+            bufFloorMove->yPos = getLobbyY(bufipcPkt3->playerNo);
 
             // send the player floor move
             outPType = 13;
@@ -278,7 +280,7 @@ void* GameplayController(void* ipcSocks) {
             DEBUG("CP> Sending packet 13");
 
 
-            //send updated data to all players on old flor
+            //send updated data to all players on old floor
 			outPType = 11;
 
 			//set outbound mask for outbound server
@@ -293,7 +295,7 @@ void* GameplayController(void* ipcSocks) {
 			write(outswitchSock, &m, sizeof(OUTMASK));
 			DEBUG("CP> Sending packet 11");
 
-			//send updated data to all players on new flor
+			//send updated data to all players on new floor
 			//set outbound mask for outbound server
 			OUT_ZERO(m);
 			for (j = 0; j < MAX_PLAYERS; j++) {
@@ -430,7 +432,7 @@ void* GameplayController(void* ipcSocks) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
-			if (write(outswitchSock, &bufFloorMove, lenPktFloor) == -1) {
+			if (write(outswitchSock, bufFloorMove, lenPktFloor) == -1) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
@@ -442,7 +444,7 @@ void* GameplayController(void* ipcSocks) {
 			DEBUG("GP> Sending packet 11 to old floor")
 						;
 
-			//send updated data to all players on old flor
+			//send updated data to all players on old floor
 			outPType = 11;
 
 			//remove this player from the floor
@@ -459,7 +461,7 @@ void* GameplayController(void* ipcSocks) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
-			if (write(outswitchSock, &bufFloorMove, lenPktAll) == -1) {
+			if (write(outswitchSock, &floorArray[playerFloor], lenPktAll) == -1) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
@@ -471,10 +473,10 @@ void* GameplayController(void* ipcSocks) {
 			//Send updated player position to all players on the new floor
 
 			//put position and velocity in update packet
-			floorArray[playerFloor].xPos[thisPlayer] = bufFloorMove->xPos;
-			floorArray[playerFloor].yPos[thisPlayer] = bufFloorMove->yPos;
-			floorArray[playerFloor].xVel[thisPlayer] = 0;
-			floorArray[playerFloor].yVel[thisPlayer] = 0;
+			floorArray[newFloor].xPos[thisPlayer] = bufFloorMove->xPos;
+			floorArray[newFloor].yPos[thisPlayer] = bufFloorMove->yPos;
+			floorArray[newFloor].xVel[thisPlayer] = 0;
+			floorArray[newFloor].yVel[thisPlayer] = 0;
 
 			//add this player to the new floor
 			floorArray[newFloor].players_on_floor[thisPlayer] = 1;
@@ -494,7 +496,7 @@ void* GameplayController(void* ipcSocks) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
-			if (write(outswitchSock, &bufFloorMove, lenPktAll) == -1) {
+			if (write(outswitchSock, &floorArray[newFloor], lenPktAll) == -1) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
