@@ -51,6 +51,9 @@
 #define DEBUG_ON 1
 #define DEBUG(msg) if(DEBUG_ON){printf("Debug: %s\n", msg);fflush(stdout);}
 
+#define TRUE    1
+#define FALSE   PLAYER_STATE_INVALID
+
 typedef int     SOCKET;
 
 //function prototypes for server-utils

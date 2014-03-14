@@ -36,7 +36,7 @@ void balanceTeams(const teamNo_t *teamIn, teamNo_t *teamOut);
 // Sending
 void sendPlayerUpdate(const SOCKET sock, const bool_t* validities, const teamNo_t* teams,
      const status_t* statuses, char names[MAX_PLAYERS][MAX_NAME]);
-status_t getGameStatus(const bool_t *validPlayers, const teamNo_t *playerTeams);
+status_t getGameStatus(const status_t *playerStatus, const teamNo_t *playerTeams);
 
 
 inline void sendGameStatus(SOCKET sock, PKT_GAME_STATUS *pkt);
@@ -114,7 +114,7 @@ void* GeneralController(void* ipcSocks) {
 	SOCKET generalSock   = ((SOCKET*) ipcSocks)[0];
 	SOCKET outswitchSock = ((SOCKET*) ipcSocks)[1];
 
-    bzero(validPlayers, sizeof(status_t)*MAX_PLAYERS);
+    bzero(validPlayers, sizeof(bool_t)*MAX_PLAYERS);
     bzero(playerNames, sizeof(char)*MAX_PLAYERS*MAX_NAME);
     bzero(playerTeams, sizeof(teamNo_t)*MAX_PLAYERS);
     bzero(objCaptured, sizeof(bool_t)*MAX_OBJECTIVES);
@@ -132,10 +132,20 @@ void* GeneralController(void* ipcSocks) {
 	// Zero out player teams and player names
 	for(i = 0; i < MAX_PLAYERS; ++i)
 	{
+        if(i < maxPlayers){
+            playerTeams[i] = TEAM_NONE;
+            validPlayers[i] = TRUE;
+            playerStatus[i] = PLAYER_STATE_AVAILABLE;
+        } else if( i > maxPlayers){
+
+        }
         // Set array space that will not hold players to invalid
 
         // STATE FOR OPEN PLAYER SLOT
+
         val = (i < maxPlayers) ? PLAYER_STATE_AVAILABLE: PLAYER_STATE_INVALID;
+
+
         playerTeams[i] = validPlayers[i] = playerStatus [i] = val;
         for(j = 0; j < MAX_NAME; j++)
             playerNames[i][j] = '\0';
@@ -157,7 +167,7 @@ void* GeneralController(void* ipcSocks) {
 			getPacket(generalSock, pkt1, ipcPacketSizes[1]);
 
             // Check if player slot is available
-            if(validPlayers[pkt1->playerNo] != PLAYER_STATE_AVAILABLE)
+            if(validPlayers[pkt1->playerNo] == TRUE)
             {
                 #if DEBUG_ON
                     char buff[32];
@@ -177,12 +187,10 @@ void* GeneralController(void* ipcSocks) {
             playerStatus[pkt1->playerNo] = PLAYER_STATE_WAITING;
             validPlayers[pkt1->playerNo] = TRUE;
 
-
-
             // Overwrite potential garbage
             memcpy(pktPlayersUpdate->otherPlayers_name, playerNames, sizeof(char)*MAX_PLAYERS*MAX_NAME);
             memcpy(pktPlayersUpdate->otherPlayers_teams, playerTeams, sizeof(teamNo_t)*MAX_PLAYERS);
-            memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(status_t)*MAX_PLAYERS);
+            memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(bool_t)*MAX_PLAYERS);
             memcpy(pktPlayersUpdate->readystatus, playerStatus, sizeof(status_t)*MAX_PLAYERS);
 
             // Send Players Update Packet 3
@@ -206,7 +214,7 @@ void* GeneralController(void* ipcSocks) {
 			}
 
 			getPacket(generalSock, pkt2, ipcPacketSizes[2]);
-			if(!validPlayers[pkt2->playerNo])
+			if(validPlayers[pkt2->playerNo] == FALSE)
 			{
                 DEBUG("GC> Lost player is not valid");
                 break;
@@ -232,7 +240,7 @@ void* GeneralController(void* ipcSocks) {
         case 5: // Ready Status change
             DEBUG("GC> Received packet 5 - Ready Status");
             getPacket(generalSock, pktReadyStatus, netPacketSizes[5]);
-            if(!validPlayers[pktReadyStatus->player_number])
+            if(validPlayers[pktReadyStatus->player_number] == FALSE)
             {
                 DEBUG("GC> Packet 5 was for an invalid player");
                 break;
@@ -249,11 +257,11 @@ void* GeneralController(void* ipcSocks) {
             // Store his desired team
             desiredTeams[pktReadyStatus->player_number] = pktReadyStatus->team_number;
 
-            status = getGameStatus(validPlayers, playerTeams);
+            status = getGameStatus(playerStatus, playerTeams);
             if(status == GAME_STATE_ACTIVE)
             {
                 balanceTeams(desiredTeams, playerTeams);
-                for(i = 0; validPlayers[i] == PLAYER_STATE_INVALID; i++)
+                for(i = 0; validPlayers[i] == FALSE; i++)
                 {
                     playerStatus[i] = PLAYER_STATE_ACTIVE;
                     pkt3->playerNo = i;
@@ -298,7 +306,7 @@ void* GeneralController(void* ipcSocks) {
             DEBUG("GC> Received packet 14 - Player Tagged");
             getPacket(generalSock, pktTagging, netPacketSizes[14]);
 
-            if(!validPlayers[pktTagging->taggee_id] || !validPlayers[pktTagging->tagger_id])
+            if(validPlayers[pktTagging->taggee_id] == FALSE || validPlayers[pktTagging->tagger_id] == FALSE)
             {
                 DEBUG("GC> Tagger or tagee is not valid");
                 break;
@@ -355,14 +363,14 @@ void* GeneralController(void* ipcSocks) {
             }
 
             memcpy(pktPlayersUpdate->otherPlayers_teams, playerTeams, sizeof(teamNo_t)*MAX_PLAYERS);
-            memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(status_t)*MAX_PLAYERS);
+            memcpy(pktPlayersUpdate->player_valid, validPlayers, sizeof(bool_t)*MAX_PLAYERS);
             memcpy(pktPlayersUpdate->otherPlayers_name, playerNames, sizeof(char)*MAX_PLAYERS*MAX_NAME);
             memcpy(pktPlayersUpdate->readystatus, playerStatus, sizeof(status_t)*MAX_PLAYERS);
             writePacket(outswitchSock, pktPlayersUpdate, 3);
 
             for(i = 0; i < MAX_PLAYERS; i++)
             {
-                if(validPlayers[i] == PLAYER_STATE_INVALID)
+                if(validPlayers[i] == FALSE)
                     break;
 
                 pkt3->newFloor = FLOOR_LOBBY;
@@ -492,7 +500,7 @@ void balanceTeams(const teamNo_t *teamIn, teamNo_t *teamOut)
 // counts ready players
 // if enough players ready; returns GAME_STATE_ACTIVE
 //      // else GAME_STATE_WAITING
-status_t getGameStatus(const bool_t *validPlayers, const teamNo_t *playerTeams)
+status_t getGameStatus(const status_t *playerStatus, const teamNo_t *playerTeams)
 {
     status_t s = GAME_STATE_WAITING;
     size_t i;
@@ -501,10 +509,11 @@ status_t getGameStatus(const bool_t *validPlayers, const teamNo_t *playerTeams)
 
     for(i = 0; i < MAX_PLAYERS; i++)
     {
-        if(*(validPlayers+i) != PLAYER_STATE_INVALID){
+        if(*(playerStatus+i) != PLAYER_STATE_INVALID){
             playerCount++;
         }
-        if(!(validPlayers+i) == PLAYER_STATE_READY){
+
+        if(!(playerStatus+i) == PLAYER_STATE_READY){
             readyCount++;
         }
     }

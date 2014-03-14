@@ -45,10 +45,6 @@ typedef uint32_t    packet_t;
 typedef uint64_t    timestamp_t;
 typedef int         bool_t;
 
-#define TRUE    1
-#define FALSE   0
-
-
 // Connect code Definitions
 #define CONNECT_CODE_ACCEPTED	0x001
 #define CONNECT_CODE_DENIED		0x000
