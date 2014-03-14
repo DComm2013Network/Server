@@ -23,7 +23,7 @@
 // Limits
 #define MAX_PLAYERS 	32
 #define MAX_FLOORS		8
-#define MAX_NAME	 	80
+#define MAX_NAME	 	15
 #define MAX_MESSAGE		180
 #define MAX_OBJECTIVES	16
 
@@ -111,7 +111,7 @@ typedef struct pkt06{
 //	<< UNPURPOSED >>
 
 typedef struct pkt08{
-	bool_t		    objectives_captured[MAX_OBJECTIVES];
+	bool_t		objectives_captured[MAX_OBJECTIVES];
 	status_t	game_status;
 } PKT_GAME_STATUS;
 

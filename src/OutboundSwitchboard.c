@@ -27,17 +27,19 @@ SOCKET inSw;
 
 void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 
-	int i;
+	int i, ret;
 	void* packet = malloc(sizeof(packet_t) + netPacketSizes[type] + sizeof(timestamp_t));
 
 
 	if(protocol == SOCK_STREAM){
 		for(i = 0; i < MAX_PLAYERS; ++i){
 			if(OUT_ISSET(to, i) && tcpConnections[i] != 0){
-				if(send(tcpConnections[i], &type, sizeof(packet_t), 0) == -1){
+				if((ret = send(tcpConnections[i], &type, sizeof(packet_t), 0)) == -1){
                     lostConnection(i);
                 }
-				send(tcpConnections[i], data, netPacketSizes[type], 0);
+				if((ret = send(tcpConnections[i], data, netPacketSizes[type], 0)) == -1){
+                    lostConnection(i);
+				}
 			}
 		}
 	}
