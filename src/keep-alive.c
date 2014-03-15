@@ -3,17 +3,26 @@
 extern int RUNNING;
 
 void* KeepAlive(void* outSock){
-    SOCKET out = *((SOCKET*)outSock);
+    SOCKET out = ((SOCKET*)outSock)[0];
+    SOCKET in = ((SOCKET*)outSock)[1];
     int i = 0;
     packet_t check = KEEP_ALIVE;
     OUTMASK m;
     int send = 0;
+
+    PKT_LOST_CLIENT lost;
+    packet_t lostType = IPC_PKT_2;
+
+
     while(RUNNING && CHECK_CONNECTIONS){
         sleep(CLEANUP_FREQUENCY);
+
+
+        // Send a heartbeat to the client if we haven't sent them anything in a while
         OUT_ZERO(m);
         send = 0;
         for(i = 0; i < MAX_PLAYERS; ++i){
-            if(tcpConnections[i] && (heartbeats[i]/CLOCKS_PER_SEC > CLEANUP_FREQUENCY)){
+            if(tcpConnections[i] && ((time(NULL) - serverHeartbeat[i]) > CLEANUP_FREQUENCY)){
                OUT_SET(m, i);
                send = 1;
             }
@@ -22,6 +31,23 @@ void* KeepAlive(void* outSock){
             write(out, &check, sizeof(packet_t));
             write(out, &m, sizeof(OUTMASK));
         }
+
+
+        // Check if any of the clients have died
+        for(i = 0; i < MAX_PLAYERS; ++i){
+            if(tcpConnections[i] && ((time(NULL) - clientHeartbeat[i]) > PRESUME_DEAD_FREQUENCY)){
+
+                bzero(&lost, ipcPacketSizes[2]);
+
+                lost.playerNo = i;
+
+                write(in, &lostType, sizeof(packet_t));
+                write(in, &lost, ipcPacketSizes[2]);
+
+            }
+        }
+
+
     }
     return NULL;
 }

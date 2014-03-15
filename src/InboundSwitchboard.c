@@ -25,7 +25,7 @@
 // Globals
 extern int RUNNING;
 
-SOCKET Inswitch_uiSocket, Inswitch_connectionSocket, Inswitch_generalSocket, Inswitch_gameplaySocket, Inswitch_outswitchSocket;
+SOCKET Inswitch_uiSocket, Inswitch_connectionSocket, Inswitch_generalSocket, Inswitch_gameplaySocket, Inswitch_outswitchSocket, Inswitch_keepAliveSocket;
 void relayPacket(void* packet, packet_t type);
 
 /*--------------------------------------------------------------------------------------------------------------------
@@ -375,6 +375,7 @@ void* InboundSwitchboard(void* ipcSocks){
 	Inswitch_generalSocket = ((SOCKET*)ipcSocks)[0];
 	Inswitch_gameplaySocket = ((SOCKET*)ipcSocks)[1];
 	Inswitch_outswitchSocket = ((SOCKET*)ipcSocks)[3];
+	Inswitch_keepAliveSocket = ((SOCKET*)ipcSocks)[5];
 
 	DEBUG("IS> Inbound Switchboard started");
 	inswitchSetup();
@@ -401,6 +402,8 @@ void* InboundSwitchboard(void* ipcSocks){
 		FD_SET(udpConnection, &fdset);
 		highSocket = (udpConnection > highSocket) ? udpConnection : highSocket;
 
+        FD_SET(Inswitch_keepAliveSocket, &fdset);
+        highSocket = (Inswitch_keepAliveSocket > highSocket) ? Inswitch_keepAliveSocket : highSocket;
 
 		// Find all active Sockets
 		numLiveSockets = select(highSocket + 1, &fdset, NULL, NULL, NULL);
@@ -417,6 +420,9 @@ void* InboundSwitchboard(void* ipcSocks){
 				if(FD_ISSET(tcpConnections[i], &fdset)){
 					if(!getTcpInput(i)){
 						cleanupSocket(i);
+					}
+					else{
+                        clientPulse(i);
 					}
 				}
 			}
@@ -440,6 +446,10 @@ void* InboundSwitchboard(void* ipcSocks){
 		if(FD_ISSET(Inswitch_generalSocket, &fdset)){
             getIPC(Inswitch_generalSocket);
 		}
+
+        if(FD_ISSET(Inswitch_keepAliveSocket, &fdset)){
+            removePlayer(Inswitch_keepAliveSocket);
+        }
 
 	}
 

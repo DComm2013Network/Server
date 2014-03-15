@@ -147,6 +147,7 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 
 		// add TCP connection to list
 		tcpConnections[i] = acceptSock;
+		clientPulse(i);
 
 		// set UDP connection info, but override the port
 		memcpy(&udpAddresses[i], &client, sizeof(struct sockaddr_in));

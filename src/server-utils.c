@@ -62,6 +62,10 @@ int getPacket(SOCKET socket, void* buffer, int sizeOfBuffer) {
 }
 
 
-void pulse(playerNo_t plyr){
-    heartbeats[plyr] = clock();
+void serverPulse(playerNo_t plyr){
+    serverHeartbeat[plyr] = time(NULL);
+}
+
+void clientPulse(playerNo_t plyr){
+    clientHeartbeat[plyr] = time(NULL);
 }

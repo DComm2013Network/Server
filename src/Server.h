@@ -116,8 +116,11 @@ int ipcPacketSizes[NUM_IPC_PACKETS + 1];
 int largestNetPacket, largestIpcPacket, largestPacket;
 
 #define CHECK_CONNECTIONS 0
-#define CLEANUP_FREQUENCY 2
-timestamp_t heartbeats[MAX_PLAYERS];
-void pulse(playerNo_t plyr);
+#define CLEANUP_FREQUENCY 5
+#define PRESUME_DEAD_FREQUENCY 15
+time_t clientHeartbeat[MAX_PLAYERS];
+time_t serverHeartbeat[MAX_PLAYERS];
+void clientPulse(playerNo_t plyr);
+void serverPulse(playerNo_t plyr);
 
 #endif
