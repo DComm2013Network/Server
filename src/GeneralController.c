@@ -165,7 +165,7 @@ void* GeneralController(void* ipcSocks) {
                     DEBUG(buff);
                 #endif
                 //TO-DO: Alert client?
-                break;
+                //break;
             }
 
             // Overwrite server data
