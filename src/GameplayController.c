@@ -356,7 +356,7 @@ void* GameplayController(void* ipcSocks) {
 				fprintf(stderr, "Gameplay Controller - player floor incorrect.  Count:%d\n", errFloor);
 
 				//for now, we just assign the player to this floor
-				floorArray[playerFloor].players_on_floor[thisPlayer] = 1;
+				//floorArray[playerFloor].players_on_floor[thisPlayer] = 1;
 			}
 
 			//put position and velocity in update packet
