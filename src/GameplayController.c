@@ -363,7 +363,7 @@ void* GameplayController(void* ipcSocks) {
 				 * floor update.
 				 */
 				errFloor++;
-				fprintf(stderr, "Gameplay Controller - player %d floor incorrect.  Count:%d\n", thisPlayer,errFloor);
+				fprintf(stderr, "Gameplay Controller - player %d floor incorrect.  Count:%d\n", thisPlayer, errFloor);
 
 				//for now, we just assign the player to this floor
 				floorArray[playerFloor].players_on_floor[thisPlayer] = 1;
@@ -402,6 +402,34 @@ void* GameplayController(void* ipcSocks) {
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
 
+			break;
+		case 11:
+			DEBUG("GP> Sending packet 11 to all players on floor")
+			;
+
+			//set packet type for outbound server
+			outPType = 11;
+
+			//set outbound mask for outbound server
+			OUT_ZERO(m);
+			for (i = 0; i < MAX_PLAYERS; i++) {
+				if (floorArray[playerFloor].players_on_floor[i] == 1) {
+					OUT_SET(m, i);
+				}
+			}
+			//send packet type and then packet to outbound switchboard
+			if (write(outswitchSock, &outPType, sizeof(outPType)) == -1) {
+				errOut++;
+				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
+			}
+			if (write(outswitchSock, &floorArray[playerFloor], lenPktAll) == -1) {
+				errOut++;
+				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
+			}
+			if (write(outswitchSock, &m, sizeof(OUTMASK)) == -1) {
+				errOut++;
+				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
+			}
 			break;
 		case 12: //floor change
 			DEBUG("GP> Received packet 12")
@@ -533,6 +561,6 @@ void* GameplayController(void* ipcSocks) {
 //currently not used
 void writeType2(SOCKET sock, void* packet, packet_t type, OUTMASK m) {
 	write(sock, &type, sizeof(packet_t));
-		write(sock, packet, netPacketSizes[type]);
+	write(sock, packet, netPacketSizes[type]);
 	write(sock, &m, sizeof(OUTMASK));
 }
