@@ -311,8 +311,7 @@ void* GameplayController(void* ipcSocks) {
             break;
 
 		case 10: //player position update
-			DEBUG("GP> Received packet 10")
-			;
+			//DEBUG("GP> Received packet 10");
 
 			bzero(bufPlayerIn, sizeof(*bufPlayerIn));
 			if (getPacket(gameplaySock, bufPlayerIn, lenPktIn) == -1) {
@@ -365,7 +364,7 @@ void* GameplayController(void* ipcSocks) {
 			floorArray[playerFloor].xVel[thisPlayer] = bufPlayerIn->xVel;
 			floorArray[playerFloor].yVel[thisPlayer] = bufPlayerIn->yVel;
 
-			DEBUG("GP> Sending packet 11 to all players on floor")
+			//DEBUG("GP> Sending packet 11 to all players on floor")
 						;
 
 			//set packet type for outbound server

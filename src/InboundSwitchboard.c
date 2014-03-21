@@ -181,7 +181,7 @@ void relayPacket(void* packet, packet_t type){
 
 		case 10:		// Movement update
 			writeType(Inswitch_gameplaySocket,		packet, type);
-			DEBUG("IS> Routed pkt 10");
+			//DEBUG("IS> Routed pkt 10");
 			break;
 
 		case 11:
