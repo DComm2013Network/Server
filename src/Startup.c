@@ -24,7 +24,7 @@
 #define READ 0
 #define WRITE 1
 
-#define NUM_CONTROLLERS 6
+#define NUM_CONTROLLERS 7
 
 // Super Global
 int RUNNING = 1;
@@ -64,6 +64,7 @@ void setupPacketInfo(){
 	ipcPacketSizes[1] = sizeof(struct pktB1);
 	ipcPacketSizes[2] = sizeof(struct pktB2);
 	ipcPacketSizes[3] = sizeof(struct pktB3);
+	ipcPacketSizes[4] = 0; // alarm packet has no data
 
 	for(i = 0; i < NUM_IPC_PACKETS + 1; ++i){
 		largestIpcPacket = (ipcPacketSizes[i] > largestIpcPacket) ? ipcPacketSizes[i] : largestIpcPacket;
@@ -88,6 +89,7 @@ int main(int argc, char* argv[]) {
 	SOCKET connectionSockSet[2];
 	SOCKET generalSockSet[2];
 	SOCKET gameplaySockSet[2];
+	SOCKET timerSockSet[2];
 
 	SOCKET out_in[2];
 	SOCKET out_gen[2];
@@ -98,7 +100,8 @@ int main(int argc, char* argv[]) {
 	SOCKET generalParams[2];
 	SOCKET gameplayParams[2];
 	SOCKET outboundParams[3];
-	SOCKET inboundParams[5];
+	SOCKET timerParams[1];
+	SOCKET inboundParams[6];
 
 	pthread_t controllers[NUM_CONTROLLERS];
 	int threadResult = 0;
@@ -149,6 +152,11 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, timerSockSet) == -1) {
+		fprintf(stderr, "Socket pair error: timerSockSet");
+		return -1;
+	}
+
 	DEBUG("All IPC sockets created succesfully");
 
 
@@ -188,6 +196,11 @@ int main(int argc, char* argv[]) {
 	// ----------------------------
 
 
+    // Start the Movement Timer
+    timerParams[0] = timerSockSet[WRITE];
+	threadResult += pthread_create(&controllers[5], NULL, MovementTimer, (void*)timerParams);
+	// ----------------------------
+
 
 	// Start the Inbound Switchboard
 	inboundParams[0] = generalSockSet[WRITE];
@@ -195,7 +208,8 @@ int main(int argc, char* argv[]) {
 	inboundParams[2] = uiSockSet[READ];
 	inboundParams[3] = out_in[WRITE];
 	inboundParams[4] = connectionSockSet[READ];
-	threadResult += pthread_create(&controllers[5], NULL, InboundSwitchboard, (void*)inboundParams);
+	inboundParams[5] = timerSockSet[READ];
+	threadResult += pthread_create(&controllers[6], NULL, InboundSwitchboard, (void*)inboundParams);
 	// ----------------------------
 
 

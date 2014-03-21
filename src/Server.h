@@ -41,7 +41,7 @@
 
 #include "NetComm.h"
 
-#define NUM_IPC_PACKETS 4
+#define NUM_IPC_PACKETS 5
 
 #define SERVER_VERSION 0.2
 
@@ -50,6 +50,8 @@
 
 #define DEBUG_ON 1
 #define DEBUG(msg) if(DEBUG_ON){printf("Debug: %s\n", msg);fflush(stdout);}
+
+#define MOVE_UPDATE_FREQUENCY 30 // Updates per seoncd
 
 typedef int     SOCKET;
 
@@ -67,6 +69,7 @@ void* GameplayController(void* ipcSocks);
 void* GeneralController(void* ipcSocks);
 void* UIController(void* ipcSocks);
 void* OutboundSwitchboard(void* ipcSocks);
+void* MovementTimer(void* ipcSocks);
 
 // structures
 typedef struct pktB0{
@@ -96,6 +99,8 @@ typedef struct pktB3{
 
 #define IPC_PKT_3 0xB3
 
+// Packet B4 is alarm packet
+#define IPC_PKT_4 0xB4
 
 // Outbound masking
 #define OUTMASK int_fast32_t

@@ -315,8 +315,6 @@ void* GameplayController(void* ipcSocks) {
 			break;
 
 		case 10: //player position update
-			DEBUG("GP> Received packet 10")
-			;
 
 			bzero(bufPlayerIn, sizeof(*bufPlayerIn));
 			if (getPacket(gameplaySock, bufPlayerIn, lenPktIn) == -1) {
@@ -403,12 +401,12 @@ void* GameplayController(void* ipcSocks) {
 			}
 
 			break;
-		case 11:
-			DEBUG("GP> Sending packet 11 to all players on floor")
-			;
-
+		case 0xB4:
+            // Timer tick, send update
 			//set packet type for outbound server
 			outPType = 11;
+
+			DEBUG("Sending game update");
 
 			//set outbound mask for outbound server
 			OUT_ZERO(m);
