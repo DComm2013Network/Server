@@ -112,7 +112,8 @@ void* GeneralController(void* ipcSocks)
 
 void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
-	SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
+    SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
+	SOCKET out  = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 	teamNo_t desiredTeams[MAX_PLAYERS] = {0};
 
 	PKT_READY_STATUS    inPkt5;
@@ -126,7 +127,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
         if(!RUNNING)
             return;
 
-        pType = getPacketType(net);
+        pType = getPacketType(in);
         switch(pType)
         {
         case IPC_PKT_1:
@@ -135,7 +136,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
         break;
         case 5:
             DEBUG(DEBUG_INFO, "GC> Lobby> Received pakcet 5");
-            getPacket(net, &inPkt5, sizeof(netPacketSizes[5]));
+            getPacket(in, &inPkt5, sizeof(netPacketSizes[5]));
 
             pLists->readystatus[inPkt5.player_number] = inPkt5.ready_status;
             strcpy(pLists->otherPlayers_name[inPkt5.player_number], inPkt5.player_name);
@@ -148,7 +149,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
                 forceMoveAll(sockets, pLists, PLAYER_STATE_ACTIVE);
             }
             DEBUG(DEBUG_WARN, "GC> Lobby> All players ready and moved to floor 1");
-            writePacket(net, pLists, 3);
+            writePacket(out, pLists, 3);
         break;
         default:
             DEBUG(DEBUG_ALRM, "GC> Lobby> Receiving invalid packet");
@@ -163,7 +164,8 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
 //
 void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
-	SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
+    SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
+	SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 
     PKT_GAME_STATUS inPkt8;
     PKT_TAGGING     inPkt14;
@@ -178,7 +180,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             return;
         }
 
-        pType = getPacketType(net);
+        pType = getPacketType(in);
         switch(pType)
         {
         case IPC_PKT_1:
@@ -187,7 +189,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         break;
         case 8:
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 8");
-            getPacket(net, &inPkt8, netPacketSizes[8]);
+            getPacket(in, &inPkt8, netPacketSizes[8]);
 
             memcpy(gameInfo->objectives_captured, &(inPkt8.objectives_captured), MAX_OBJECTIVES);
 
@@ -198,25 +200,25 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             } else {
                 gameInfo->game_status = GAME_STATE_ACTIVE;
             }
-            writePacket(net, gameInfo, 8);
+            writePacket(out, gameInfo, 8);
         break;
         case 14:
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 14");
-            getPacket(net, &inPkt14, netPacketSizes[14]);
+            getPacket(in, &inPkt14, netPacketSizes[14]);
 
             outIPC3.playerNo = inPkt14.taggee_id;
             outIPC3.newFloor = FLOOR_LOBBY;
-            writeIPC(net, &outIPC3, 0xB3);
+            writeIPC(out, &outIPC3, 0xB3);
 
             pLists->otherPlayers_teams[inPkt14.taggee_id] = TEAM_NONE;
             pLists->readystatus[inPkt14.taggee_id] = PLAYER_STATE_OUT;
-            writePacket(net, pLists, 3);
+            writePacket(out, pLists, 3);
 
             //Check win
             countTeams(pLists->otherPlayers_teams, &team1, &team2);
             if(team2 <= 0) {
                 gameInfo->game_status = GAME_TEAM1_WIN;
-                writePacket(net, gameInfo, 8);
+                writePacket(out, gameInfo, 8);
             }
 
         break;
@@ -230,7 +232,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 // revised march 25 lobby controller strips player teams
 void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
-    SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
+    SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 
 
     if(!RUNNING) {
@@ -240,7 +242,7 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
     forceMoveAll(sockets, pLists, PLAYER_STATE_WAITING);
     // players are stripped of their teams when entering the lobby controller
     // memset(pLists->otherPlayers_teams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
-    writePacket(net, pLists, 3);
+    writePacket(out, pLists, 3);
 }
 
 // handles new player and player lost packets
@@ -249,9 +251,9 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
 // created march 25
 void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
-    SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
+    SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
+    SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 
-    size_t team1 = 0, team2 = 0;
     size_t numPlayers = countActivePlayers(pLists->otherPlayers_teams);
 
 
@@ -262,7 +264,7 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
     {
     case IPC_PKT_1: // New Player
         DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_1");
-        getPacket(net, &inIPC1, ipcPacketSizes[1]);
+        getPacket(in, &inIPC1, ipcPacketSizes[1]);
 
         numPlayers++;
 
@@ -272,8 +274,8 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
         pLists->readystatus[inIPC1.playerNo] = PLAYER_STATE_WAITING;
         pLists->player_valid[inIPC1.playerNo] = TRUE;
 
-        writePacket(net, pLists, 3);
-        writePacket(net, gameInfo, 8);
+        writePacket(out, pLists, 3);
+        writePacket(out, gameInfo, 8);
         break;
 		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
 			DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_2");
@@ -287,7 +289,7 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
 //                break;
 //			}
 
-			getPacket(net, &inIPC2, ipcPacketSizes[2]);
+			getPacket(in, &inIPC2, ipcPacketSizes[2]);
 			if(pLists->player_valid[inIPC2.playerNo] == FALSE)
 			{
                 DEBUG(DEBUG_WARN, "GC> Sources tell me this player is already not valid.. at least he's actrually gone now");
@@ -300,7 +302,7 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
             pLists->otherPlayers_teams[inIPC2.playerNo] = TEAM_NONE;
             pLists->player_valid[inIPC2.playerNo] = FALSE;
             pLists->readystatus[inIPC2.playerNo] = PLAYER_STATE_DROPPED;
-            writePacket(net, pLists, 3);
+            writePacket(out, pLists, 3);
 
             //TO-DO check if that was the last player of a team and trigger a win condition
         break;    DEBUG(DEBUG_WARN, "GC> Lost player is not valid");
@@ -322,7 +324,7 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
     int i;
     floorNo_t floor = FLOOR_LOBBY;
     PKT_FORCE_MOVE      outIPC3;
-    SOCKET ipc   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
+    SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 
     if(status == PLAYER_STATE_ACTIVE) {
         floor = 1;
@@ -335,7 +337,7 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
         pLists->readystatus[i] = status;
         outIPC3.playerNo = i;
         outIPC3.newFloor = floor;
-        writeIPC(ipc, &outIPC3, 0xB3);
+        writeIPC(out, &outIPC3, 0xB3);
     }
 }
 
