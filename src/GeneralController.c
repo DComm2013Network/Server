@@ -32,7 +32,7 @@ double WIN_RATIO = MAX_OBJECTIVES * 0.75;
 
 // Controllers
 void* GeneralController(void* ipcSocks);
-void connectionController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
+void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
 void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
 void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
 void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
@@ -233,9 +233,8 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
     writePacket(net, pLists, 3);
 }
 
-void connectionController(void* sockets, packet_t type, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
+void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
-    SOCKET ipc   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
     SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 
     size_t numPlayers = 0;
