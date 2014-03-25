@@ -148,4 +148,7 @@ time_t serverHeartbeat[MAX_PLAYERS];
 void clientPulse(playerNo_t plyr);
 void serverPulse(playerNo_t plyr);
 
+
+void chatGameStart();
+void sendChat(PKT_CHAT* chat, teamNo_t teams[MAX_PLAYERS], SOCKET outswitch);
 #endif
