@@ -23,11 +23,11 @@
 // Limits
 #define MAX_PLAYERS 	32
 #define MAX_FLOORS		8
-#define MAX_NAME	 	80
+#define MAX_NAME	 	15
 #define MAX_MESSAGE		180
 #define MAX_OBJECTIVES	16
 
-#define NUM_NET_PACKETS 13
+#define NUM_NET_PACKETS 14
 
 
 // Other Includes
@@ -43,6 +43,10 @@ typedef uint32_t    pos_t;
 typedef float	    vel_t;
 typedef uint32_t    packet_t;
 typedef uint64_t    timestamp_t;
+typedef int         bool_t;
+
+#define TRUE    1
+#define FALSE   0
 
 
 // Connect code Definitions
@@ -50,16 +54,30 @@ typedef uint64_t    timestamp_t;
 #define CONNECT_CODE_DENIED		0x000
 
 // Game Status Definitions
-#define GAME_STATE_WAITING		0x001
-#define GAME_STATE_ACTIVE		0x002
+#define GAME_STATE_WAITING		0x001   // Waiting for PLAYER_STATE_READY by all players
+#define GAME_STATE_ACTIVE		0x002   // Game engine running
 #define GAME_STATE_OVER			0x003
-#define PLAYER_STATE_READY		0x004
-#define PLAYER_STATE_WAITING	0x005
+
 #define GAME_TEAM1_WIN			0x006
 #define GAME_TEAM2_WIN			0x007
 
+// Player Status Definitions
+#define PLAYER_STATE_WAITING	0x005   // Player just joined in lobby
+#define PLAYER_STATE_READY		0x004   // Ready to join game - player chosen team
+#define PLAYER_STATE_DROPPED    0x008   // Joined and disconnected
+#define PLAYER_STATE_OUT        0x009   // Tagged sent to lobby
+#define PLAYER_STATE_INVALID    0x010   // Not a player - used when MAX_PLAYERS > number of players allowed to join a game
+#define PLAYER_STATE_ACTIVE     0x011   // Player is in the game world running around
+#define PLAYER_STATE_AVAILABLE  0x012   // Available slot for player to join - value cannot be defined to 1 or 2!!
+
+
 // Special floor Definitions
 #define FLOOR_LOBBY				0x000
+
+// Team Definitions
+#define TEAM_NONE       0
+#define TEAM_COPS       1
+#define TEAM_ROBBERS    2
 
 #ifndef PACKETS
 #define PACKETS
@@ -76,7 +94,7 @@ typedef struct pkt02{
 } PKT_JOIN_RESPONSE;
 
 typedef struct pkt03{
-	int 		player_valid[MAX_PLAYERS];
+	bool_t 	    player_valid[MAX_PLAYERS];
 	char 		otherPlayers_name[MAX_PLAYERS][MAX_NAME];
 	teamNo_t 	otherPlayers_teams[MAX_PLAYERS];
 	status_t	readystatus[MAX_PLAYERS];
@@ -103,12 +121,11 @@ typedef struct pkt06{
 //	<< UNPURPOSED >>
 
 typedef struct pkt08{
-	int		    objectives_captured[MAX_OBJECTIVES];
+	bool_t		objectives_captured[MAX_OBJECTIVES];
 	status_t	game_status;
 } PKT_GAME_STATUS;
 
-//Packet 9: 0x0009
-//	<< UNPURPOSED >>
+#define KEEP_ALIVE              0x9
 
 typedef struct pkt10{
 	floorNo_t 	floor;
@@ -121,7 +138,7 @@ typedef struct pkt10{
 
 typedef struct pkt11{
 	floorNo_t 	floor;
-	int 		players_on_floor[MAX_PLAYERS];
+	bool_t	    players_on_floor[MAX_PLAYERS];
 	pos_t		xPos[MAX_PLAYERS];
 	pos_t		yPos[MAX_PLAYERS];
 	vel_t		xVel[MAX_PLAYERS];
@@ -132,6 +149,8 @@ typedef struct pkt12{
 	playerNo_t 	player_number;
 	floorNo_t 	current_floor;
 	floorNo_t 	desired_floor;
+	pos_t       desired_xPos;
+	pos_t       desired_yPos;
 } PKT_FLOOR_MOVE_REQUEST;
 
 typedef struct pkt13{
@@ -139,5 +158,10 @@ typedef struct pkt13{
 	pos_t		xPos;
 	pos_t		yPos;
 } PKT_FLOOR_MOVE;
+
+typedef struct pkt14 {
+    playerNo_t  tagger_id; /* the person who tagged */
+    playerNo_t  taggee_id; /* the person who got tagged */
+} PKT_TAGGING;
 
 #endif

@@ -1,21 +1,21 @@
 /*-------------------------------------------------------------------------------------------------------------------*
--- SOURCE FILE: .c 	
+-- SOURCE FILE: .c
 --		The Process that will ...
 --
 -- FUNCTIONS:
 -- 		int UI(SOCKET outSock)
 --
 --
--- DATE: 		
+-- DATE:
 --
 -- REVISIONS: 	none
 --
--- DESIGNER: 	
+-- DESIGNER:
 --
--- PROGRAMMER: 	
+-- PROGRAMMER:
 --
 -- NOTES:
--- 
+--
 *-------------------------------------------------------------------------------------------------------------------*/
 
 
@@ -31,13 +31,13 @@ inline void listAllCommands();
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	...
 --
--- DATE: 		
+-- DATE:
 --
 -- REVISIONS: 	none
 --
--- DESIGNER: 	
+-- DESIGNER:
 --
--- PROGRAMMER: 	
+-- PROGRAMMER:
 --
 -- INTERFACE: 	int UI(SOCKET outSock)
 --
@@ -45,41 +45,57 @@ inline void listAllCommands();
 --					1 when the server stops running
 --
 -- NOTES:
--- 
+--
 ----------------------------------------------------------------------------------------------------------------------*/
 void* UIController(void* ipcSocks) {
-	
+
 	// prompt setup info
-	const char *format = "%s %d";
 	int maxPlayers = 0;
 	char servName[MAX_NAME];
 	PKT_SERVER_SETUP pkt;
 	SOCKET outSock;
 	packet_t pType=IPC_PKT_0;
-	
+
+	do{
+        printf("Enter a server name: ");
+        #if DEBUG_ON
+            fprintf(stdin, "Test");
+        #endif
+	}while(scanf("%s", servName) != 1);
+
+
 	do {
-		printf("Enter serverName and maxPlayers as %s\n", format);	
-	} while(scanf(format, servName, &maxPlayers) != 2);
-	
+		printf("Enter the maximum number of players: ");
+        #if DEBUG_ON
+            fprintf(stdin, "%d", MAX_PLAYERS);
+        #endif
+	} while(scanf("%d", &maxPlayers) != 1);
+
+    if(maxPlayers > MAX_PLAYERS)
+    {
+        printf("Entered illegal number of players: %d\n", maxPlayers);
+        maxPlayers = MAX_PLAYERS;
+        printf("It has been reset to the maximum: %d\n", maxPlayers);
+    }
 
 	// create setup packet
 	pkt = createSetupPacket(servName, maxPlayers);
 	printSetupPacketInfo(&pkt);
-	
+
 	// get the socket
 	outSock = ((SOCKET*)ipcSocks)[0];
-	
+
 	// send setup packet
 	write(outSock, &pType, sizeof(packet_t));
 	write(outSock, &pkt, sizeof(pkt));
 
-	/* populate list of commands	
+	/* populate list of commands
 	char commands[3][15];
 	strcpy(commands[0], "quit");
 	strcpy(commands[1], "get-stats");
-	strcpy(commands[2], "help"); 
+	strcpy(commands[2], "help");
 	*/
-	
+
 	char input[24];
     // while running
 	while(RUNNING)
@@ -91,7 +107,7 @@ void* UIController(void* ipcSocks) {
 			printf("Error. Try that again..");
 			continue;
 		}
-		        
+
         // if quit
 		if(strcmp(input, "quit") == 0)
 		{
@@ -99,14 +115,14 @@ void* UIController(void* ipcSocks) {
             // send to switchboard
             // exit
 		}
-		
+
 		// if get-stats
 		if(strcmp(input, "get-stats") == 0)
 		{
 			printSetupPacketInfo(&pkt);
 			continue;
 		}
-		
+
 		//if help
 		if(strcmp(input, "help") == 0)
 		{

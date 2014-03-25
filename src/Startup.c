@@ -24,7 +24,7 @@
 #define READ 0
 #define WRITE 1
 
-#define NUM_CONTROLLERS 6
+#define NUM_CONTROLLERS 7
 
 // Super Global
 int RUNNING = 1;
@@ -48,11 +48,12 @@ void setupPacketInfo(){
 	netPacketSizes[6] = sizeof(struct pkt06);
 	netPacketSizes[7] = 0;
 	netPacketSizes[8] = sizeof(struct pkt08);
-	netPacketSizes[9] = 0;
+	netPacketSizes[9] = 0; // keep alive data is 0
 	netPacketSizes[10] = sizeof(struct pkt10);
 	netPacketSizes[11] = sizeof(struct pkt11);
 	netPacketSizes[12] = sizeof(struct pkt12);
 	netPacketSizes[13] = sizeof(struct pkt13);
+	netPacketSizes[14] = sizeof(struct pkt14);
 
 	for(i = 0; i < NUM_NET_PACKETS + 1; ++i){
 		largestNetPacket = (netPacketSizes[i] > largestNetPacket) ? netPacketSizes[i] : largestNetPacket;
@@ -62,6 +63,7 @@ void setupPacketInfo(){
 	ipcPacketSizes[0] = sizeof(struct pktB0);
 	ipcPacketSizes[1] = sizeof(struct pktB1);
 	ipcPacketSizes[2] = sizeof(struct pktB2);
+	ipcPacketSizes[3] = sizeof(struct pktB3);
 
 	for(i = 0; i < NUM_IPC_PACKETS + 1; ++i){
 		largestIpcPacket = (ipcPacketSizes[i] > largestIpcPacket) ? ipcPacketSizes[i] : largestIpcPacket;
@@ -86,17 +88,20 @@ int main(int argc, char* argv[]) {
 	SOCKET connectionSockSet[2];
 	SOCKET generalSockSet[2];
 	SOCKET gameplaySockSet[2];
+	SOCKET keepAliveSockSet[2];
 
 	SOCKET out_in[2];
 	SOCKET out_gen[2];
 	SOCKET out_game[2];
+	SOCKET out_keepal[2];
 
 	SOCKET uiParams[1];
 	SOCKET conManParams[2];
 	SOCKET generalParams[2];
 	SOCKET gameplayParams[2];
-	SOCKET outboundParams[3];
-	SOCKET inboundParams[5];
+	SOCKET outboundParams[4];
+	SOCKET inboundParams[6];
+	SOCKET keepAliveParams[2];
 
 	pthread_t controllers[NUM_CONTROLLERS];
 	int threadResult = 0;
@@ -131,6 +136,10 @@ int main(int argc, char* argv[]) {
 		fprintf(stderr, "Socket pair error: outswitchSockSet");
 		return -1;
 	}
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, out_keepal) == -1) {
+		fprintf(stderr, "Socket pair error: outswitchSockSet");
+		return -1;
+	}
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, connectionSockSet) == -1) {
 		fprintf(stderr, "Socket pair error: connectionSockSet");
@@ -143,6 +152,11 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, gameplaySockSet) == -1) {
+		fprintf(stderr, "Socket pair error: gameplaySockSet");
+		return -1;
+	}
+
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, keepAliveSockSet) == -1) {
 		fprintf(stderr, "Socket pair error: gameplaySockSet");
 		return -1;
 	}
@@ -182,9 +196,16 @@ int main(int argc, char* argv[]) {
 	outboundParams[0] = out_in[READ];
 	outboundParams[1] = out_game[READ];
 	outboundParams[2] = out_gen[READ];
+	outboundParams[3] = out_keepal[READ];
 	threadResult += pthread_create(&controllers[4], NULL, OutboundSwitchboard, (void*)outboundParams);
 	// ----------------------------
 
+
+    // Start the Keep Alive Cleaner
+	keepAliveParams[0] = out_keepal[WRITE];
+	keepAliveParams[1] = keepAliveSockSet[WRITE];
+	threadResult += pthread_create(&controllers[5], NULL, KeepAlive, (void*)keepAliveParams);
+	// ----------------------------
 
 
 	// Start the Inbound Switchboard
@@ -193,7 +214,8 @@ int main(int argc, char* argv[]) {
 	inboundParams[2] = uiSockSet[READ];
 	inboundParams[3] = out_in[WRITE];
 	inboundParams[4] = connectionSockSet[READ];
-	threadResult += pthread_create(&controllers[5], NULL, InboundSwitchboard, (void*)inboundParams);
+	inboundParams[5] = keepAliveSockSet[READ];
+	threadResult += pthread_create(&controllers[6], NULL, InboundSwitchboard, (void*)inboundParams);
 	// ----------------------------
 
 
@@ -210,7 +232,7 @@ int main(int argc, char* argv[]) {
 		DEBUG("All controllers launched");
 
 		// Wait on the inbound switchboard to terminate process
-		pthread_join(controllers[5], NULL);
+		pthread_join(controllers[6], NULL);
 	}
 
 

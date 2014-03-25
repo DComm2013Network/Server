@@ -26,7 +26,6 @@
 
 // Globals
 SOCKET listenSock;
-int connectedPlayers[MAX_PLAYERS];
 extern int RUNNING;
 
 
@@ -121,7 +120,7 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 	getPacket(acceptSock, &clientReg, netPacketSizes[1]);
 
 	for(i = 0; i < maxPlayers; ++i){
-		if(connectedPlayers[i] == 0){
+		if(tcpConnections[i] == 0){
 			break;
 		}
 	}
@@ -130,22 +129,25 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 	if(i < maxPlayers){
 		DEBUG("CM> Space available, adding player");
 
-		connectedPlayers[i] = acceptSock;
+        connectedPlayers++;
+        printf("Added player %d to game.\n", i);
 		replyToClient.connect_code = CONNECT_CODE_ACCEPTED;
 		replyToClient.clients_player_number = i;
 
-		// This is just for milestone 1, where first player is team 1, second is team 2
-		replyToClient.clients_team_number = i;
+		// The client's inital team number is 0. This will be later assigned by the Conn Man
+		replyToClient.clients_team_number = 0;
 
 		// Send accept to client with their player and team number
 		send(acceptSock, &replyType, sizeof(packet_t), 0);
 		send(acceptSock, &replyToClient, sizeof(struct pkt02), 0);
+		DEBUG("CM> Sent pkt 2");
 
 		newClientInfo.playerNo = i;
 		memcpy(&newClientInfo.client_player_name, &clientReg.client_player_name, MAX_NAME);
 
 		// add TCP connection to list
 		tcpConnections[i] = acceptSock;
+		clientPulse(i);
 
 		// set UDP connection info, but override the port
 		memcpy(&udpAddresses[i], &client, sizeof(struct sockaddr_in));
@@ -206,7 +208,7 @@ void removeConnection(SOCKET connectionSock){
 
 	getPacket(connectionSock, &lostClient, ipcPacketSizes[2]);
 
-	connectedPlayers[lostClient.playerNo] = 0;
+	connectedPlayers--;
 
 	DEBUG("CM> Removed player from game");
 
@@ -264,7 +266,7 @@ void* ConnectionManager(void* ipcSocks){
 	udpConnection = socket(AF_INET, SOCK_DGRAM, 0);
 
 	// No clients yet joined
-	bzero(connectedPlayers, 	sizeof(SOCKET) * MAX_PLAYERS);
+	connectedPlayers = 0;
 	bzero(tcpConnections, 		sizeof(SOCKET) * MAX_PLAYERS);
 	bzero(udpAddresses, 		sizeof(struct sockaddr_in) * MAX_PLAYERS);
 
@@ -305,13 +307,13 @@ void* ConnectionManager(void* ipcSocks){
 		FD_ZERO(&fdset);
 		FD_SET(connectionSock, &fdset);
 		FD_SET(listenSock, &fdset);
-		highSocket = (connectionSock > outswitchSock) ? connectionSock : outswitchSock;
+		highSocket = (connectionSock > listenSock) ? connectionSock : listenSock;
 
 		// Find all active Sockets
 		numLiveSockets = select(highSocket + 1, &fdset, NULL, NULL, NULL);
 
 		if(numLiveSockets == -1){
-			perror("Select Failed in Inbound Switchboard!");
+			perror("Select Failed in Connection Manager!");
 			continue;
 		}
 
