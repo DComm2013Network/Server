@@ -116,7 +116,10 @@ int main(int argc, char* argv[]) {
 		"                      Server v", SERVER_VERSION,
 		"-------------------------------------------------------------");
 
-	DEBUG("Started With Debug");
+	DEBUG(DEBUG_ALRM, "Started With Debug");
+	DEBUG(DEBUG_ALRM, " - Alarms [on]");
+	DEBUG(DEBUG_WARN, " - Warnings [on]");
+	DEBUG(DEBUG_INFO, " - Information [on]");
 
     //signal(SIGINT, KillHandler);
 
@@ -169,7 +172,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	DEBUG("All IPC sockets created succesfully");
+	DEBUG(DEBUG_INFO, "All IPC sockets created succesfully");
 
 
 
@@ -245,7 +248,7 @@ int main(int argc, char* argv[]) {
 
 	}
 	else{
-		DEBUG("All controllers launched");
+		DEBUG(DEBUG_INFO, "All controllers launched");
 
 		// Wait on the inbound switchboard to terminate process
 		pthread_join(controllers[6], NULL);

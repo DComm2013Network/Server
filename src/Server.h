@@ -43,18 +43,29 @@
 
 #define NUM_IPC_PACKETS 5
 
-#define SERVER_VERSION 0.8
+#define SERVER_VERSION 1.1
 
 #define TCP_PORT 42337
 #define UDP_PORT 42338
 
+// **********************************
+//             DEBUG
+// **********************************
 #define DEBUG_ON 1
-#define DEBUG(msg) if(DEBUG_ON){printf("Debug: %s\n", msg);fflush(stdout);}
+#define DEBUG_INFO  1
+#define DEBUG_WARN  2
+#define DEBUG_ALRM  3
+#define DEBUG_LEVEL 2
+#define DEBUG(lvl, msg) if(DEBUG_ON && lvl >= DEBUG_LEVEL){printf("Debug: %s\n", msg);fflush(stdout);}
 
 #define TRUE    1
 #define FALSE   PLAYER_STATE_INVALID
 
-#define MOVE_UPDATE_FREQUENCY 30 // Updates per seoncd
+
+// **********************************
+//           MOVE UPDATES
+// **********************************
+#define MOVE_UPDATE_FREQUENCY 0.5 // Updates per seoncd
 
 typedef int     SOCKET;
 
@@ -106,7 +117,9 @@ typedef struct pktB3{
 // Packet B4 is alarm packet
 #define IPC_PKT_4 0xB4
 
-// Outbound masking
+// **********************************
+//           OUT MASK
+// **********************************
 #define OUTMASK int_fast32_t
 #define OUT_SET(mask, pos) mask|=(1<<(pos))
 #define OUT_SETALL(mask) mask=0xFFFFFFFF
@@ -123,6 +136,10 @@ int netPacketSizes[NUM_NET_PACKETS + 1];
 int ipcPacketSizes[NUM_IPC_PACKETS + 1];
 int largestNetPacket, largestIpcPacket, largestPacket;
 
+
+// **********************************
+//            KEEP ALIVE
+// **********************************
 #define CHECK_CONNECTIONS 0
 #define CLEANUP_FREQUENCY 5
 #define PRESUME_DEAD_FREQUENCY 15

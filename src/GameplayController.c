@@ -125,7 +125,7 @@ void* GameplayController(void* ipcSocks) {
 	getPacketType(gameplaySock);
 	getPacket(gameplaySock, bufipcPkt0, ipcPacketSizes[0]);
 	maxPlayers = bufipcPkt0->maxPlayers + 1;
-	DEBUG("GP> Setup Complete");
+	DEBUG(DEBUG_INFO, "GP> Setup Complete");
 
 	while (RUNNING) {
 		//get packet type.  Save to int.
@@ -137,7 +137,7 @@ void* GameplayController(void* ipcSocks) {
 			break;
 
 		case 0xB1: //new player packet
-			DEBUG("GP> Receive packet 0xB1")
+			DEBUG(DEBUG_INFO, "GP> Receive packet 0xB1")
 			;
 
 			bzero(bufipcPkt1, sizeof(ipcPacketSizes[1]));
@@ -161,7 +161,7 @@ void* GameplayController(void* ipcSocks) {
 			floorArray[0].players_on_floor[thisPlayer] = 1;
 
 			//send floor change packet
-			DEBUG("GP> Sending packet 13")
+			DEBUG(DEBUG_INFO, "GP> Sending packet 13")
 			;
 			//set outbound mask for outbound server
 			OUT_ZERO(m);
@@ -182,7 +182,7 @@ void* GameplayController(void* ipcSocks) {
 			}
 
 			//send packet 11 to players on floor
-			DEBUG("GP> Sending packet 11 to floor 0")
+			DEBUG(DEBUG_INFO, "GP> Sending packet 11 to floor 0")
 			;
 
 			outPType = 11;
@@ -216,7 +216,7 @@ void* GameplayController(void* ipcSocks) {
 
 		case 0xB2: //lost or quit client
 
-			DEBUG("GP> Received packet 0xB2")
+			DEBUG(DEBUG_INFO, "GP> Received packet 0xB2")
 			;
 
 			bzero(bufipcPkt2, ipcPacketSizes[2]);
@@ -233,7 +233,7 @@ void* GameplayController(void* ipcSocks) {
 
 		case 0xB3:  // Force floor change
 
-			DEBUG("GP> Received packet 0xB3")
+			DEBUG(DEBUG_INFO, "GP> Received packet 0xB3")
 			;
 
 			bzero(bufipcPkt3, ipcPacketSizes[3]);
@@ -280,7 +280,7 @@ void* GameplayController(void* ipcSocks) {
 			write(outswitchSock, &outPType, sizeof(packet_t));
 			write(outswitchSock, &bufFloorMove, netPacketSizes[13]);
 			write(outswitchSock, &m, sizeof(OUTMASK));
-			DEBUG("CP> Sending packet 13")
+			DEBUG(DEBUG_INFO, "CP> Sending packet 13")
 			;
 
 			//send updated data to all players on old floor
@@ -296,7 +296,7 @@ void* GameplayController(void* ipcSocks) {
 			write(outswitchSock, &outPType, sizeof(packet_t));
 			write(outswitchSock, &floorArray[i], netPacketSizes[11]);
 			write(outswitchSock, &m, sizeof(OUTMASK));
-			DEBUG("CP> Sending packet 11")
+			DEBUG(DEBUG_INFO, "CP> Sending packet 11")
 			;
 
 			//send updated data to all players on new floor
@@ -310,7 +310,7 @@ void* GameplayController(void* ipcSocks) {
 			write(outswitchSock, &outPType, sizeof(packet_t));
 			write(outswitchSock, &floorArray[bufipcPkt3->newFloor], netPacketSizes[11]);
 			write(outswitchSock, &m, sizeof(OUTMASK));
-			DEBUG("CP> Sending packet 11")
+			DEBUG(DEBUG_INFO, "CP> Sending packet 11")
 			;
 
 			break;
@@ -404,7 +404,7 @@ void* GameplayController(void* ipcSocks) {
 			//set packet type for outbound server
 			outPType = 11;
 
-			DEBUG("Sending game update");
+			DEBUG(DEBUG_INFO, "Sending game update");
 
 			//set outbound mask for outbound server
 			OUT_ZERO(m);
@@ -428,7 +428,7 @@ void* GameplayController(void* ipcSocks) {
 			}
 			break;
 		case 12: //floor change
-			DEBUG("GP> Received packet 12")
+			DEBUG(DEBUG_INFO, "GP> Received packet 12")
 			;
 
 			bzero(bufFloorMoveReq, sizeof(*bufFloorMoveReq));
@@ -454,7 +454,7 @@ void* GameplayController(void* ipcSocks) {
 			bufFloorMove->xPos = bufFloorMoveReq->desired_xPos;
 			bufFloorMove->yPos = bufFloorMoveReq->desired_yPos;
 
-			DEBUG("GP> Sending packet 13")
+			DEBUG(DEBUG_INFO, "GP> Sending packet 13")
 			;
 
 			//set outbound mask to send only to this player
@@ -475,7 +475,7 @@ void* GameplayController(void* ipcSocks) {
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
 
-			DEBUG("GP> Sending packet 11 to old floor")
+			DEBUG(DEBUG_INFO, "GP> Sending packet 11 to old floor")
 			;
 
 			//send updated data to all players on old floor
@@ -522,7 +522,7 @@ void* GameplayController(void* ipcSocks) {
 					OUT_SET(m, i);
 				}
 			}
-			DEBUG("GP> Sending packet 11 to new floor")
+			DEBUG(DEBUG_INFO, "GP> Sending packet 11 to new floor")
 			;
 			//writeType(outswitchSock, &bufFloorMove,outPType, m);
 

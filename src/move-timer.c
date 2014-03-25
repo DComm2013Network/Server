@@ -13,7 +13,7 @@ void* MovementTimer(void* ipcSocks) {
     // Wait for setup to complete.
     setup = getPacketType(inSwitch);
     if(setup != IPC_PKT_0){
-        DEBUG("Timer getting incorrect setup packets");
+        DEBUG(DEBUG_ALRM, "Timer getting incorrect setup packets");
     }
 
     getPacket(inSwitch, setupPacket, ipcPacketSizes[0]);

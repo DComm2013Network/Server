@@ -170,16 +170,16 @@ void* OutboundSwitchboard(void* ipcSocks){
 	kpal = ((SOCKET*)ipcSocks)[3];
 	highSocket = (kpal > highSocket) ? kpal : highSocket;
 
-	DEBUG("OS> Outbound Switchboard started");
+	DEBUG(DEBUG_INFO, "OS> Outbound Switchboard started");
 
 	// wait for IPC packet 0 - This is the server startup packet
 	type = getPacketType(inSw);
 	if(type != 0xB0){
-		DEBUG("OS> setup getting packets it shouldn't be");
+		DEBUG(DEBUG_ALRM, "OS> setup getting packets it shouldn't be");
 	}
 	getPacket(inSw, setup, ipcPacketSizes[0]);
 
-	DEBUG("OS> Setup Complete");
+	DEBUG(DEBUG_INFO, "OS> Setup Complete");
 
 	while (RUNNING) {
 
@@ -193,7 +193,7 @@ void* OutboundSwitchboard(void* ipcSocks){
 		numLiveSockets = select(highSocket + 1, &fdset, NULL, NULL, NULL);
 
 		if(numLiveSockets == -1){
-			DEBUG("OS> Select failed");
+			DEBUG(DEBUG_ALRM, "OS> Select failed");
 			continue;
 		}
 
@@ -212,7 +212,7 @@ void* OutboundSwitchboard(void* ipcSocks){
 
 	}
 
-	DEBUG("OS> Finished");
+	DEBUG(DEBUG_INFO, "OS> Finished");
 
 	return NULL;
 }
