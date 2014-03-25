@@ -237,7 +237,8 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
 {
     SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 
-    size_t numPlayers = 0;
+    // num players has no significance unless i count through the list
+    //size_t numPlayers = 0;
 
     PKT_NEW_CLIENT  inIPC1;
     PKT_LOST_CLIENT inIPC2;
@@ -248,7 +249,7 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
         DEBUG("GC> Received IPC_PKT_1");
         getPacket(net, &inIPC1, ipcPacketSizes[1]);
 
-        numPlayers++;
+//      numPlayers++;
 
             // Assign no team and send him to the lobby
             pLists->otherPlayers_teams[inIPC1.playerNo] = TEAM_NONE;
@@ -261,15 +262,15 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
         break;
 		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
 			DEBUG("GC> Received IPC_PKT_2");
-			if (numPlayers < 1)
-			{
-                DEBUG("GC> numPlayers < 1 HOW COULD WE LOSE SOMEONE?!");
-                if(pLists->player_valid[inIPC2.playerNo] == TRUE)
-                {
-                    DEBUG("GC> ...because the playerNo is still valid..BUT WHY!?");
-                }
-                break;
-			}
+//			if (numPlayers < 1)
+//			{
+//                DEBUG("GC> numPlayers < 1 HOW COULD WE LOSE SOMEONE?!");
+//                if(pLists->player_valid[inIPC2.playerNo] == TRUE)
+//                {
+//                    DEBUG("GC> ...because the playerNo is still valid..BUT WHY!?");
+//                }
+//                break;
+//			}
 
 			getPacket(net, &inIPC2, ipcPacketSizes[2]);
 			if(pLists->player_valid[inIPC2.playerNo] == FALSE)
@@ -278,7 +279,7 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
                 break;
 			}
 
-			numPlayers--;
+//			numPlayers--;
 
             pLists->otherPlayers_name[inIPC2.playerNo][0] = '\0';
             pLists->otherPlayers_teams[inIPC2.playerNo] = TEAM_NONE;
@@ -292,11 +293,6 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
         DEBUG("GC> This should never be possible... gg");
     break;
     }
-
-
-
-
-
 }
 
 /***********************************************************/
