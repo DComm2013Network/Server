@@ -25,7 +25,8 @@
 // Globals
 extern int RUNNING;
 
-SOCKET Inswitch_uiSocket, Inswitch_connectionSocket, Inswitch_generalSocket, Inswitch_gameplaySocket, Inswitch_outswitchSocket, Inswitch_keepAliveSocket;
+SOCKET Inswitch_uiSocket, Inswitch_connectionSocket, Inswitch_generalSocket, Inswitch_gameplaySocket, Inswitch_outswitchSocket, Inswitch_keepAliveSocket, Inswitch_timerSocket;
+
 void relayPacket(void* packet, packet_t type);
 
 /*--------------------------------------------------------------------------------------------------------------------
@@ -124,6 +125,7 @@ void relayPacket(void* packet, packet_t type){
 			writeType(Inswitch_outswitchSocket,		packet, type);
 			writeType(Inswitch_gameplaySocket,		packet, type);
 			writeType(Inswitch_generalSocket,		packet, type);
+			writeType(Inswitch_timerSocket,         packet, type);
 			DEBUG("IS> Routed pkt B0");
 			break;
 
@@ -145,6 +147,11 @@ void relayPacket(void* packet, packet_t type){
         case 0xB3:      // Forced floor change
             writeType(Inswitch_gameplaySocket,      packet, type);
             DEBUG("IS> Routed pkt B3");
+            break;
+
+        case 0xB4:
+            writeType(Inswitch_gameplaySocket,      packet, type);
+            DEBUG("IS> Routed pkt B4");
             break;
  		// --------------------------NET--------------------------------
 
@@ -376,6 +383,7 @@ void* InboundSwitchboard(void* ipcSocks){
 	Inswitch_gameplaySocket = ((SOCKET*)ipcSocks)[1];
 	Inswitch_outswitchSocket = ((SOCKET*)ipcSocks)[3];
 	Inswitch_keepAliveSocket = ((SOCKET*)ipcSocks)[5];
+	Inswitch_timerSocket = ((SOCKET*)ipcSocks)[6];
 
 	DEBUG("IS> Inbound Switchboard started");
 	inswitchSetup();
@@ -397,6 +405,10 @@ void* InboundSwitchboard(void* ipcSocks){
 				highSocket = (tcpConnections[i] > highSocket) ? tcpConnections[i] : highSocket;
 			}
 		}
+
+        // Add the timer socket
+		FD_SET(Inswitch_timerSocket, &fdset);
+		highSocket = (Inswitch_timerSocket > highSocket) ? Inswitch_timerSocket : highSocket;
 
 		// Add the master UPD socket
 		FD_SET(udpConnection, &fdset);
@@ -450,6 +462,9 @@ void* InboundSwitchboard(void* ipcSocks){
         if(FD_ISSET(Inswitch_keepAliveSocket, &fdset)){
             removePlayer(Inswitch_keepAliveSocket);
         }
+		if(FD_ISSET(Inswitch_timerSocket, &fdset)){
+            getIPC(Inswitch_timerSocket);
+		}
 
 	}
 
