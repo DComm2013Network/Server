@@ -45,16 +45,12 @@ typedef uint32_t    packet_t;
 typedef uint64_t    timestamp_t;
 typedef int         bool_t;
 
-#define TRUE    1
-#define FALSE   0
-
-
 // Connect code Definitions
 #define CONNECT_CODE_ACCEPTED	0x001
 #define CONNECT_CODE_DENIED		0x000
 
 // Game Status Definitions
-#define GAME_STATE_WAITING		0x001   // Waiting for PLAYER_STATE_READY by all players
+#define GAME_STATE_WAITING		0x001   // Waiting for PLAYER_STATE_READY by all players (LOBBY)
 #define GAME_STATE_ACTIVE		0x002   // Game engine running
 #define GAME_STATE_OVER			0x003
 
