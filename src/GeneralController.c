@@ -32,8 +32,10 @@ double WIN_RATIO = MAX_OBJECTIVES * 0.75;
 
 // Controllers
 void* GeneralController(void* ipcSocks);
+void connectionController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
 void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
 void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
+void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
 
 // Helpers
 size_t countObjectives(bool_t *objectives);
@@ -44,6 +46,7 @@ void zeroPlayerLists(PKT_PLAYERS_UPDATE *pLists, const int maxPlayers);
 void balanceTeams(const teamNo_t *teamIn, teamNo_t *teamOut);
 status_t getGameStatus(const status_t *playerStatus, const teamNo_t *playerTeams);
 int setup(SOCKET in, int *maxPlayers, PKT_PLAYERS_UPDATE *pLists);
+void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status);
 
 // Socket Utility
 inline void writePacket(SOCKET sock, void* packet, packet_t type);
@@ -99,7 +102,7 @@ void* GeneralController(void* ipcSocks)
 
         lobbyController(ipcSocks, &pInfoLists,&gameInfo);
         runningController(ipcSocks, &pInfoLists, &gameInfo);
-
+        endController(ipcSocks, &pInfoLists, &gameInfo);
 
 	}
 	return NULL;
@@ -107,16 +110,13 @@ void* GeneralController(void* ipcSocks)
 
 void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
-    SOCKET ipc   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
 	SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 	teamNo_t desiredTeams[MAX_PLAYERS] = {0};
 
     gameInfo->game_status = GAME_STATE_WAITING;
 
 	PKT_READY_STATUS    inPkt5;
-    PKT_FORCE_MOVE      outIPC3;
-
-	int pType, i;
+	int pType;
 
 	while(gameInfo->game_status == GAME_STATE_WAITING)
     {
@@ -126,6 +126,10 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
         pType = getPacketType(net);
         switch(pType)
         {
+        case IPC_PKT_1:
+        case IPC_PKT_2:
+            connectionController(sockets, pLists, gameInfo);
+        break;
         case 5:
             DEBUG("GC> Lobby> Received pakcet 5");
             getPacket(net, &inPkt5, sizeof(netPacketSizes[5]));
@@ -138,13 +142,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
             if(gameInfo->game_status == GAME_STATE_ACTIVE)
             {
                 balanceTeams(desiredTeams, pLists->otherPlayers_teams);
-                for(i = 0; pLists->player_valid[i] == FALSE; ++i)
-                {
-                    pLists->readystatus[i] = PLAYER_STATE_ACTIVE;
-                    outIPC3.playerNo = i;
-                    outIPC3.newFloor = 1;
-                    writeIPC(ipc, &outIPC3, 0xB3);
-                }
+                forceMoveAll(sockets, pLists, PLAYER_STATE_ACTIVE);
             }
             DEBUG("GC> Lobby> All players ready and moved to floor 1");
             writePacket(net, pLists, 3);
@@ -176,6 +174,10 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         pType = getPacketType(net);
         switch(pType)
         {
+        case IPC_PKT_1:
+        case IPC_PKT_2:
+            connectionController(sockets, pLists, gameInfo);
+        break;
         case 8:
             DEBUG("GC> Running> Received packet 8");
             getPacket(net, &inPkt8, netPacketSizes[8]);
@@ -216,9 +218,53 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     }
 }
 
+
+void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
+{
+    SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
+
+
+    if(!RUNNING) {
+        return;
+    }
+
+    forceMoveAll(sockets, pLists, PLAYER_STATE_WAITING);
+    memset(pLists->otherPlayers_teams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
+    writePacket(net, pLists, 3);
+}
+
+void connectionController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
+{
+    SOCKET ipc   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
+    SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
+
+
+}
+
 /***********************************************************/
 /******                HELPER FUNCTIONS               ******/
 /***********************************************************/
+void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
+{
+    int i;
+    floorNo_t floor = FLOOR_LOBBY;
+    PKT_FORCE_MOVE      outIPC3;
+    SOCKET ipc   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
+
+    if(status == PLAYER_STATE_ACTIVE) {
+        floor = 1;
+    } else if(status == PLAYER_STATE_WAITING) {
+        floor = FLOOR_LOBBY;
+    }
+
+    for(i = 0; pLists->player_valid[i] == FALSE; ++i)
+    {
+        pLists->readystatus[i] = status;
+        outIPC3.playerNo = i;
+        outIPC3.newFloor = floor;
+        writeIPC(ipc, &outIPC3, 0xB3);
+    }
+}
 
 size_t countObjectives(bool_t *objectives)
 {
