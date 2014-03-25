@@ -97,7 +97,7 @@ typedef struct pkt03{
 } PKT_PLAYERS_UPDATE;
 
 typedef struct pkt04{
-	playerNo_t 	sendingPlayer_number;
+	playerNo_t 	sendingPlayer;
 	char 		message[MAX_MESSAGE];
 } PKT_CHAT;
 
