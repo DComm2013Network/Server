@@ -132,6 +132,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
         {
         case IPC_PKT_1:
         case IPC_PKT_2:
+        case 4:
             connectionController(sockets, pType, pLists, gameInfo);
         break;
         case 5:
@@ -174,6 +175,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 	packet_t pType;
     size_t team1 = 0, team2 = 0, objCount = 0;
 	DEBUG(DEBUG_INFO, "GC> In runningController");
+	chatGameStart();
     while(gameInfo->game_status == GAME_STATE_ACTIVE)
     {
         if(!RUNNING) {
@@ -185,6 +187,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         {
         case IPC_PKT_1:
         case IPC_PKT_2:
+        case 4:
             connectionController(sockets, pType, pLists, gameInfo);
         break;
         case 8:
@@ -259,6 +262,7 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
 
     PKT_NEW_CLIENT  inIPC1;
     PKT_LOST_CLIENT inIPC2;
+    PKT_CHAT pktchat;
 
     switch(pType)
     {
@@ -305,7 +309,13 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
             writePacket(out, pLists, 3);
 
             //TO-DO check if that was the last player of a team and trigger a win condition
-        break;    DEBUG(DEBUG_WARN, "GC> Lost player is not valid");
+            DEBUG(DEBUG_WARN, "GC> Lost player is not valid");
+        break;
+
+        case 4: // chat
+            getPacket(in, &pktchat, netPacketSizes[4]);
+            sendChat(&pktchat, pLists->otherPlayers_teams, out);
+        break;
     default:
         DEBUG(DEBUG_ALRM, "GC> This should never be possible... gg");
     break;

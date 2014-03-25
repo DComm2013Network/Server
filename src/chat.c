@@ -1,10 +1,10 @@
 #include "Server.h"
 
 time_t gameStart;
-status_t currentState
+status_t currentState;
 
 void chatGameStart(){
-    gameStart = time();
+    gameStart = time(NULL);
 }
 
 void sendChat(PKT_CHAT* chat, teamNo_t teams[MAX_PLAYERS], SOCKET outswitch){
@@ -22,6 +22,6 @@ void sendChat(PKT_CHAT* chat, teamNo_t teams[MAX_PLAYERS], SOCKET outswitch){
 
     write(outswitch, &type, sizeof(packet_t));
     write(outswitch, chat, netPacketSizes[type]);
-    write(outswitch, &m, sizeof(OUTMASK));
+    write(outswitch, &outM, sizeof(OUTMASK));
 
 }
