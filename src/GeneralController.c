@@ -41,6 +41,7 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
 // Helpers
 size_t countObjectives(bool_t *objectives);
 size_t countTeams(const teamNo_t *playerTeams, size_t *team1, size_t *team2);
+size_t countActivePlayers(const teamNo_t *playerTeams);
 void zeroPlayerLists(PKT_PLAYERS_UPDATE *pLists, const int maxPlayers);
 
 // Game Utility
@@ -114,10 +115,11 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
 	SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 	teamNo_t desiredTeams[MAX_PLAYERS] = {0};
 
-    gameInfo->game_status = GAME_STATE_WAITING;
-
 	PKT_READY_STATUS    inPkt5;
 	packet_t pType;
+
+    gameInfo->game_status = GAME_STATE_WAITING;
+    memset(pLists->otherPlayers_teams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
 
 	while(gameInfo->game_status == GAME_STATE_WAITING)
     {
@@ -155,6 +157,10 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
     }
 }
 
+// main game engine controller
+// refactored march 25
+// created WAY BACK IN THE DAY
+//
 void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
 	SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
@@ -219,7 +225,9 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     }
 }
 
-
+// moves all players to lobby
+// created march 24
+// revised march 25 lobby controller strips player teams
 void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
     SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
@@ -230,10 +238,15 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
     }
 
     forceMoveAll(sockets, pLists, PLAYER_STATE_WAITING);
-    memset(pLists->otherPlayers_teams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
+    // players are stripped of their teams when entering the lobby controller
+    // memset(pLists->otherPlayers_teams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
     writePacket(net, pLists, 3);
 }
 
+// handles new player and player lost packets
+// checks win on player lost
+// should be called in each controller that is allowed to accept these packets...pretty much all of them
+// created march 25
 void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
     SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
@@ -288,7 +301,7 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
 
         // WIN CHECK
         countTeams(pLists->otherPlayers_teams, &team1, &team2);
-        if(team1 <= MIN_PLAYERS_TEAM)
+        if(team1 <= MIN_PLAYER_TEAM)
         {
             gameInfo->game_status = GAME_TEAM2_WIN;
         }
@@ -313,6 +326,10 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
 /***********************************************************/
 /******                HELPER FUNCTIONS               ******/
 /***********************************************************/
+
+// created march 24
+// sends ipc3 for all players
+// moves all players to specified floor and sets their specified state
 void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
 {
     int i;
@@ -335,6 +352,9 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
     }
 }
 
+// counts the captured objectives
+// created march 14
+// refactored march 24
 size_t countObjectives(bool_t *objectives)
 {
     int i, val = 0;
@@ -346,6 +366,9 @@ size_t countObjectives(bool_t *objectives)
     return val;
 }
 
+//created march 25
+//uses player teams to count the number of players still in the game
+// returns the amoun of players
 size_t countActivePlayers(const teamNo_t *playerTeams)
 {
     size_t team1 = 0, team2 = 0;
@@ -355,6 +378,7 @@ size_t countActivePlayers(const teamNo_t *playerTeams)
 // params [out] team1 - number of players in team1
 //        [out] team2 - number of players in team2
 // returns total number of players in the game
+// created march 12
 size_t countTeams(const teamNo_t *playerTeams, size_t *team1, size_t *team2)
 {
     size_t i, state;
@@ -374,6 +398,9 @@ size_t countTeams(const teamNo_t *playerTeams, size_t *team1, size_t *team2)
     return (*team1) + (*team2);
 }
 
+// in - teams chosed by the users
+// out- teams balanced by the server
+// created march 12
 void balanceTeams(const teamNo_t *teamIn, teamNo_t *teamOut)
 {
     size_t team1Count = 0, team2Count = 0, i = 0;
@@ -381,7 +408,8 @@ void balanceTeams(const teamNo_t *teamIn, teamNo_t *teamOut)
     countTeams(teamIn, &team1Count, &team2Count);
     while(team1Count < team2Count)
     {
-        if(*(teamOut+i) == TEAM_ROBBERS){
+        if(*(teamOut+i) == TEAM_ROBBERS)
+        {
             *(teamOut+i) = TEAM_COPS;
             team1Count++;
             team2Count--;
@@ -417,7 +445,9 @@ status_t getGameStatus(const status_t *playerStatus, const teamNo_t *playerTeams
     return s;
 }
 
-
+// useful in setup of a new game
+// sets ll player data to initial states
+// march25 created
 void zeroPlayerLists(PKT_PLAYERS_UPDATE *pLists, const int maxPlayers)
 {
     int i, j;
@@ -438,8 +468,9 @@ void zeroPlayerLists(PKT_PLAYERS_UPDATE *pLists, const int maxPlayers)
 }
 
 
-// receives etup packet and initializes player lists
+// receives setup packet and initializes player lists
 // returns 1 on success <0 on error
+// march 25 created
 int setup(SOCKET in, int *maxPlayers, PKT_PLAYERS_UPDATE *pLists)
 {
     char msg[BUFFSIZE] = {0};
