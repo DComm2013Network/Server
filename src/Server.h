@@ -43,7 +43,7 @@
 
 #define NUM_IPC_PACKETS 5
 
-#define SERVER_VERSION 1.1
+#define SERVER_VERSION 1.2
 
 #define TCP_PORT 42337
 #define UDP_PORT 42338

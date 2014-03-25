@@ -374,30 +374,6 @@ void* GameplayController(void* ipcSocks) {
 			floorArray[playerFloor].xVel[thisPlayer] = bufPlayerIn->xVel;
 			floorArray[playerFloor].yVel[thisPlayer] = bufPlayerIn->yVel;
 
-			//set packet type for outbound server
-			outPType = 11;
-
-			//set outbound mask for outbound server
-			OUT_ZERO(m);
-			for (i = 0; i < MAX_PLAYERS; i++) {
-				if (floorArray[playerFloor].players_on_floor[i] == 1) {
-					OUT_SET(m, i);
-				}
-			}
-			//send packet type and then packet to outbound switchboard
-			if (write(outswitchSock, &outPType, sizeof(outPType)) == -1) {
-				errOut++;
-				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
-			}
-			if (write(outswitchSock, &floorArray[playerFloor], lenPktAll) == -1) {
-				errOut++;
-				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
-			}
-			if (write(outswitchSock, &m, sizeof(OUTMASK)) == -1) {
-				errOut++;
-				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
-			}
-
 			break;
 		case 0xB4:
             // Timer tick, send update
