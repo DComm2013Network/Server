@@ -52,7 +52,7 @@ void connectionManagerSetup(SOCKET connectionSock, int* maxPlayers, char* gameNa
 	struct pktB0 setupPkt;
 
 	if(getPacketType(connectionSock) != 0xB0){
-		DEBUG("CM> CM setup getting packets it shouldn't be");
+		DEBUG(DEBUG_WARN, "CM> CM setup getting packets it shouldn't be");
 		return;
 	}
 
@@ -61,7 +61,7 @@ void connectionManagerSetup(SOCKET connectionSock, int* maxPlayers, char* gameNa
 	*maxPlayers = setupPkt.maxPlayers;
 	memcpy(gameName, setupPkt.serverName, MAX_NAME);
 
-	DEBUG("CM> Setup Complete");
+	DEBUG(DEBUG_INFO, "CM> Setup Complete");
 
 	return;
 }
@@ -100,19 +100,19 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 	socklen_t addr_len = sizeof(struct sockaddr_in);
 	int i;
 
-	DEBUG("CM> Adding new connection");
+	DEBUG(DEBUG_INFO,"CM> Adding new connection");
 
 	bzero(&replyToClient, netPacketSizes[2]);
 	bzero(&newClientInfo, ipcPacketSizes[1]);
 
 	if ((acceptSock = accept(listenSock, (struct sockaddr *)&client, &addr_len)) == -1){
-		DEBUG("Could not accept client");
+		DEBUG(DEBUG_ALRM, "Could not accept client");
 		return;
 	}
 
 	// Read in the packet type, which should be 1
 	if(getPacketType(acceptSock) != 1){
-		DEBUG("CM> Add new connection getting packets it shouldn't be");
+		DEBUG(DEBUG_WARN, "CM> Add new connection getting packets it shouldn't be");
 		return;
 	}
 
@@ -127,7 +127,7 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 
 	// Add player if space
 	if(i < maxPlayers){
-		DEBUG("CM> Space available, adding player");
+		DEBUG(DEBUG_INFO, "CM> Space available, adding player");
 
         connectedPlayers++;
         printf("Added player %d to game.\n", i);
@@ -140,30 +140,31 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 		// Send accept to client with their player and team number
 		send(acceptSock, &replyType, sizeof(packet_t), 0);
 		send(acceptSock, &replyToClient, sizeof(struct pkt02), 0);
-		DEBUG("CM> Sent pkt 2");
+		DEBUG(DEBUG_INFO, "CM> Sent pkt 2");
 
 		newClientInfo.playerNo = i;
 		memcpy(&newClientInfo.client_player_name, &clientReg.client_player_name, MAX_NAME);
 
 		// add TCP connection to list
 		tcpConnections[i] = acceptSock;
+		clientPulse(i);
 
 		// set UDP connection info, but override the port
 		memcpy(&udpAddresses[i], &client, sizeof(struct sockaddr_in));
 		udpAddresses[i].sin_port = htons(UDP_PORT);
 
-		DEBUG("CM> Notifying switchboards");
+		DEBUG(DEBUG_INFO, "CM> Notifying switchboards");
 		// Notify switchboards
 		write(connectionSock, &newClientType, sizeof(packet_t));
 		write(connectionSock, &newClientInfo, sizeof(struct pktB1));
 		write(outswitchSock, &newClientType, sizeof(packet_t));
 		write(outswitchSock, &newClientInfo, sizeof(struct pktB1));
 
-		DEBUG("CM> New client added");
+		DEBUG(DEBUG_INFO, "CM> New client added");
 	}
 	else{
 		// Server is full. GTFO
-		DEBUG("CM> Game full, rejecting client");
+		DEBUG(DEBUG_WARN, "CM> Game full, rejecting client");
 		replyToClient.connect_code = CONNECT_CODE_DENIED;
 		send(acceptSock, &replyType, sizeof(packet_t), 0);
 		send(acceptSock, &replyToClient, sizeof(struct pkt02), 0);
@@ -198,10 +199,10 @@ void removeConnection(SOCKET connectionSock){
 	struct pktB2 lostClient;
 	int type = 0xB2;
 
-	DEBUG("CM> Removing player from game");
+	DEBUG(DEBUG_WARN, "CM> Removing player from game");
 
 	if(getPacketType(connectionSock) != type){
-		DEBUG("CM> Connection manager Remove Connection getting packets it shouldn't be.");
+		DEBUG(DEBUG_ALRM, "CM> Connection manager Remove Connection getting packets it shouldn't be.");
 		return;
 	}
 
@@ -209,7 +210,7 @@ void removeConnection(SOCKET connectionSock){
 
 	connectedPlayers--;
 
-	DEBUG("CM> Removed player from game");
+	DEBUG(DEBUG_INFO, "CM> Removed player from game");
 
 	return;
 }
@@ -255,7 +256,7 @@ void* ConnectionManager(void* ipcSocks){
 
 	gameName = (char*)malloc(sizeof(char) * MAX_NAME);
 
-	DEBUG("CM> Connection Manager Started");
+	DEBUG(DEBUG_INFO, "CM> Connection Manager Started");
 
 	// Read the packet from UI and get started
 	connectionManagerSetup(connectionSock, &maxPlayers, gameName);
@@ -284,7 +285,7 @@ void* ConnectionManager(void* ipcSocks){
 		return NULL;
 	}
 
-	DEBUG("CM> TCP socket bound");
+	DEBUG(DEBUG_INFO, "CM> TCP socket bound");
 
 	server.sin_port = htons(UDP_PORT);
 
@@ -294,12 +295,12 @@ void* ConnectionManager(void* ipcSocks){
 		return NULL;
 	}
 
-	DEBUG("CM> UDP socket bound");
+	DEBUG(DEBUG_INFO, "CM> UDP socket bound");
 
 	// queue up to 5 connect requests
 	listen(listenSock, 5);
 
-	DEBUG("CM> Listening");
+	DEBUG(DEBUG_INFO, "CM> Listening");
 
 	while(RUNNING){
 

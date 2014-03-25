@@ -99,7 +99,7 @@ void* GeneralController(void* ipcSocks)
     SOCKET ipc   = ((SOCKET*) ipcSocks)[0];     // Socket to relay IPC messages
 
     setup(ipc, &maxPlayers, &pInfoLists);
-	DEBUG("GC> Setup Complete");
+	DEBUG(DEBUG_INFO, "GC> Setup Complete");
 	while (RUNNING) {
 
         lobbyController(ipcSocks, &pInfoLists,&gameInfo);
@@ -134,7 +134,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
             connectionController(sockets, pType, pLists, gameInfo);
         break;
         case 5:
-            DEBUG("GC> Lobby> Received pakcet 5");
+            DEBUG(DEBUG_INFO, "GC> Lobby> Received pakcet 5");
             getPacket(net, &inPkt5, sizeof(netPacketSizes[5]));
 
             pLists->readystatus[inPkt5.player_number] = inPkt5.ready_status;
@@ -147,11 +147,11 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
                 balanceTeams(desiredTeams, pLists->otherPlayers_teams);
                 forceMoveAll(sockets, pLists, PLAYER_STATE_ACTIVE);
             }
-            DEBUG("GC> Lobby> All players ready and moved to floor 1");
+            DEBUG(DEBUG_WARN, "GC> Lobby> All players ready and moved to floor 1");
             writePacket(net, pLists, 3);
         break;
         default:
-            DEBUG("GC> Lobby> Receiving invalid packet");
+            DEBUG(DEBUG_ALRM, "GC> Lobby> Receiving invalid packet");
         break;
         }
     }
@@ -171,7 +171,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
 	packet_t pType;
     size_t team1 = 0, team2 = 0, objCount = 0;
-	DEBUG("GC> In runningController");
+	DEBUG(DEBUG_INFO, "GC> In runningController");
     while(gameInfo->game_status == GAME_STATE_ACTIVE)
     {
         if(!RUNNING) {
@@ -186,7 +186,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             connectionController(sockets, pType, pLists, gameInfo);
         break;
         case 8:
-            DEBUG("GC> Running> Received packet 8");
+            DEBUG(DEBUG_INFO, "GC> Running> Received packet 8");
             getPacket(net, &inPkt8, netPacketSizes[8]);
 
             memcpy(gameInfo->objectives_captured, &(inPkt8.objectives_captured), MAX_OBJECTIVES);
@@ -201,7 +201,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             writePacket(net, gameInfo, 8);
         break;
         case 14:
-            DEBUG("GC> Running> Received packet 14");
+            DEBUG(DEBUG_INFO, "GC> Running> Received packet 14");
             getPacket(net, &inPkt14, netPacketSizes[14]);
 
             outIPC3.playerNo = inPkt14.taggee_id;
@@ -220,7 +220,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             }
 
         break;
-        default: DEBUG("GC> Running> Receiving invalid packet"); break;
+        default: DEBUG(DEBUG_ALRM, "GC> Running> Receiving invalid packet"); break;
         }
     }
 }
@@ -261,7 +261,7 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
     switch(pType)
     {
     case IPC_PKT_1: // New Player
-        DEBUG("GC> Received IPC_PKT_1");
+        DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_1");
         getPacket(net, &inIPC1, ipcPacketSizes[1]);
 
         numPlayers++;
@@ -274,51 +274,38 @@ void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLi
 
         writePacket(net, pLists, 3);
         writePacket(net, gameInfo, 8);
-    break;
-    case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
-        DEBUG("GC> Received IPC_PKT_2");
-        if (numPlayers < 1)
-        {
-            DEBUG("GC> numPlayers < 1 HOW COULD WE LOSE SOMEONE?!");
-            if(pLists->player_valid[inIPC2.playerNo] == TRUE) {
-                DEBUG("GC> ...because the playerNo is still valid..BUT WHY!?");
-            }
-            break;
-        }
+        break;
+		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
+			DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_2");
+//			if (numPlayers < 1)
+//			{
+//                DEBUG("GC> numPlayers < 1 HOW COULD WE LOSE SOMEONE?!");
+//                if(pLists->player_valid[inIPC2.playerNo] == TRUE)
+//                {
+//                    DEBUG("GC> ...because the playerNo is still valid..BUT WHY!?");
+//                }
+//                break;
+//			}
 
-        getPacket(net, &inIPC2, ipcPacketSizes[2]);
-        if(pLists->player_valid[inIPC2.playerNo] == FALSE)
-        {
-            DEBUG("GC> Sources tell me this player is already not valid.. at least he's actrually gone now");
-            break;
-        }
+			getPacket(net, &inIPC2, ipcPacketSizes[2]);
+			if(pLists->player_valid[inIPC2.playerNo] == FALSE)
+			{
+                DEBUG(DEBUG_WARN, "GC> Sources tell me this player is already not valid.. at least he's actrually gone now");
+                break;
+			}
 
-        pLists->otherPlayers_name[inIPC2.playerNo][0] = '\0';
-        pLists->otherPlayers_teams[inIPC2.playerNo] = TEAM_NONE;
-        pLists->player_valid[inIPC2.playerNo] = FALSE;
-        pLists->readystatus[inIPC2.playerNo] = PLAYER_STATE_DROPPED;
-        writePacket(net, pLists, 3);
+//			numPlayers--;
 
-        // WIN CHECK
-        countTeams(pLists->otherPlayers_teams, &team1, &team2);
-        if(team1 <= MIN_PLAYER_TEAM)
-        {
-            gameInfo->game_status = GAME_TEAM2_WIN;
-        }
+            pLists->otherPlayers_name[inIPC2.playerNo][0] = '\0';
+            pLists->otherPlayers_teams[inIPC2.playerNo] = TEAM_NONE;
+            pLists->player_valid[inIPC2.playerNo] = FALSE;
+            pLists->readystatus[inIPC2.playerNo] = PLAYER_STATE_DROPPED;
+            writePacket(net, pLists, 3);
 
-        if(team2 <= MIN_PLAYER_TEAM)
-        {
-            gameInfo->game_status = GAME_TEAM1_WIN;
-        }
-
-        if(gameInfo->game_status == GAME_TEAM1_WIN || gameInfo->game_status == GAME_TEAM2_WIN)
-        {
-            writePacket(net, gameInfo, 8);
-        }
-
-    break;    DEBUG("GC> Lost player is not valid");
+            //TO-DO check if that was the last player of a team and trigger a win condition
+        break;    DEBUG(DEBUG_WARN, "GC> Lost player is not valid");
     default:
-        DEBUG("GC> This should never be possible... gg");
+        DEBUG(DEBUG_ALRM, "GC> This should never be possible... gg");
     break;
     }
 }
@@ -391,7 +378,7 @@ size_t countTeams(const teamNo_t *playerTeams, size_t *team1, size_t *team2)
             case PLAYER_STATE_INVALID: return (*team1) + (*team2);
             case TEAM_COPS:     (*team1)++; break;
             case TEAM_ROBBERS:  (*team2)++; break;
-            default: DEBUG("GC> Error getting player's team"); break;
+            default: DEBUG(DEBUG_ALRM, "GC> Error getting player's team"); break;
         }
 
     }
@@ -481,7 +468,7 @@ int setup(SOCKET in, int *maxPlayers, PKT_PLAYERS_UPDATE *pLists)
 
     if(pType != IPC_PKT_0) {
         sprintf(msg, "GC> Expected %d - Received %d", IPC_PKT_0, pType);
-        DEBUG(msg);
+        DEBUG(DEBUG_ALRM, msg);
         return -1;
     }
 
@@ -504,7 +491,7 @@ inline void writeIPC(SOCKET sock, void* buf, packet_t type)
     #if DEBUG_ON
         char buff[BUFFSIZE];
         sprintf(buff, "GC> Sent packet: %d", type);
-        DEBUG(buff);
+        DEBUG(DEBUG_INFO, buff);
     #endif
 }
 
@@ -520,6 +507,6 @@ inline void writePacket(SOCKET sock, void* packet, packet_t type)
     #if DEBUG_ON
         char buff[BUFFSIZE];
         sprintf(buff, "GC> Sent packet: %d", type);
-        DEBUG(buff);
+        DEBUG(DEBUG_INFO, buff);
     #endif
 }

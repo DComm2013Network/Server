@@ -4,11 +4,12 @@ CC=gcc
 CFLAGS=-c -Wall
 GBD=-g
 LIBS=-lpthread
+OBJECTS=server-utils.o Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o keep-alive.o game-utils.o
 
 all: Server
 
-Server: server-utils.o Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o game-utils.o
-	$(CC) $(GDB) server-utils.o Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o  UI.o game-utils.o -o ../bin/Server $(LIBS)
+Server: $(OBJECTS)
+	$(CC) $(GDB) $(OBJECTS) -o ../bin/Server $(LIBS)
 
 server-utils.o: ../src/server-utils.c
 	$(CC) $(CFLAGS) ../src/server-utils.c
@@ -33,6 +34,9 @@ OutboundSwitchboard.o: ../src/OutboundSwitchboard.c
 	
 UI.o: ../src/UI.c
 	$(CC) $(CFLAGS) ../src/UI.c
+
+keep-alive.o: ../src/keep-alive.c
+	$(CC) $(CFLAGS) ../src/keep-alive.c
 
 game-utils.o: ../src/game-utils.c
 	$(CC) $(CFLAGS) ../src/game-utils.c
