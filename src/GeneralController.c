@@ -116,7 +116,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
     gameInfo->game_status = GAME_STATE_WAITING;
 
 	PKT_READY_STATUS    inPkt5;
-	int pType;
+	packet_t pType;
 
 	while(gameInfo->game_status == GAME_STATE_WAITING)
     {
@@ -128,7 +128,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
         {
         case IPC_PKT_1:
         case IPC_PKT_2:
-            connectionController(sockets, pLists, gameInfo);
+            connectionController(sockets, pType, pLists, gameInfo);
         break;
         case 5:
             DEBUG("GC> Lobby> Received pakcet 5");
@@ -162,7 +162,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     PKT_TAGGING     inPkt14;
     PKT_FORCE_MOVE  outIPC3;
 
-	int pType;
+	packet_t pType;
     size_t team1 = 0, team2 = 0, objCount = 0;
 	DEBUG("GC> In runningController");
     while(gameInfo->game_status == GAME_STATE_ACTIVE)
@@ -176,7 +176,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         {
         case IPC_PKT_1:
         case IPC_PKT_2:
-            connectionController(sockets, pLists, gameInfo);
+            connectionController(sockets, pType, pLists, gameInfo);
         break;
         case 8:
             DEBUG("GC> Running> Received packet 8");
@@ -233,7 +233,7 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
     writePacket(net, pLists, 3);
 }
 
-void connectionController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
+void connectionController(void* sockets, packet_t type, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
     SOCKET ipc   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
     SOCKET net   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
