@@ -95,6 +95,7 @@ typedef struct pkt03{
 	bool_t 	    player_valid[MAX_PLAYERS];
 	char 		otherPlayers_name[MAX_PLAYERS][MAX_NAME];
 	teamNo_t 	otherPlayers_teams[MAX_PLAYERS];
+    character_t characters[MAX_PLAYERS];
 	status_t	readystatus[MAX_PLAYERS];
 } PKT_PLAYERS_UPDATE;
 
@@ -108,7 +109,6 @@ typedef struct pkt05{
 	status_t	ready_status;
 	teamNo_t	team_number;
 	char 		player_name[MAX_NAME];
-	character_t characters[MAX_PLAYERS];
 } PKT_READY_STATUS;
 
 typedef struct pkt06{
