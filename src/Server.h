@@ -96,6 +96,7 @@ typedef struct pktB0{
 
 typedef struct pktB1{
 	playerNo_t			playerNo;
+	character_t         character;
 	char 				client_player_name[MAX_NAME];
 } PKT_NEW_CLIENT;
 

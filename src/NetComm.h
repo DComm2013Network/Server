@@ -40,6 +40,7 @@ typedef uint32_t    playerNo_t;
 typedef uint32_t    teamNo_t;
 typedef uint32_t    status_t;
 typedef uint32_t    pos_t;
+typedef uint32_t    character_t;
 typedef float	    vel_t;
 typedef uint32_t    packet_t;
 typedef uint64_t    timestamp_t;
@@ -81,6 +82,7 @@ typedef int         bool_t;
 
 typedef struct pkt01{
 	char 		client_player_name[MAX_NAME];
+	character_t selectedChatacter;
 } PKT_PLAYER_JOIN;
 
 typedef struct pkt02{
@@ -93,6 +95,7 @@ typedef struct pkt03{
 	bool_t 	    player_valid[MAX_PLAYERS];
 	char 		otherPlayers_name[MAX_PLAYERS][MAX_NAME];
 	teamNo_t 	otherPlayers_teams[MAX_PLAYERS];
+    character_t characters[MAX_PLAYERS];
 	status_t	readystatus[MAX_PLAYERS];
 } PKT_PLAYERS_UPDATE;
 

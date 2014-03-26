@@ -33,7 +33,7 @@ double WIN_RATIO = MAX_OBJECTIVES * 0.75;
 
 // Controllers
 void* GeneralController(void* ipcSocks);
-void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
+void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
 void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
 void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
 void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
@@ -110,6 +110,82 @@ void* GeneralController(void* ipcSocks)
 	return NULL;
 }
 
+// handles new player and player lost packets
+// checks win on player lost
+// should be called in each controller that is allowed to accept these packets...pretty much all of them
+// created march 25
+// march 26 added player selection
+void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
+{
+    SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
+    SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
+
+    size_t numPlayers = countActivePlayers(pLists->otherPlayers_teams);
+
+
+    PKT_NEW_CLIENT  inIPC1;
+    PKT_LOST_CLIENT inIPC2;
+    PKT_CHAT pktchat;
+
+    switch(pType)
+    {
+    case IPC_PKT_1: // New Player
+        DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_1");
+        getPacket(in, &inIPC1, ipcPacketSizes[1]);
+
+        numPlayers++;
+
+        // Assign no team and send him to the lobby
+        pLists->otherPlayers_teams[inIPC1.playerNo] = TEAM_NONE;
+        strcpy(pLists->otherPlayers_name[inIPC1.playerNo], inIPC1.client_player_name);
+        pLists->readystatus[inIPC1.playerNo] = PLAYER_STATE_WAITING;
+        pLists->player_valid[inIPC1.playerNo] = TRUE;
+        pLists->characters[inIPC1.playerNo] = inIPC1.character;
+
+        writePacket(out, pLists, 3);
+        writePacket(out, gameInfo, 8);
+        break;
+		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
+			DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_2");
+			if (numPlayers < 1)
+			{
+                DEBUG(DEBUG_ALRM, "GC> numPlayers < 1 HOW COULD WE LOSE SOMEONE?!");
+                if(pLists->player_valid[inIPC2.playerNo] == TRUE)
+                {
+                    DEBUG(DEBUG_WARN, "GC> ...because the playerNo is still valid..BUT WHY!?");
+                }
+                break;
+			}
+
+			getPacket(in, &inIPC2, ipcPacketSizes[2]);
+			if(pLists->player_valid[inIPC2.playerNo] == FALSE)
+			{
+                DEBUG(DEBUG_WARN, "GC> Sources tell me this player is already not valid.. at least he's actrually gone now");
+                break;
+			}
+
+			numPlayers--;
+
+            pLists->otherPlayers_name[inIPC2.playerNo][0] = '\0';
+            pLists->otherPlayers_teams[inIPC2.playerNo] = TEAM_NONE;
+            pLists->player_valid[inIPC2.playerNo] = FALSE;
+            pLists->readystatus[inIPC2.playerNo] = PLAYER_STATE_DROPPED;
+            writePacket(out, pLists, 3);
+
+            //TO-DO check if that was the last player of a team and trigger a win condition
+            DEBUG(DEBUG_WARN, "GC> Lost player is not valid");
+        break;
+
+        case 4: // chat
+            getPacket(in, &pktchat, netPacketSizes[4]);
+            sendChat(&pktchat, pLists->otherPlayers_teams, out);
+        break;
+    default:
+        DEBUG(DEBUG_ALRM, "GC> This should never be possible... gg");
+    break;
+    }
+}
+
 void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
     SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
@@ -133,7 +209,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
         case IPC_PKT_1:
         case IPC_PKT_2:
         case 4:
-            connectionController(sockets, pType, pLists, gameInfo);
+            ongoingController(sockets, pType, pLists, gameInfo);
         break;
         case 5:
             DEBUG(DEBUG_INFO, "GC> Lobby> Received pakcet 5");
@@ -188,7 +264,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         case IPC_PKT_1:
         case IPC_PKT_2:
         case 4:
-            connectionController(sockets, pType, pLists, gameInfo);
+            ongoingController(sockets, pType, pLists, gameInfo);
         break;
         case 8:
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 8");
@@ -246,80 +322,6 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
     // players are stripped of their teams when entering the lobby controller
     // memset(pLists->otherPlayers_teams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
     writePacket(out, pLists, 3);
-}
-
-// handles new player and player lost packets
-// checks win on player lost
-// should be called in each controller that is allowed to accept these packets...pretty much all of them
-// created march 25
-void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
-{
-    SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
-    SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
-
-    size_t numPlayers = countActivePlayers(pLists->otherPlayers_teams);
-
-
-    PKT_NEW_CLIENT  inIPC1;
-    PKT_LOST_CLIENT inIPC2;
-    PKT_CHAT pktchat;
-
-    switch(pType)
-    {
-    case IPC_PKT_1: // New Player
-        DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_1");
-        getPacket(in, &inIPC1, ipcPacketSizes[1]);
-
-        numPlayers++;
-
-        // Assign no team and send him to the lobby
-        pLists->otherPlayers_teams[inIPC1.playerNo] = TEAM_NONE;
-        strcpy(pLists->otherPlayers_name[inIPC1.playerNo], inIPC1.client_player_name);
-        pLists->readystatus[inIPC1.playerNo] = PLAYER_STATE_WAITING;
-        pLists->player_valid[inIPC1.playerNo] = TRUE;
-
-        writePacket(out, pLists, 3);
-        writePacket(out, gameInfo, 8);
-        break;
-		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
-			DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_2");
-//			if (numPlayers < 1)
-//			{
-//                DEBUG("GC> numPlayers < 1 HOW COULD WE LOSE SOMEONE?!");
-//                if(pLists->player_valid[inIPC2.playerNo] == TRUE)
-//                {
-//                    DEBUG("GC> ...because the playerNo is still valid..BUT WHY!?");
-//                }
-//                break;
-//			}
-
-			getPacket(in, &inIPC2, ipcPacketSizes[2]);
-			if(pLists->player_valid[inIPC2.playerNo] == FALSE)
-			{
-                DEBUG(DEBUG_WARN, "GC> Sources tell me this player is already not valid.. at least he's actrually gone now");
-                break;
-			}
-
-//			numPlayers--;
-
-            pLists->otherPlayers_name[inIPC2.playerNo][0] = '\0';
-            pLists->otherPlayers_teams[inIPC2.playerNo] = TEAM_NONE;
-            pLists->player_valid[inIPC2.playerNo] = FALSE;
-            pLists->readystatus[inIPC2.playerNo] = PLAYER_STATE_DROPPED;
-            writePacket(out, pLists, 3);
-
-            //TO-DO check if that was the last player of a team and trigger a win condition
-            DEBUG(DEBUG_WARN, "GC> Lost player is not valid");
-        break;
-
-        case 4: // chat
-            getPacket(in, &pktchat, netPacketSizes[4]);
-            sendChat(&pktchat, pLists->otherPlayers_teams, out);
-        break;
-    default:
-        DEBUG(DEBUG_ALRM, "GC> This should never be possible... gg");
-    break;
-    }
 }
 
 /***********************************************************/

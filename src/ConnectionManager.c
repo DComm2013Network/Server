@@ -144,6 +144,7 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 
 		newClientInfo.playerNo = i;
 		memcpy(&newClientInfo.client_player_name, &clientReg.client_player_name, MAX_NAME);
+		newClientInfo.character = clientReg.selectedChatacter;
 
 		// add TCP connection to list
 		tcpConnections[i] = acceptSock;
