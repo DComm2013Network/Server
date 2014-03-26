@@ -74,8 +74,7 @@ packet_t    getPacketType(SOCKET socket);
 int         getPacket(SOCKET socket, void* buffer, int sizeOfBuffer);
 
 //function prototypes for game-utils
-pos_t       getLobbyX(playerNo_t plyr);
-pos_t       getLobbyY(playerNo_t plyr);
+void getSpawn(playerNo_t player, floorNo_t floor, pos_t* xPos, pos_t* yPos);
 
 void* ConnectionManager(void* ipcSocks);
 void* InboundSwitchboard(void* ipcSocks);

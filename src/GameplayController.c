@@ -154,8 +154,7 @@ void* GameplayController(void* ipcSocks) {
 			thisPlayer = bufipcPkt1->playerNo;
 			playerFloor = 0;
 			bufFloorMove->new_floor = playerFloor;
-			bufFloorMove->xPos = getLobbyX(bufipcPkt1->playerNo);
-			bufFloorMove->yPos = getLobbyY(bufipcPkt1->playerNo);
+			getSpawn(bufipcPkt1->playerNo, playerFloor, &bufFloorMove->xPos, &bufFloorMove->yPos);
 
 			//add player to floor array
 			floorArray[0].players_on_floor[thisPlayer] = 1;
@@ -269,9 +268,8 @@ void* GameplayController(void* ipcSocks) {
 			bufFloorMove->new_floor = bufipcPkt3->newFloor;
 
 
-			// put them in their lobby location
-			bufFloorMove->xPos = getLobbyX(bufipcPkt3->playerNo);
-			bufFloorMove->yPos = getLobbyY(bufipcPkt3->playerNo);
+			// put them in new locations
+			getSpawn(bufipcPkt3->playerNo, bufipcPkt3->newFloor, &bufFloorMove->xPos, &bufFloorMove->yPos);
 
 			// send the player floor move
 			outPType = 13;

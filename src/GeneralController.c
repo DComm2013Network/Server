@@ -344,12 +344,24 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
         floor = FLOOR_LOBBY;
     }
 
-    for(i = 0; pLists->player_valid[i] == FALSE; ++i)
-    {
-        pLists->readystatus[i] = status;
-        outIPC3.playerNo = i;
-        outIPC3.newFloor = floor;
-        writeIPC(out, &outIPC3, 0xB3);
+    if(floor == 1){
+        for(i = 0; pLists->player_valid[i] == FALSE; ++i)
+        {
+            pLists->readystatus[i] = status;
+            outIPC3.playerNo = i;
+            outIPC3.newFloor = floor;
+            writeIPC(out, &outIPC3, 0xB3);
+        }
+    }
+    else{
+        for(i = 0; pLists->player_valid[i] == FALSE; ++i)
+        {
+            pLists->readystatus[i] = status;
+            outIPC3.playerNo = i;
+            outIPC3.newFloor = (pLists->otherPlayers_teams[i] == TEAM_COPS) ? 3 : 1;
+            writeIPC(out, &outIPC3, 0xB3);
+        }
+
     }
 }
 
