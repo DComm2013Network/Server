@@ -33,7 +33,7 @@ double WIN_RATIO = MAX_OBJECTIVES * 0.75;
 
 // Controllers
 void* GeneralController(void* ipcSocks);
-void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
+void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
 void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
 void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
 void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo);
@@ -114,7 +114,8 @@ void* GeneralController(void* ipcSocks)
 // checks win on player lost
 // should be called in each controller that is allowed to accept these packets...pretty much all of them
 // created march 25
-void connectionController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
+// march 26 added player selection
+void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
     SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
     SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
@@ -208,7 +209,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
         case IPC_PKT_1:
         case IPC_PKT_2:
         case 4:
-            connectionController(sockets, pType, pLists, gameInfo);
+            ongoingController(sockets, pType, pLists, gameInfo);
         break;
         case 5:
             DEBUG(DEBUG_INFO, "GC> Lobby> Received pakcet 5");
@@ -263,7 +264,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         case IPC_PKT_1:
         case IPC_PKT_2:
         case 4:
-            connectionController(sockets, pType, pLists, gameInfo);
+            ongoingController(sockets, pType, pLists, gameInfo);
         break;
         case 8:
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 8");
