@@ -224,8 +224,9 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
             {
                 balanceTeams(desiredTeams, pLists->otherPlayers_teams);
                 forceMoveAll(sockets, pLists, PLAYER_STATE_ACTIVE);
+                DEBUG(DEBUG_WARN, "GC> Lobby> All players ready and moved to floor 1");
             }
-            DEBUG(DEBUG_WARN, "GC> Lobby> All players ready and moved to floor 1");
+
             writePacket(out, pLists, 3);
         break;
         default:
