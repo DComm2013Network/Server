@@ -114,6 +114,8 @@ void handleOut(SOCKET liveSock){
 		case 0x09:
 		case 0x0c:
 		case 0x0d:
+		case 15:
+		case 16:
 			sendToPlayers(SOCK_STREAM, mask, packet, type);
 			break;
 

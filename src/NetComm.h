@@ -27,7 +27,7 @@
 #define MAX_MESSAGE		180
 #define MAX_OBJECTIVES	16
 
-#define NUM_NET_PACKETS 14
+#define NUM_NET_PACKETS 16
 
 
 // Other Includes
@@ -162,5 +162,19 @@ typedef struct pkt14 {
     playerNo_t  tagger_id; /* the person who tagged */
     playerNo_t  taggee_id; /* the person who got tagged */
 } PKT_TAGGING;
+
+typedef struct pkt15 {
+    uint32_t    data;
+    uint8_t     vel;
+} PKT_MIN_POS_UPDATE;
+#define MIN_10 15
+
+typedef struct pkt16 {
+    uint32_t    players_on_floor;
+    uint32_t    xPos[11];
+    uint32_t    yPos[11];
+    uint8_t     vel[32];
+} PKT_MIN_ALL_POS_UPDATE;
+#define MIN_11 16
 
 #endif
