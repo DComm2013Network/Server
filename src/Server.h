@@ -43,7 +43,7 @@
 
 #define NUM_IPC_PACKETS 5
 
-#define SERVER_VERSION 1.2
+#define SERVER_VERSION 1.3
 
 #define TCP_PORT 42337
 #define UDP_PORT 42338
@@ -65,7 +65,7 @@
 // **********************************
 //           MOVE UPDATES
 // **********************************
-#define MOVE_UPDATE_FREQUENCY 0.5 // Updates per seoncd
+#define MOVE_UPDATE_FREQUENCY 60 // Updates per seoncd
 
 typedef int     SOCKET;
 

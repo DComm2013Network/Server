@@ -120,7 +120,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
     SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
     SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 
-    size_t numPlayers = countActivePlayers(pLists->otherPlayers_teams);
+//    size_t numPlayers = countActivePlayers(pLists->otherPlayers_teams);
 
 
     PKT_NEW_CLIENT  inIPC1;
@@ -133,7 +133,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
         DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_1");
         getPacket(in, &inIPC1, ipcPacketSizes[1]);
 
-        numPlayers++;
+  //      numPlayers++;
 
         // Assign no team and send him to the lobby
         pLists->otherPlayers_teams[inIPC1.playerNo] = TEAM_NONE;
@@ -147,15 +147,15 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
         break;
 		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
 			DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_2");
-			if (numPlayers < 1)
-			{
-                DEBUG(DEBUG_ALRM, "GC> numPlayers < 1 HOW COULD WE LOSE SOMEONE?!");
-                if(pLists->player_valid[inIPC2.playerNo] == TRUE)
-                {
-                    DEBUG(DEBUG_WARN, "GC> ...because the playerNo is still valid..BUT WHY!?");
-                }
-                break;
-			}
+//			if (numPlayers < 1)
+//			{
+//                DEBUG(DEBUG_ALRM, "GC> numPlayers < 1 HOW COULD WE LOSE SOMEONE?!");
+//                if(pLists->player_valid[inIPC2.playerNo] == TRUE)
+//                {
+//                    DEBUG(DEBUG_WARN, "GC> ...because the playerNo is still valid..BUT WHY!?");
+//                }
+//                break;ff
+//			}
 
 			getPacket(in, &inIPC2, ipcPacketSizes[2]);
 			if(pLists->player_valid[inIPC2.playerNo] == FALSE)
@@ -164,7 +164,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
                 break;
 			}
 
-			numPlayers--;
+//			numPlayers--;
 
             pLists->otherPlayers_name[inIPC2.playerNo][0] = '\0';
             pLists->otherPlayers_teams[inIPC2.playerNo] = TEAM_NONE;
@@ -173,7 +173,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
             writePacket(out, pLists, 3);
 
             //TO-DO check if that was the last player of a team and trigger a win condition
-            DEBUG(DEBUG_WARN, "GC> Lost player is not valid");
+            DEBUG(DEBUG_WARN, "GC> Player removed");
         break;
 
         case 4: // chat

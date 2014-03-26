@@ -140,6 +140,7 @@ void* GameplayController(void* ipcSocks) {
 			DEBUG(DEBUG_INFO, "GP> Receive packet 0xB1")
 			;
 
+
 			bzero(bufipcPkt1, sizeof(ipcPacketSizes[1]));
 			if (getPacket(gameplaySock, bufipcPkt1, ipcPacketSizes[1]) == -1) {
 				//couldn't read packet
@@ -202,7 +203,7 @@ void* GameplayController(void* ipcSocks) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
-			if (write(outswitchSock, &floorArray, lenPktAll) == -1) {
+			if (write(outswitchSock, &floorArray[0], lenPktAll) == -1) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
@@ -331,10 +332,8 @@ void* GameplayController(void* ipcSocks) {
 
 			//check to see if the floor number falls in the valid range
 			if (playerFloor < 0 || playerFloor > MAX_FLOORS) {
-				//break;
-				/*
-				 * Does this need handling?
-				 */
+			    DEBUG(DEBUG_ALRM, "Received pkt 10 with whack floor data");
+				break;
 			}
 
 			//get player number from incoming packet
@@ -342,10 +341,8 @@ void* GameplayController(void* ipcSocks) {
 
 			//check to see if the player number falls in the valid range
 			if (thisPlayer < 0 || thisPlayer > maxPlayers) {
-				//break;
-				/*
-				 * Does this need handling?
-				 */
+                DEBUG(DEBUG_ALRM, "Received pkt 10 with whack player number data");
+				break;
 			}
 
 			//is this player supposed to be on this floor?
@@ -360,7 +357,7 @@ void* GameplayController(void* ipcSocks) {
 				 * floor update.
 				 */
 				errFloor++;
-				fprintf(stderr, "Gameplay Controller - player %d floor incorrect.  Count:%d\n", thisPlayer, errFloor);
+				fprintf(stderr, "Gameplay Controller - player %d floor incorrect: %d.  Count:%d\n", thisPlayer, playerFloor, errFloor);
 
 				//for now, we just assign the player to this floor
 				//floorArray[playerFloor].players_on_floor[thisPlayer] = 1;
@@ -381,24 +378,26 @@ void* GameplayController(void* ipcSocks) {
 			DEBUG(DEBUG_INFO, "Sending game update");
 
 			//set outbound mask for outbound server
-			OUT_ZERO(m);
-			for (i = 0; i < MAX_PLAYERS; i++) {
-				if (floorArray[playerFloor].players_on_floor[i] == 1) {
-					OUT_SET(m, i);
-				}
-			}
-			//send packet type and then packet to outbound switchboard
-			if (write(outswitchSock, &outPType, sizeof(outPType)) == -1) {
-				errOut++;
-				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
-			}
-			if (write(outswitchSock, &floorArray[playerFloor], lenPktAll) == -1) {
-				errOut++;
-				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
-			}
-			if (write(outswitchSock, &m, sizeof(OUTMASK)) == -1) {
-				errOut++;
-				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
+			for(j = 0; j < MAX_FLOORS; ++j){
+                OUT_ZERO(m);
+                for (i = 0; i < MAX_PLAYERS; i++) {
+                    if (floorArray[j].players_on_floor[i] == 1) {
+                        OUT_SET(m, i);
+                    }
+                }
+                //send packet type and then packet to outbound switchboard
+                if (write(outswitchSock, &outPType, sizeof(outPType)) == -1) {
+                    errOut++;
+                    fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
+                }
+                if (write(outswitchSock, &floorArray[j], lenPktAll) == -1) {
+                    errOut++;
+                    fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
+                }
+                if (write(outswitchSock, &m, sizeof(OUTMASK)) == -1) {
+                    errOut++;
+                    fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
+                }
 			}
 			break;
 		case 12: //floor change
