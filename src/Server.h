@@ -67,6 +67,10 @@
 // **********************************
 #define MOVE_UPDATE_FREQUENCY 0.5 // Updates per seoncd
 
+
+#define CHAT_DECRYPT_TIME 450 // seconds until chat is fully decrypted
+
+
 typedef int     SOCKET;
 
 //function prototypes for server-utils
