@@ -114,7 +114,6 @@ void* GameplayController(void* ipcSocks) {
 
 	//assign struct lengths before the loop so as not to keep checking
 	size_t lenPktIn = sizeof(struct pkt10);
-	size_t lenPktAll = sizeof(struct pkt11);
 	size_t lenPktFloorReq = sizeof(struct pkt12);
 	size_t lenPktFloor = sizeof(struct pkt13);
 
