@@ -213,7 +213,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
         break;
         case 5:
             DEBUG(DEBUG_INFO, "GC> Lobby> Received pakcet 5");
-            getPacket(in, &inPkt5, sizeof(netPacketSizes[5]));
+            getPacket(in, &inPkt5, netPacketSizes[5]);
 
             pLists->readystatus[inPkt5.player_number] = inPkt5.ready_status;
             strcpy(pLists->otherPlayers_name[inPkt5.player_number], inPkt5.player_name);
@@ -252,6 +252,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 	packet_t pType;
     size_t team1 = 0, team2 = 0, objCount = 0;
 	DEBUG(DEBUG_INFO, "GC> In runningController");
+	writePacket(out, gameInfo, 8);
 	chatGameStart();
     while(gameInfo->game_status == GAME_STATE_ACTIVE)
     {
@@ -444,11 +445,11 @@ status_t getGameStatus(const status_t *playerStatus, const teamNo_t *playerTeams
 
     for(i = 0; i < MAX_PLAYERS; i++)
     {
-        if(*(playerStatus+i) != PLAYER_STATE_INVALID){
+        if(*(playerStatus+i) == PLAYER_STATE_WAITING || *(playerStatus+i) == PLAYER_STATE_READY){
             playerCount++;
         }
 
-        if(!(playerStatus+i) == PLAYER_STATE_READY){
+        if(*(playerStatus+i) == PLAYER_STATE_READY){
             readyCount++;
         }
     }
