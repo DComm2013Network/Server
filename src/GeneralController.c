@@ -344,6 +344,11 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
 
     for(i = 0; pLists->player_valid[i] == FALSE; ++i)
     {
+        if(pLists->player_valid[i] == FALSE)
+        {
+            break;
+        }
+
         pLists->readystatus[i] = status;
         outIPC3.playerNo = i;
         outIPC3.newFloor = floor;
