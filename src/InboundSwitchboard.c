@@ -207,6 +207,11 @@ void relayPacket(void* packet, packet_t type){
             DEBUG(DEBUG_INFO, "IS> Routed pkt 14");
             break;
 
+        case 15:
+            writeType(Inswitch_gameplaySocket,      packet, type);
+            DEBUG(DEBUG_INFO, "IS> Routed pkt 15 (min-10)");
+            break;
+
 		default:
 			DEBUG(DEBUG_ALRM, "IS> In Switchboard getting packets it shouldn't be");
 			break;

@@ -89,6 +89,7 @@ void* UIController(void* ipcSocks) {
 	write(outSock, &pType, sizeof(packet_t));
 	write(outSock, &pkt, sizeof(pkt));
 
+    printf("Server Running!\n");
 	/* populate list of commands
 	char commands[3][15];
 	strcpy(commands[0], "quit");
@@ -101,7 +102,6 @@ void* UIController(void* ipcSocks) {
 	while(RUNNING)
 	{
 		// get input
-		printf("Enter a command: ");
 		if(scanf("%s", input) != 1)
 		{
 			printf("Error. Try that again..");
@@ -111,9 +111,9 @@ void* UIController(void* ipcSocks) {
         // if quit
 		if(strcmp(input, "quit") == 0)
 		{
-			// create quit packet
-            // send to switchboard
-            // exit
+			// hard-kill
+			// should really soften this blow
+			exit(1);
 		}
 
 		// if get-stats

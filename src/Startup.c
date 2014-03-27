@@ -54,6 +54,8 @@ void setupPacketInfo(){
 	netPacketSizes[12] = sizeof(struct pkt12);
 	netPacketSizes[13] = sizeof(struct pkt13);
 	netPacketSizes[14] = sizeof(struct pkt14);
+	netPacketSizes[15] = sizeof(struct pkt15);
+	netPacketSizes[16] = sizeof(struct pkt16);
 
 	for(i = 0; i < NUM_NET_PACKETS + 1; ++i){
 		largestNetPacket = (netPacketSizes[i] > largestNetPacket) ? netPacketSizes[i] : largestNetPacket;
