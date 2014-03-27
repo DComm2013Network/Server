@@ -338,57 +338,38 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
     int i;
     floorNo_t floor = FLOOR_LOBBY;
     PKT_FORCE_MOVE      outIPC3;
-    SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
+    SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay ipc messages
 
-    if(status == PLAYER_STATE_ACTIVE) {
-        floor = 1;
-    } else if(status == PLAYER_STATE_WAITING) {
-        floor = FLOOR_LOBBY;
-    }
+    // Game is going active
+    if(status == PLAYER_STATE_ACTIVE){
+        for(i = 0; i < MAX_PLAYERS; ++i){
+            if(pLists->other_playerTeams[i] == TEAM_COPS){
+                floor = 3;
+            }
+            else if(pLists->other_playersTeams[i] == TEAM_ROBBER){
+                floor = 1;
+            }
 
-    for(i = 0; i < MAX_PLAYERS; ++i)
-    {
-        if(pLists->player_valid[i] == FALSE)
-        {
-            break;
-        }
-
-        pLists->readystatus[i] = status;
-        outIPC3.playerNo = i;
-        outIPC3.newFloor = floor;
-        writeIPC(out, &outIPC3, 0xB3);
-
-        if(floor == 1)
-        {
-            for(i = 0; i < MAX_PLAYERS; ++i)
-            {
-                if(pLists->player_valid[i] == FALSE)
-                {
-                    break;
-                }
-
-                pLists->readystatus[i] = status;
+            if(pLists->other_playersTeams[i] != TEAM_NONE){
                 outIPC3.playerNo = i;
                 outIPC3.newFloor = floor;
-                writeIPC(out, &outIPC3, 0xB3);
-            }
-        }
-        else
-        {
-            for(i = 0; i < MAX_PLAYERS; ++i)
-            {
-                if(pLists->player_valid[i] == FALSE)
-                {
-                    break;
-                }
-
-                pLists->readystatus[i] = status;
-                outIPC3.playerNo = i;
-                outIPC3.newFloor = (pLists->otherPlayers_teams[i] == TEAM_COPS) ? 3 : 1;
-                writeIPC(out, &outIPC3, 0xB3);
+                writeIPC(in, &outIPC3, IPC_PKT_3);
             }
         }
     }
+
+    // Game is ending
+    if(status == PLAYER_STATE_WAITING){
+        for(i = 0; i < MAX_PLAYERS; ++i){
+
+            if(pLists->other_playersTeams[i] != TEAM_NONE){
+                outIPC3.playerNo = i;
+                outIPC3.newFloor = FLOOR_LOBBY;
+                writeIPC(in, &outIPC3, IPC_PKT_3);
+            }
+        }
+    }
+
 }
 
 // counts the captured objectives
