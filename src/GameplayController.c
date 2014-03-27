@@ -329,17 +329,11 @@ void* GameplayController(void* ipcSocks) {
 
 		case 10: //player position update
 
-			bzero(bufPlayerIn, sizeof(*bufPlayerIn));
-
 			if(pType == 10){ // Not a min packet
                 if (getPacket(gameplaySock, bufPlayerIn, lenPktIn) == -1) {
                     //couldn't read packet
                     errPacket++;
                     fprintf(stderr, "Gameplay Controller - error reading packet 10.  Count:%d\n", errPacket);
-
-                    /*
-                     *  handle error here.  Perhaps check the size of the packet as well?
-                     */
                     break;
                 }
             }
