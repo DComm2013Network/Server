@@ -38,6 +38,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <stdint.h>
+#include <math.h>
 
 #include "NetComm.h"
 
@@ -76,6 +77,11 @@ int         getPacket(SOCKET socket, void* buffer, int sizeOfBuffer);
 //function prototypes for game-utils
 void getSpawn(playerNo_t player, floorNo_t floor, pos_t* xPos, pos_t* yPos);
 
+// min-utils
+void encapsulate_all_pos_update(PKT_ALL_POS_UPDATE *old_pkt, PKT_MIN_ALL_POS_UPDATE *pkt);
+void decapsulate_pos_update(PKT_MIN_POS_UPDATE *pkt, PKT_POS_UPDATE* old_pkt);
+
+// Controllers
 void* ConnectionManager(void* ipcSocks);
 void* InboundSwitchboard(void* ipcSocks);
 void* GameplayController(void* ipcSocks);
