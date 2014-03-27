@@ -358,33 +358,35 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
         outIPC3.newFloor = floor;
         writeIPC(out, &outIPC3, 0xB3);
 
-    if(floor == 1)
-    {
-        for(i = 0; i < MAX_PLAYERS; ++i)
+        if(floor == 1)
         {
-            if(pLists->player_valid[i] == FALSE)
+            for(i = 0; i < MAX_PLAYERS; ++i)
             {
-                break;
-            }
+                if(pLists->player_valid[i] == FALSE)
+                {
+                    break;
+                }
 
-            pLists->readystatus[i] = status;
-            outIPC3.playerNo = i;
-            outIPC3.newFloor = floor;
-            writeIPC(out, &outIPC3, 0xB3);
+                pLists->readystatus[i] = status;
+                outIPC3.playerNo = i;
+                outIPC3.newFloor = floor;
+                writeIPC(out, &outIPC3, 0xB3);
+            }
         }
-    }
-    else{
-        for(i = 0; i < MAX_PLAYERS; ++i)
+        else
         {
-            if(pLists->player_valid[i] == FALSE)
+            for(i = 0; i < MAX_PLAYERS; ++i)
             {
-                break;
-            }
+                if(pLists->player_valid[i] == FALSE)
+                {
+                    break;
+                }
 
-            pLists->readystatus[i] = status;
-            outIPC3.playerNo = i;
-            outIPC3.newFloor = (pLists->otherPlayers_teams[i] == TEAM_COPS) ? 3 : 1;
-            writeIPC(out, &outIPC3, 0xB3);
+                pLists->readystatus[i] = status;
+                outIPC3.playerNo = i;
+                outIPC3.newFloor = (pLists->otherPlayers_teams[i] == TEAM_COPS) ? 3 : 1;
+                writeIPC(out, &outIPC3, 0xB3);
+            }
         }
     }
 }
