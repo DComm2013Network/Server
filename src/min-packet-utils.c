@@ -62,6 +62,7 @@ void encapsulate_all_pos_update(PKT_ALL_POS_UPDATE *old_pkt, PKT_MIN_ALL_POS_UPD
 	if(!pkt)
 		return;
 
+    pkt->floor = old_pkt->floor;
 	pkt->players_on_floor = 0;
 	for (i = 0; i < 32; i++) {
 		n_xVel = (uint32_t)round(old_pkt->xVel[i] * GRANULARITY_VEL + FACTOR);
