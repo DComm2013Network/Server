@@ -38,12 +38,13 @@
 #include <pthread.h>
 #include <signal.h>
 #include <stdint.h>
+#include <math.h>
 
 #include "NetComm.h"
 
 #define NUM_IPC_PACKETS 5
 
-#define SERVER_VERSION 1.2
+#define SERVER_VERSION 1.3
 
 #define TCP_PORT 42337
 #define UDP_PORT 42338
@@ -65,7 +66,7 @@
 // **********************************
 //           MOVE UPDATES
 // **********************************
-#define MOVE_UPDATE_FREQUENCY 0.5 // Updates per seoncd
+#define MOVE_UPDATE_FREQUENCY 60 // Updates per seoncd
 
 typedef int     SOCKET;
 
@@ -74,9 +75,13 @@ packet_t    getPacketType(SOCKET socket);
 int         getPacket(SOCKET socket, void* buffer, int sizeOfBuffer);
 
 //function prototypes for game-utils
-pos_t       getLobbyX(playerNo_t plyr);
-pos_t       getLobbyY(playerNo_t plyr);
+void getSpawn(playerNo_t player, floorNo_t floor, pos_t* xPos, pos_t* yPos);
 
+// min-utils
+void encapsulate_all_pos_update(PKT_ALL_POS_UPDATE *old_pkt, PKT_MIN_ALL_POS_UPDATE *pkt);
+void decapsulate_pos_update(PKT_MIN_POS_UPDATE *pkt, PKT_POS_UPDATE* old_pkt);
+
+// Controllers
 void* ConnectionManager(void* ipcSocks);
 void* InboundSwitchboard(void* ipcSocks);
 void* GameplayController(void* ipcSocks);

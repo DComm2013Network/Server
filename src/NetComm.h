@@ -27,7 +27,7 @@
 #define MAX_MESSAGE		180
 #define MAX_OBJECTIVES	16
 
-#define NUM_NET_PACKETS 14
+#define NUM_NET_PACKETS 16
 
 
 // Other Includes
@@ -95,6 +95,7 @@ typedef struct pkt03{
 	bool_t 	    player_valid[MAX_PLAYERS];
 	char 		otherPlayers_name[MAX_PLAYERS][MAX_NAME];
 	teamNo_t 	otherPlayers_teams[MAX_PLAYERS];
+    character_t characters[MAX_PLAYERS];
 	status_t	readystatus[MAX_PLAYERS];
 } PKT_PLAYERS_UPDATE;
 
@@ -108,7 +109,6 @@ typedef struct pkt05{
 	status_t	ready_status;
 	teamNo_t	team_number;
 	char 		player_name[MAX_NAME];
-	character_t characters[MAX_PLAYERS];
 } PKT_READY_STATUS;
 
 typedef struct pkt06{
@@ -162,5 +162,20 @@ typedef struct pkt14 {
     playerNo_t  tagger_id; /* the person who tagged */
     playerNo_t  taggee_id; /* the person who got tagged */
 } PKT_TAGGING;
+
+typedef struct pkt15 {
+    uint32_t    data;
+    uint8_t     vel;
+} PKT_MIN_POS_UPDATE;
+#define MIN_10 15
+
+typedef struct pkt16 {
+    uint8_t     floor;
+    uint32_t    players_on_floor;
+    uint32_t    xPos[11];
+    uint32_t    yPos[11];
+    uint8_t     vel[32];
+} PKT_MIN_ALL_POS_UPDATE;
+#define MIN_11 16
 
 #endif
