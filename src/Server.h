@@ -39,7 +39,7 @@
     #define DEBUG_LEVEL             2       // Print only debugs of this level or higher
 
     // Movement updates control
-    #define MOVE_UPDATE_FREQUENCY   10      // Movement updates per second (~0.18KB/second/client)
+    #define MOVE_UPDATE_FREQUENCY   60      // Movement updates per second (~0.18KB/second/client)
 
     // Keep Alive Control
     #define CHECK_CONNECTIONS       0       // Toggle keep-alive protocols on or off

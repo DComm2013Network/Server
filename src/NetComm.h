@@ -25,7 +25,7 @@
 #define MAX_FLOORS		8
 #define MAX_NAME	 	15
 #define MAX_MESSAGE		180
-#define MAX_OBJECTIVES	16
+#define MAX_OBJECTIVES	32
 
 #define NUM_NET_PACKETS 16
 
@@ -45,6 +45,7 @@ typedef float	    vel_t;
 typedef uint32_t    packet_t;
 typedef uint64_t    sequence_t;
 typedef uint32_t    bool_t;
+typedef uint32_t    tile_t;
 
 // Connect code Definitions
 #define connectCode_ACCEPTED	0x001
@@ -67,6 +68,10 @@ typedef uint32_t    bool_t;
 #define PLAYER_STATE_ACTIVE     0x011   // Player is in the game world running around
 #define PLAYER_STATE_AVAILABLE  0x012   // Available slot for player to join - value cannot be defined to 1 or 2!!
 
+// Objective statuses
+#define OBJECTIVE_INVALID       0x000
+#define OBJECTIVE_AVAILABLE     0x001
+#define OBJECTIVE_CAPTURED      0x002
 
 // Special floor Definitions
 #define FLOOR_LOBBY				0x000
@@ -112,9 +117,11 @@ typedef struct pkt05{
 } PKT_READY_STATUS;
 
 typedef struct pkt06{
-    packet_t    type;
-    //	<< UNPURPOSED >>
-} PKT_6;
+    floorNo_t   floor;
+    pos_t       xPos;
+    pos_t       yPos;
+    tile_t      tile;
+} PKT_SPECIAL_TILE;
 
 typedef struct pkt07{
     packet_t    type;

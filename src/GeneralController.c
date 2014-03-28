@@ -184,7 +184,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 
         case 6: // special tile placed
             getPacket(in, &pktTile, netPacketSizes[6]);
-            writePacket(out, pktTile, 6);
+            writePacket(out, &pktTile, 6);
             break;
     default:
         DEBUG(DEBUG_ALRM, "GC> This should never be possible... gg");
@@ -255,8 +255,25 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     PKT_TAGGING     inPkt14;
     PKT_FORCE_MOVE  outIPC3;
 
+    int i;
 	packet_t pType;
-    size_t team1 = 0, team2 = 0, objCount = 0;
+    size_t team1 = 0, team2 = 0, objCount = 0, totalPlayers = 0;
+
+    totalPlayers = countActivePlayers(pLists->playerTeams);
+
+    #warning TODO (aburian#7#): Verify logic to base objective count off player count
+
+    // start with half the player count
+    objCount = totalPlayers / 2;
+    // at least 3 floors
+    objCount = (objCount < 12) ? 12 : objCount;
+    // rounded to the nearest full floor
+    objCount += objCount % 4;
+
+    for(i = 0; i < objCount; ++i){
+        gameInfo->objectiveStates[i] = OBJECTIVE_AVAILABLE;
+    }
+
 	DEBUG(DEBUG_INFO, "GC> In runningController");
 	writePacket(out, gameInfo, 8);
 	chatGameStart();
