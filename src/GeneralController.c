@@ -343,14 +343,14 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
     // Game is going active
     if(status == PLAYER_STATE_ACTIVE){
         for(i = 0; i < MAX_PLAYERS; ++i){
-            if(pLists->other_playerTeams[i] == TEAM_COPS){
+            if(pLists->otherPlayers_teams[i] == TEAM_COPS){
                 floor = 3;
             }
-            else if(pLists->other_playersTeams[i] == TEAM_ROBBER){
+            else if(pLists->otherPlayers_teams[i] == TEAM_ROBBERS){
                 floor = 1;
             }
 
-            if(pLists->other_playersTeams[i] != TEAM_NONE){
+            if(pLists->otherPlayers_teams[i] != TEAM_NONE){
                 outIPC3.playerNo = i;
                 outIPC3.newFloor = floor;
                 writeIPC(in, &outIPC3, IPC_PKT_3);
@@ -362,7 +362,7 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
     if(status == PLAYER_STATE_WAITING){
         for(i = 0; i < MAX_PLAYERS; ++i){
 
-            if(pLists->other_playersTeams[i] != TEAM_NONE){
+            if(pLists->otherPlayers_teams[i] != TEAM_NONE){
                 outIPC3.playerNo = i;
                 outIPC3.newFloor = FLOOR_LOBBY;
                 writeIPC(in, &outIPC3, IPC_PKT_3);
@@ -474,14 +474,15 @@ void zeroPlayerLists(PKT_PLAYERS_UPDATE *pLists, const int maxPlayers)
     for(i = 0; i < MAX_PLAYERS; ++i)
     {
         pLists->player_valid[i] = FALSE;
+        pLists->characters[i] = 0;
         for(j = 0; j < MAX_NAME; ++j) {
             pLists->otherPlayers_name[i][j] = '\0';
         }
 
         if(i < maxPlayers){
-            pLists->player_valid[i] = TRUE;
             pLists->readystatus[i] = PLAYER_STATE_AVAILABLE;
-        } else if( i > maxPlayers){
+
+        } else if( i >= maxPlayers){
             pLists->readystatus[i] = PLAYER_STATE_INVALID;
         }
 	}
@@ -517,9 +518,8 @@ int setup(SOCKET in, int *maxPlayers, PKT_PLAYERS_UPDATE *pLists)
 /***********************************************************/
 inline void writeIPC(SOCKET sock, void* buf, packet_t type)
 {
-    packet_t outType = type - 0xB0;
-    write(sock, &outType, sizeof(packet_t));
-    write(sock, buf, ipcPacketSizes[outType]);
+    write(sock, &type, sizeof(packet_t));
+    write(sock, buf, ipcPacketSizes[type]);
 
     #if DEBUG_ON
         char buff[BUFFSIZE];
