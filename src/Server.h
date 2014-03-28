@@ -23,32 +23,32 @@
 #define SERVER
 
 
-// ********************************************************************************************
-//                                       CONTROL PANEL
-// ********************************************************************************************
+// ************************************************************************************************
+//                                         CONTROL PANEL
+// ************************************************************************************************
 
-// Version no
-#define SERVER_VERSION          1.8
+    // Version no
+    #define SERVER_VERSION          1.8
 
-// Net comm control
-#define TCP_PORT                42337
-#define UDP_PORT                42338
+    // Net comm control
+    #define TCP_PORT                42337
+    #define UDP_PORT                42338
 
-// Debug control
-#define DEBUG_ON                1       // Toggle all debug statements on or off
-#define DEBUG_LEVEL             2       // Print only debugs of this level or higher
+    // Debug control
+    #define DEBUG_ON                1       // Toggle all debug statements on or off
+    #define DEBUG_LEVEL             2       // Print only debugs of this level or higher
 
-// Movement updates control
-#define MOVE_UPDATE_FREQUENCY   60      // Movement updates per second
+    // Movement updates control
+    #define MOVE_UPDATE_FREQUENCY   60      // Movement updates per second (~0.18KB/second/client)
 
-// Keep Alive Control
-#define CHECK_CONNECTIONS       0       // Toggle keep-alive protocols on or off
-#define CHECK_FREQUENCY         5       // Seconds between checks
-#define PRESUME_DEAD_FREQUENCY  15      // Seconds until loss is assumed
+    // Keep Alive Control
+    #define CHECK_CONNECTIONS       0       // Toggle keep-alive protocols on or off
+    #define CHECK_FREQUENCY         5       // Seconds between checks
+    #define PRESUME_DEAD_FREQUENCY  15      // Seconds until loss is assumed
 
 
-// ********************************************************************************************
-// ********************************************************************************************
+// ************************************************************************************************
+// ************************************************************************************************
 
 
 
