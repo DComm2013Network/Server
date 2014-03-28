@@ -44,7 +44,7 @@ typedef uint32_t    character_t;
 typedef float	    vel_t;
 typedef uint32_t    packet_t;
 typedef uint64_t    timestamp_t;
-typedef int         bool_t;
+typedef uint32_t    bool_t;
 
 // Connect code Definitions
 #define CONNECT_CODE_ACCEPTED	0x001

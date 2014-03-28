@@ -60,7 +60,7 @@
 #define DEBUG(lvl, msg) if(DEBUG_ON && lvl >= DEBUG_LEVEL){printf("Debug: %s\n", msg);fflush(stdout);}
 
 #define TRUE    1
-#define FALSE   PLAYER_STATE_INVALID
+#define FALSE   0
 
 
 // **********************************

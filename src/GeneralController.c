@@ -213,7 +213,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
         break;
         case 5:
             DEBUG(DEBUG_INFO, "GC> Lobby> Received pakcet 5");
-            getPacket(in, &inPkt5, sizeof(netPacketSizes[5]));
+            getPacket(in, &inPkt5, netPacketSizes[5]);
 
             pLists->readystatus[inPkt5.player_number] = inPkt5.ready_status;
             strcpy(pLists->otherPlayers_name[inPkt5.player_number], inPkt5.player_name);
@@ -252,6 +252,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 	packet_t pType;
     size_t team1 = 0, team2 = 0, objCount = 0;
 	DEBUG(DEBUG_INFO, "GC> In runningController");
+	writePacket(out, gameInfo, 8);
 	chatGameStart();
     while(gameInfo->game_status == GAME_STATE_ACTIVE)
     {
@@ -337,33 +338,38 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
     int i;
     floorNo_t floor = FLOOR_LOBBY;
     PKT_FORCE_MOVE      outIPC3;
-    SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
+    SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay ipc messages
 
-    if(status == PLAYER_STATE_ACTIVE) {
-        floor = 1;
-    } else if(status == PLAYER_STATE_WAITING) {
-        floor = FLOOR_LOBBY;
-    }
+    // Game is going active
+    if(status == PLAYER_STATE_ACTIVE){
+        for(i = 0; i < MAX_PLAYERS; ++i){
+            if(pLists->otherPlayers_teams[i] == TEAM_COPS){
+                floor = 3;
+            }
+            else if(pLists->otherPlayers_teams[i] == TEAM_ROBBERS){
+                floor = 1;
+            }
 
-    if(floor == 1){
-        for(i = 0; pLists->player_valid[i] == FALSE; ++i)
-        {
-            pLists->readystatus[i] = status;
-            outIPC3.playerNo = i;
-            outIPC3.newFloor = floor;
-            writeIPC(out, &outIPC3, 0xB3);
+            if(pLists->otherPlayers_teams[i] != TEAM_NONE){
+                outIPC3.playerNo = i;
+                outIPC3.newFloor = floor;
+                writeIPC(in, &outIPC3, IPC_PKT_3);
+            }
         }
     }
-    else{
-        for(i = 0; pLists->player_valid[i] == FALSE; ++i)
-        {
-            pLists->readystatus[i] = status;
-            outIPC3.playerNo = i;
-            outIPC3.newFloor = (pLists->otherPlayers_teams[i] == TEAM_COPS) ? 3 : 1;
-            writeIPC(out, &outIPC3, 0xB3);
-        }
 
+    // Game is ending
+    if(status == PLAYER_STATE_WAITING){
+        for(i = 0; i < MAX_PLAYERS; ++i){
+
+            if(pLists->otherPlayers_teams[i] != TEAM_NONE){
+                outIPC3.playerNo = i;
+                outIPC3.newFloor = FLOOR_LOBBY;
+                writeIPC(in, &outIPC3, IPC_PKT_3);
+            }
+        }
     }
+
 }
 
 // counts the captured objectives
@@ -444,11 +450,11 @@ status_t getGameStatus(const status_t *playerStatus, const teamNo_t *playerTeams
 
     for(i = 0; i < MAX_PLAYERS; i++)
     {
-        if(*(playerStatus+i) != PLAYER_STATE_INVALID){
+        if(*(playerStatus+i) == PLAYER_STATE_WAITING || *(playerStatus+i) == PLAYER_STATE_READY){
             playerCount++;
         }
 
-        if(!(playerStatus+i) == PLAYER_STATE_READY){
+        if(*(playerStatus+i) == PLAYER_STATE_READY){
             readyCount++;
         }
     }
@@ -468,14 +474,15 @@ void zeroPlayerLists(PKT_PLAYERS_UPDATE *pLists, const int maxPlayers)
     for(i = 0; i < MAX_PLAYERS; ++i)
     {
         pLists->player_valid[i] = FALSE;
+        pLists->characters[i] = 0;
         for(j = 0; j < MAX_NAME; ++j) {
             pLists->otherPlayers_name[i][j] = '\0';
         }
 
         if(i < maxPlayers){
-            pLists->player_valid[i] = TRUE;
             pLists->readystatus[i] = PLAYER_STATE_AVAILABLE;
-        } else if( i > maxPlayers){
+
+        } else if( i >= maxPlayers){
             pLists->readystatus[i] = PLAYER_STATE_INVALID;
         }
 	}
@@ -511,9 +518,8 @@ int setup(SOCKET in, int *maxPlayers, PKT_PLAYERS_UPDATE *pLists)
 /***********************************************************/
 inline void writeIPC(SOCKET sock, void* buf, packet_t type)
 {
-    packet_t outType = type - 0xB0;
-    write(sock, &outType, sizeof(packet_t));
-    write(sock, buf, ipcPacketSizes[outType]);
+    write(sock, &type, sizeof(packet_t));
+    write(sock, buf, ipcPacketSizes[type]);
 
     #if DEBUG_ON
         char buff[BUFFSIZE];
