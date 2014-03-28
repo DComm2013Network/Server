@@ -289,7 +289,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
             outIPC3.playerNo = inPkt14.taggee_id;
             outIPC3.newFloor = FLOOR_LOBBY;
-            writeIPC(out, &outIPC3, 0xB3);
+            writeIPC(out, &outIPC3, IPC_PKT_3);
 
             pLists->otherPlayers_teams[inPkt14.taggee_id] = TEAM_NONE;
             pLists->readystatus[inPkt14.taggee_id] = PLAYER_STATE_OUT;
@@ -518,7 +518,9 @@ int setup(SOCKET in, int *maxPlayers, PKT_PLAYERS_UPDATE *pLists)
 /***********************************************************/
 inline void writeIPC(SOCKET sock, void* buf, packet_t type)
 {
+
     write(sock, &type, sizeof(packet_t));
+    type =- 0xB0;
     write(sock, buf, ipcPacketSizes[type]);
 
     #if DEBUG_ON
