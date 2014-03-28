@@ -120,7 +120,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
     SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
     SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 
-//    size_t numPlayers = countActivePlayers(pLists->otherPlayers_teams);
+//    size_t numPlayers = countActivePlayers(pLists->playerTeams);
 
 
     PKT_NEW_CLIENT  inIPC1;
@@ -136,10 +136,10 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
   //      numPlayers++;
 
         // Assign no team and send him to the lobby
-        pLists->otherPlayers_teams[inIPC1.playerNo] = TEAM_NONE;
-        strcpy(pLists->otherPlayers_name[inIPC1.playerNo], inIPC1.client_player_name);
+        pLists->playerTeams[inIPC1.playerNo] = TEAM_NONE;
+        strcpy(pLists->playerNames[inIPC1.playerNo], inIPC1.playerName);
         pLists->readystatus[inIPC1.playerNo] = PLAYER_STATE_WAITING;
-        pLists->player_valid[inIPC1.playerNo] = TRUE;
+        pLists->playerValid[inIPC1.playerNo] = TRUE;
         pLists->characters[inIPC1.playerNo] = inIPC1.character;
 
         writePacket(out, pLists, 3);
@@ -150,7 +150,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 //			if (numPlayers < 1)
 //			{
 //                DEBUG(DEBUG_ALRM, "GC> numPlayers < 1 HOW COULD WE LOSE SOMEONE?!");
-//                if(pLists->player_valid[inIPC2.playerNo] == TRUE)
+//                if(pLists->playerValid[inIPC2.playerNo] == TRUE)
 //                {
 //                    DEBUG(DEBUG_WARN, "GC> ...because the playerNo is still valid..BUT WHY!?");
 //                }
@@ -158,7 +158,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 //			}
 
 			getPacket(in, &inIPC2, ipcPacketSizes[2]);
-			if(pLists->player_valid[inIPC2.playerNo] == FALSE)
+			if(pLists->playerValid[inIPC2.playerNo] == FALSE)
 			{
                 DEBUG(DEBUG_WARN, "GC> Sources tell me this player is already not valid.. at least he's actrually gone now");
                 break;
@@ -166,9 +166,9 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 
 //			numPlayers--;
 
-            pLists->otherPlayers_name[inIPC2.playerNo][0] = '\0';
-            pLists->otherPlayers_teams[inIPC2.playerNo] = TEAM_NONE;
-            pLists->player_valid[inIPC2.playerNo] = FALSE;
+            pLists->playerNames[inIPC2.playerNo][0] = '\0';
+            pLists->playerTeams[inIPC2.playerNo] = TEAM_NONE;
+            pLists->playerValid[inIPC2.playerNo] = FALSE;
             pLists->readystatus[inIPC2.playerNo] = PLAYER_STATE_DROPPED;
             writePacket(out, pLists, 3);
 
@@ -178,7 +178,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 
         case 4: // chat
             getPacket(in, &pktchat, netPacketSizes[4]);
-            sendChat(&pktchat, pLists->otherPlayers_teams, out);
+            sendChat(&pktchat, pLists->playerTeams, out);
         break;
     default:
         DEBUG(DEBUG_ALRM, "GC> This should never be possible... gg");
@@ -196,7 +196,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
 	packet_t pType;
 
     gameInfo->game_status = GAME_STATE_WAITING;
-    memset(pLists->otherPlayers_teams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
+    memset(pLists->playerTeams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
 
 	while(gameInfo->game_status == GAME_STATE_WAITING)
     {
@@ -215,14 +215,14 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
             DEBUG(DEBUG_INFO, "GC> Lobby> Received pakcet 5");
             getPacket(in, &inPkt5, netPacketSizes[5]);
 
-            pLists->readystatus[inPkt5.player_number] = inPkt5.ready_status;
-            strcpy(pLists->otherPlayers_name[inPkt5.player_number], inPkt5.player_name);
-            desiredTeams[inPkt5.player_number] = inPkt5.team_number;
+            pLists->readystatus[inPkt5.playerNumber] = inPkt5.ready_status;
+            strcpy(pLists->playerNames[inPkt5.playerNumber], inPkt5.playerName);
+            desiredTeams[inPkt5.playerNumber] = inPkt5.team_number;
 
             gameInfo->game_status = getGameStatus(pLists->readystatus, desiredTeams);
             if(gameInfo->game_status == GAME_STATE_ACTIVE)
             {
-                balanceTeams(desiredTeams, pLists->otherPlayers_teams);
+                balanceTeams(desiredTeams, pLists->playerTeams);
                 forceMoveAll(sockets, pLists, PLAYER_STATE_ACTIVE);
                 DEBUG(DEBUG_WARN, "GC> Lobby> All players ready and moved to floor 1");
             }
@@ -272,10 +272,10 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 8");
             getPacket(in, &inPkt8, netPacketSizes[8]);
 
-            memcpy(gameInfo->objectives_captured, &(inPkt8.objectives_captured), MAX_OBJECTIVES);
+            memcpy(gameInfo->objectiveStates, &(inPkt8.objectiveStates), MAX_OBJECTIVES);
 
             // Check win
-            objCount = countObjectives(inPkt8.objectives_captured);
+            objCount = countObjectives(inPkt8.objectiveStates);
             if((objCount/MAX_OBJECTIVES) >= WIN_RATIO){
                 gameInfo->game_status = GAME_TEAM2_WIN;
             } else {
@@ -291,12 +291,12 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             outIPC3.newFloor = FLOOR_LOBBY;
             writeIPC(out, &outIPC3, IPC_PKT_3);
 
-            pLists->otherPlayers_teams[inPkt14.taggee_id] = TEAM_NONE;
+            pLists->playerTeams[inPkt14.taggee_id] = TEAM_NONE;
             pLists->readystatus[inPkt14.taggee_id] = PLAYER_STATE_OUT;
             writePacket(out, pLists, 3);
 
             //Check win
-            countTeams(pLists->otherPlayers_teams, &team1, &team2);
+            countTeams(pLists->playerTeams, &team1, &team2);
             if(team2 <= 0) {
                 gameInfo->game_status = GAME_TEAM1_WIN;
                 writePacket(out, gameInfo, 8);
@@ -322,7 +322,7 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
 
     forceMoveAll(sockets, pLists, PLAYER_STATE_WAITING);
     // players are stripped of their teams when entering the lobby controller
-    // memset(pLists->otherPlayers_teams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
+    // memset(pLists->playerTeams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
     writePacket(out, pLists, 3);
 }
 
@@ -343,14 +343,14 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
     // Game is going active
     if(status == PLAYER_STATE_ACTIVE){
         for(i = 0; i < MAX_PLAYERS; ++i){
-            if(pLists->otherPlayers_teams[i] == TEAM_COPS){
+            if(pLists->playerTeams[i] == TEAM_COPS){
                 floor = 3;
             }
-            else if(pLists->otherPlayers_teams[i] == TEAM_ROBBERS){
+            else if(pLists->playerTeams[i] == TEAM_ROBBERS){
                 floor = 1;
             }
 
-            if(pLists->otherPlayers_teams[i] != TEAM_NONE){
+            if(pLists->playerTeams[i] != TEAM_NONE){
                 outIPC3.playerNo = i;
                 outIPC3.newFloor = floor;
                 writeIPC(in, &outIPC3, IPC_PKT_3);
@@ -362,7 +362,7 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
     if(status == PLAYER_STATE_WAITING){
         for(i = 0; i < MAX_PLAYERS; ++i){
 
-            if(pLists->otherPlayers_teams[i] != TEAM_NONE){
+            if(pLists->playerTeams[i] != TEAM_NONE){
                 outIPC3.playerNo = i;
                 outIPC3.newFloor = FLOOR_LOBBY;
                 writeIPC(in, &outIPC3, IPC_PKT_3);
@@ -473,10 +473,10 @@ void zeroPlayerLists(PKT_PLAYERS_UPDATE *pLists, const int maxPlayers)
     int i, j;
     for(i = 0; i < MAX_PLAYERS; ++i)
     {
-        pLists->player_valid[i] = FALSE;
+        pLists->playerValid[i] = FALSE;
         pLists->characters[i] = 0;
         for(j = 0; j < MAX_NAME; ++j) {
-            pLists->otherPlayers_name[i][j] = '\0';
+            pLists->playerNames[i][j] = '\0';
         }
 
         if(i < maxPlayers){

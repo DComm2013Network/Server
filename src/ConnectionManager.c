@@ -131,8 +131,8 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 
         connectedPlayers++;
         printf("Added player %d to game.\n", i);
-		replyToClient.connect_code = CONNECT_CODE_ACCEPTED;
-		replyToClient.clients_player_number = i;
+		replyToClient.connectCode = connectCode_ACCEPTED;
+		replyToClient.clients_playerNumber = i;
 
 		// The client's inital team number is 0. This will be later assigned by the Conn Man
 		replyToClient.clients_team_number = 0;
@@ -143,7 +143,7 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 		DEBUG(DEBUG_INFO, "CM> Sent pkt 2");
 
 		newClientInfo.playerNo = i;
-		memcpy(&newClientInfo.client_player_name, &clientReg.client_player_name, MAX_NAME);
+		memcpy(&newClientInfo.playerName, &clientReg.playerName, MAX_NAME);
 		newClientInfo.character = clientReg.selectedChatacter;
 
 		// add TCP connection to list
@@ -166,7 +166,7 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 	else{
 		// Server is full. GTFO
 		DEBUG(DEBUG_WARN, "CM> Game full, rejecting client");
-		replyToClient.connect_code = CONNECT_CODE_DENIED;
+		replyToClient.connectCode = connectCode_DENIED;
 		send(acceptSock, &replyType, sizeof(packet_t), 0);
 		send(acceptSock, &replyToClient, sizeof(struct pkt02), 0);
 		close(acceptSock);

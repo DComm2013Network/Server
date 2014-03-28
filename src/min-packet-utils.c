@@ -26,7 +26,7 @@ void decapsulate_pos_update(PKT_MIN_POS_UPDATE *pkt, PKT_POS_UPDATE* old_pkt) {
 		return;
 
 	old_pkt->floor = (pkt->data >> 27) & 0x1F;
-	old_pkt->player_number = (pkt->data >> 22) & 0x1F;
+	old_pkt->playerNumber = (pkt->data >> 22) & 0x1F;
 	old_pkt->xPos = (float)(GRANULARITY_POS * ((pkt->data >> 11) & 0x7FF));
 	old_pkt->yPos = (float)(GRANULARITY_POS * (pkt->data & 0x7FF));
 
@@ -63,7 +63,7 @@ void encapsulate_all_pos_update(PKT_ALL_POS_UPDATE *old_pkt, PKT_MIN_ALL_POS_UPD
 		return;
 
     pkt->floor = old_pkt->floor;
-	pkt->players_on_floor = 0;
+	pkt->playersOnFloor = 0;
 	for (i = 0; i < 32; i++) {
 		n_xVel = (uint32_t)round(old_pkt->xVel[i] * GRANULARITY_VEL + FACTOR);
 		n_yVel = (uint32_t)round(old_pkt->yVel[i] * GRANULARITY_VEL + FACTOR);
@@ -73,7 +73,7 @@ void encapsulate_all_pos_update(PKT_ALL_POS_UPDATE *old_pkt, PKT_MIN_ALL_POS_UPD
 		pkt->vel[i] |= n_xVel & 0xF;
 		pkt->vel[i] <<= 4;
 		pkt->vel[i] |= n_yVel & 0xF;
-		pkt->players_on_floor |= (old_pkt->players_on_floor[i]) << i;
+		pkt->playersOnFloor |= (old_pkt->playersOnFloor[i]) << i;
 	}
 
 	memset(&pkt->xPos, 0x00, sizeof(uint32_t) * 11);

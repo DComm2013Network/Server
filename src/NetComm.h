@@ -43,12 +43,12 @@ typedef uint32_t    pos_t;
 typedef uint32_t    character_t;
 typedef float	    vel_t;
 typedef uint32_t    packet_t;
-typedef uint64_t    timestamp_t;
+typedef uint64_t    sequence_t;
 typedef uint32_t    bool_t;
 
 // Connect code Definitions
-#define CONNECT_CODE_ACCEPTED	0x001
-#define CONNECT_CODE_DENIED		0x000
+#define connectCode_ACCEPTED	0x001
+#define connectCode_DENIED		0x000
 
 // Game Status Definitions
 #define GAME_STATE_WAITING		0x001   // Waiting for PLAYER_STATE_READY by all players (LOBBY)
@@ -81,20 +81,20 @@ typedef uint32_t    bool_t;
 // Packet Definitions
 
 typedef struct pkt01{
-	char 		client_player_name[MAX_NAME];
+	char 		playerName[MAX_NAME];
 	character_t selectedChatacter;
 } PKT_PLAYER_JOIN;
 
 typedef struct pkt02{
-	status_t 	connect_code;
-	playerNo_t 	clients_player_number;
+	status_t 	connectCode;
+	playerNo_t 	clients_playerNumber;
 	teamNo_t 	clients_team_number;
 } PKT_JOIN_RESPONSE;
 
 typedef struct pkt03{
-	bool_t 	    player_valid[MAX_PLAYERS];
-	char 		otherPlayers_name[MAX_PLAYERS][MAX_NAME];
-	teamNo_t 	otherPlayers_teams[MAX_PLAYERS];
+	bool_t 	    playerValid[MAX_PLAYERS];
+	char 		playerNames[MAX_PLAYERS][MAX_NAME];
+	teamNo_t 	playerTeams[MAX_PLAYERS];
     character_t characters[MAX_PLAYERS];
 	status_t	readystatus[MAX_PLAYERS];
 } PKT_PLAYERS_UPDATE;
@@ -105,10 +105,10 @@ typedef struct pkt04{
 } PKT_CHAT;
 
 typedef struct pkt05{
-	playerNo_t	player_number;
+	playerNo_t	playerNumber;
 	status_t	ready_status;
 	teamNo_t	team_number;
-	char 		player_name[MAX_NAME];
+	char 		playerName[MAX_NAME];
 } PKT_READY_STATUS;
 
 typedef struct pkt06{
@@ -122,7 +122,7 @@ typedef struct pkt07{
 } PKT_7;
 
 typedef struct pkt08{
-	bool_t		objectives_captured[MAX_OBJECTIVES];
+	bool_t		objectiveStates[MAX_OBJECTIVES];
 	status_t	game_status;
 } PKT_GAME_STATUS;
 
@@ -130,7 +130,7 @@ typedef struct pkt08{
 
 typedef struct pkt10{
 	floorNo_t 	floor;
-	playerNo_t 	player_number;
+	playerNo_t 	playerNumber;
 	pos_t 		xPos;
 	pos_t		yPos;
 	vel_t		xVel;
@@ -139,7 +139,7 @@ typedef struct pkt10{
 
 typedef struct pkt11{
 	floorNo_t 	floor;
-	bool_t	    players_on_floor[MAX_PLAYERS];
+	bool_t	    playersOnFloor[MAX_PLAYERS];
 	pos_t		xPos[MAX_PLAYERS];
 	pos_t		yPos[MAX_PLAYERS];
 	vel_t		xVel[MAX_PLAYERS];
@@ -147,7 +147,7 @@ typedef struct pkt11{
 } PKT_ALL_POS_UPDATE;
 
 typedef struct pkt12{
-	playerNo_t 	player_number;
+	playerNo_t 	playerNumber;
 	floorNo_t 	current_floor;
 	floorNo_t 	desired_floor;
 	pos_t       desired_xPos;
@@ -155,7 +155,7 @@ typedef struct pkt12{
 } PKT_FLOOR_MOVE_REQUEST;
 
 typedef struct pkt13{
-	floorNo_t 	new_floor;
+	floorNo_t 	newFloor;
 	pos_t		xPos;
 	pos_t		yPos;
 } PKT_FLOOR_MOVE;
@@ -173,7 +173,7 @@ typedef struct pkt15 {
 
 typedef struct pkt16 {
     uint8_t     floor;
-    uint32_t    players_on_floor;
+    uint32_t    playersOnFloor;
     uint32_t    xPos[11];
     uint32_t    yPos[11];
     uint8_t     vel[32];
