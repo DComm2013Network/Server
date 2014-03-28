@@ -139,9 +139,7 @@ void* GameplayController(void* ipcSocks) {
 			break;
 
 		case 0xB1: //new player packet
-			DEBUG(DEBUG_INFO, "GP> Receive packet 0xB1")
-			;
-
+			DEBUG(DEBUG_INFO, "GP> Receive packet 0xB1");
 
 			bzero(bufipcPkt1, sizeof(ipcPacketSizes[1]));
 			if (getPacket(gameplaySock, bufipcPkt1, ipcPacketSizes[1]) == -1) {
@@ -163,8 +161,8 @@ void* GameplayController(void* ipcSocks) {
 			floorArray[0].players_on_floor[thisPlayer] = 1;
 
 			//send floor change packet
-			DEBUG(DEBUG_INFO, "GP> Sending packet 13")
-			;
+			DEBUG(DEBUG_INFO, "GP> Sending packet 13");
+
 			//set outbound mask for outbound server
 			OUT_ZERO(m);
 			OUT_SET(m, thisPlayer);
@@ -220,8 +218,7 @@ void* GameplayController(void* ipcSocks) {
 
 		case 0xB2: //lost or quit client
 
-			DEBUG(DEBUG_INFO, "GP> Received packet 0xB2")
-			;
+			DEBUG(DEBUG_INFO, "GP> Received packet 0xB2");
 
 			bzero(bufipcPkt2, ipcPacketSizes[2]);
 			if (getPacket(gameplaySock, bufipcPkt2, ipcPacketSizes[2]) == -1) {
@@ -283,8 +280,7 @@ void* GameplayController(void* ipcSocks) {
 			write(outswitchSock, &outPType, sizeof(packet_t));
 			write(outswitchSock, &bufFloorMove, netPacketSizes[13]);
 			write(outswitchSock, &m, sizeof(OUTMASK));
-			DEBUG(DEBUG_INFO, "CP> Sending packet 13")
-			;
+			DEBUG(DEBUG_INFO, "CP> Sending packet 13");
 
 			//send updated data to all players on old floor
 			outPType = MIN_11;
@@ -414,8 +410,7 @@ void* GameplayController(void* ipcSocks) {
 			}
 			break;
 		case 12: //floor change
-			DEBUG(DEBUG_INFO, "GP> Received packet 12")
-			;
+			DEBUG(DEBUG_INFO, "GP> Received packet 12");
 
 			bzero(bufFloorMoveReq, sizeof(*bufFloorMoveReq));
 			if (getPacket(gameplaySock, bufFloorMoveReq, lenPktFloorReq) == -1) {
@@ -433,6 +428,11 @@ void* GameplayController(void* ipcSocks) {
 			playerFloor = bufFloorMoveReq->current_floor;
 			newFloor = bufFloorMoveReq->desired_floor;
 			thisPlayer = bufFloorMoveReq->player_number;
+
+            if(!floorArray[playerFloor].players_on_floor[thisPlayer] || playerFloor == FLOOR_LOBBY){
+                DEBUG(DEBUG_WARN, "Player moving off wrong floor or escaping lobby rejected");
+                break;
+            }
 
 			//set information for floor move
 			bzero(bufFloorMove, sizeof(*bufFloorMove));

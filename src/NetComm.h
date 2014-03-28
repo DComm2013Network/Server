@@ -112,12 +112,14 @@ typedef struct pkt05{
 } PKT_READY_STATUS;
 
 typedef struct pkt06{
-	floorNo_t	map_data[MAX_FLOORS];
-	int			objective_locations[MAX_OBJECTIVES];
-} PKT_OBJECTIVES_DATA;
+    packet_t    type;
+    //	<< UNPURPOSED >>
+} PKT_6;
 
-//Packet 7: 0x0007
-//	<< UNPURPOSED >>
+typedef struct pkt07{
+    packet_t    type;
+    //	<< UNPURPOSED >>
+} PKT_7;
 
 typedef struct pkt08{
 	bool_t		objectives_captured[MAX_OBJECTIVES];

@@ -276,7 +276,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
             // Check win
             objCount = countObjectives(inPkt8.objectives_captured);
-            if((objCount/MAX_OBJECTIVES) > WIN_RATIO){
+            if((objCount/MAX_OBJECTIVES) >= WIN_RATIO){
                 gameInfo->game_status = GAME_TEAM2_WIN;
             } else {
                 gameInfo->game_status = GAME_STATE_ACTIVE;

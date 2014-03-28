@@ -111,6 +111,7 @@ void handleOut(SOCKET liveSock){
 		case 0x05:
 		case 0x06:
 		case 0x07:
+        case 0x08:
 		case 0x09:
 		case 0x0c:
 		case 0x0d:
@@ -118,7 +119,6 @@ void handleOut(SOCKET liveSock){
 			break;
 
 		// UDP cases
-		case 0x08:
 		case 0x0a:
 		case 0x0b:
         case 15:
