@@ -126,6 +126,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
     PKT_NEW_CLIENT  inIPC1;
     PKT_LOST_CLIENT inIPC2;
     PKT_CHAT pktchat;
+    PKT_SPECIAL_TILE pktTile;
 
     switch(pType)
     {
@@ -174,15 +175,20 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 
             //TO-DO check if that was the last player of a team and trigger a win condition
             DEBUG(DEBUG_WARN, "GC> Player removed");
-        break;
+            break;
 
         case 4: // chat
             getPacket(in, &pktchat, netPacketSizes[4]);
             sendChat(&pktchat, pLists->playerTeams, out);
-        break;
+            break;
+
+        case 6: // special tile placed
+            getPacket(in, &pktTile, netPacketSizes[6]);
+            writePacket(out, pktTile, 6);
+            break;
     default:
         DEBUG(DEBUG_ALRM, "GC> This should never be possible... gg");
-    break;
+        break;
     }
 }
 
@@ -262,8 +268,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
         pType = getPacketType(in);
         switch(pType)
-        {
-        case IPC_PKT_1:
+        {        case IPC_PKT_1:
         case IPC_PKT_2:
         case 4:
             ongoingController(sockets, pType, pLists, gameInfo);
