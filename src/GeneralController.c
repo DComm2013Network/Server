@@ -175,6 +175,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
                     gameInfo->game_status = GAME_TEAM1_WIN;
                     DEBUG(DEBUG_INFO, "GC> Team 1 (Cops) won - no robbers left");
                 }
+                writePacket(out, gameInfo, 8);
             }
             break;
 
