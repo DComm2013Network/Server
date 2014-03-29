@@ -430,7 +430,7 @@ size_t countTeams(const teamNo_t *playerTeams, size_t *team1, size_t *team2)
         state = *(playerTeams+i);
         switch(state)
         {
-            case PLAYER_STATE_INVALID: return (*team1) + (*team2);
+            case TEAM_NONE: return (*team1) + (*team2);
             case TEAM_COPS:     (*team1)++; break;
             case TEAM_ROBBERS:  (*team2)++; break;
             default: DEBUG(DEBUG_ALRM, "GC> Error getting player's team"); break;
@@ -542,7 +542,7 @@ inline void writeIPC(SOCKET sock, void* buf, packet_t type)
 {
 
     write(sock, &type, sizeof(packet_t));
-    type =- 0xB0;
+    type -= 0xB0;
     write(sock, buf, ipcPacketSizes[type]);
 
     #if DEBUG_ON
