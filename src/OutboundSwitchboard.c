@@ -22,14 +22,14 @@
 
 extern int RUNNING;
 void lostConnection(int pos);
-timestamp_t seq = 0;
+sequence_t seq = 0;
 SOCKET inSw;
 
 
 void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 
 	int i, ret;
-	void* packet = malloc(sizeof(packet_t) + netPacketSizes[type] + sizeof(timestamp_t));
+	void* packet = malloc(sizeof(packet_t) + netPacketSizes[type] + sizeof(sequence_t));
 
 
 	if(protocol == SOCK_STREAM){
@@ -51,8 +51,8 @@ void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 			    serverPulse(i);
 				*((packet_t*)packet) = type;
 				memcpy((packet + sizeof(packet_t)), data, netPacketSizes[type]);
-				*((timestamp_t*)(packet + sizeof(packet_t) + netPacketSizes[type])) = ++seq;
-				sendto(udpConnection, packet, sizeof(packet_t) + netPacketSizes[type] + sizeof(timestamp_t), 0,
+				*((sequence_t*)(packet + sizeof(packet_t) + netPacketSizes[type])) = ++seq;
+				sendto(udpConnection, packet, sizeof(packet_t) + netPacketSizes[type] + sizeof(sequence_t), 0,
                         (struct sockaddr*)&(udpAddresses[i]), sizeof(udpAddresses[i]));
 			}
 		}
@@ -111,6 +111,7 @@ void handleOut(SOCKET liveSock){
 		case 0x05:
 		case 0x06:
 		case 0x07:
+        case 0x08:
 		case 0x09:
 		case 0x0c:
 		case 0x0d:
@@ -118,7 +119,6 @@ void handleOut(SOCKET liveSock){
 			break;
 
 		// UDP cases
-		case 0x08:
 		case 0x0a:
 		case 0x0b:
         case 15:

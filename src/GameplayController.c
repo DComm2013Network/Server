@@ -139,9 +139,7 @@ void* GameplayController(void* ipcSocks) {
 			break;
 
 		case 0xB1: //new player packet
-			DEBUG(DEBUG_INFO, "GP> Receive packet 0xB1")
-			;
-
+			DEBUG(DEBUG_INFO, "GP> Receive packet 0xB1");
 
 			bzero(bufipcPkt1, sizeof(ipcPacketSizes[1]));
 			if (getPacket(gameplaySock, bufipcPkt1, ipcPacketSizes[1]) == -1) {
@@ -156,15 +154,15 @@ void* GameplayController(void* ipcSocks) {
 			bzero(bufFloorMove, netPacketSizes[13]);
 			thisPlayer = bufipcPkt1->playerNo;
 			playerFloor = 0;
-			bufFloorMove->new_floor = playerFloor;
+			bufFloorMove->newFloor = playerFloor;
 			getSpawn(bufipcPkt1->playerNo, playerFloor, &bufFloorMove->xPos, &bufFloorMove->yPos);
 
 			//add player to floor array
-			floorArray[0].players_on_floor[thisPlayer] = 1;
+			floorArray[0].playersOnFloor[thisPlayer] = 1;
 
 			//send floor change packet
-			DEBUG(DEBUG_INFO, "GP> Sending packet 13")
-			;
+			DEBUG(DEBUG_INFO, "GP> Sending packet 13");
+
 			//set outbound mask for outbound server
 			OUT_ZERO(m);
 			OUT_SET(m, thisPlayer);
@@ -196,7 +194,7 @@ void* GameplayController(void* ipcSocks) {
 			//set outbound mask for outbound server
 			OUT_ZERO(m);
 			for (i = 0; i < MAX_PLAYERS; i++) {
-				if (floorArray[playerFloor].players_on_floor[i] == 1) {
+				if (floorArray[playerFloor].playersOnFloor[i] == 1) {
 					OUT_SET(m, i);
 				}
 			}
@@ -220,8 +218,7 @@ void* GameplayController(void* ipcSocks) {
 
 		case 0xB2: //lost or quit client
 
-			DEBUG(DEBUG_INFO, "GP> Received packet 0xB2")
-			;
+			DEBUG(DEBUG_INFO, "GP> Received packet 0xB2");
 
 			bzero(bufipcPkt2, ipcPacketSizes[2]);
 			if (getPacket(gameplaySock, bufipcPkt2, ipcPacketSizes[2]) == -1) {
@@ -231,7 +228,7 @@ void* GameplayController(void* ipcSocks) {
 				break;
 			}
 			for (i = 0; i < MAX_FLOORS + 1; i++) {
-				floorArray[i].players_on_floor[bufipcPkt2->playerNo] = 0;
+				floorArray[i].playersOnFloor[bufipcPkt2->playerNo] = 0;
 			}
 			break;
 
@@ -251,7 +248,7 @@ void* GameplayController(void* ipcSocks) {
 
 			// Find the player's floor
 			for (i = 0; i < MAX_FLOORS; ++i) {
-				if (floorArray[i].players_on_floor[bufipcPkt3->playerNo]) {
+				if (floorArray[i].playersOnFloor[bufipcPkt3->playerNo]) {
 					// found player
 					break;
 				}
@@ -264,13 +261,13 @@ void* GameplayController(void* ipcSocks) {
 			}
 
 			// remove player from floor
-			floorArray[i].players_on_floor[bufipcPkt3->playerNo] = 0;
+			floorArray[i].playersOnFloor[bufipcPkt3->playerNo] = 0;
 
 			// add them to the new floor
-			floorArray[bufipcPkt3->newFloor].players_on_floor[bufipcPkt3->playerNo] = 1;
+			floorArray[bufipcPkt3->newFloor].playersOnFloor[bufipcPkt3->playerNo] = 1;
 
 			// prepare outbound packet
-			bufFloorMove->new_floor = bufipcPkt3->newFloor;
+			bufFloorMove->newFloor = bufipcPkt3->newFloor;
 
 
 			// put them in new locations
@@ -283,8 +280,7 @@ void* GameplayController(void* ipcSocks) {
 			write(outswitchSock, &outPType, sizeof(packet_t));
 			write(outswitchSock, &bufFloorMove, netPacketSizes[13]);
 			write(outswitchSock, &m, sizeof(OUTMASK));
-			DEBUG(DEBUG_INFO, "CP> Sending packet 13")
-			;
+			DEBUG(DEBUG_INFO, "CP> Sending packet 13");
 
 			//send updated data to all players on old floor
 			outPType = MIN_11;
@@ -292,7 +288,7 @@ void* GameplayController(void* ipcSocks) {
 			//set outbound mask for outbound server
 			OUT_ZERO(m);
 			for (j = 0; j < MAX_PLAYERS; j++) {
-				if (floorArray[i].players_on_floor[j] == 1) {
+				if (floorArray[i].playersOnFloor[j] == 1) {
 					OUT_SET(m, j);
 				}
 			}
@@ -309,7 +305,7 @@ void* GameplayController(void* ipcSocks) {
 			//set outbound mask for outbound server
 			OUT_ZERO(m);
 			for (j = 0; j < MAX_PLAYERS; j++) {
-				if (floorArray[bufipcPkt3->newFloor].players_on_floor[j] == 1) {
+				if (floorArray[bufipcPkt3->newFloor].playersOnFloor[j] == 1) {
 					OUT_SET(m, j);
 				}
 			}
@@ -347,7 +343,7 @@ void* GameplayController(void* ipcSocks) {
 			}
 
 			//get player number from incoming packet
-			thisPlayer = (*bufPlayerIn).player_number;
+			thisPlayer = (*bufPlayerIn).playerNumber;
 
 			//check to see if the player number falls in the valid range
 			if (thisPlayer < 0 || thisPlayer > maxPlayers) {
@@ -356,7 +352,7 @@ void* GameplayController(void* ipcSocks) {
 			}
 
 			//is this player supposed to be on this floor?
-			if (floorArray[playerFloor].players_on_floor[thisPlayer] != 1) {
+			if (floorArray[playerFloor].playersOnFloor[thisPlayer] != 1) {
 				/*
 				 * handle error - this means that the player is sending a
 				 * packet with the wrong floor number.  Perhaps pop up a big
@@ -370,7 +366,7 @@ void* GameplayController(void* ipcSocks) {
 				fprintf(stderr, "Gameplay Controller - player %d floor incorrect: %d.  Count:%d\n", thisPlayer, playerFloor, errFloor);
 
 				//for now, we just assign the player to this floor
-				//floorArray[playerFloor].players_on_floor[thisPlayer] = 1;
+				//floorArray[playerFloor].playersOnFloor[thisPlayer] = 1;
 			}
 
 			//put position and velocity in update packet
@@ -391,7 +387,7 @@ void* GameplayController(void* ipcSocks) {
 			for(j = 0; j < MAX_FLOORS; ++j){
                 OUT_ZERO(m);
                 for (i = 0; i < MAX_PLAYERS; i++) {
-                    if (floorArray[j].players_on_floor[i] == 1) {
+                    if (floorArray[j].playersOnFloor[i] == 1) {
                         OUT_SET(m, i);
                     }
                 }
@@ -414,8 +410,7 @@ void* GameplayController(void* ipcSocks) {
 			}
 			break;
 		case 12: //floor change
-			DEBUG(DEBUG_INFO, "GP> Received packet 12")
-			;
+			DEBUG(DEBUG_INFO, "GP> Received packet 12");
 
 			bzero(bufFloorMoveReq, sizeof(*bufFloorMoveReq));
 			if (getPacket(gameplaySock, bufFloorMoveReq, lenPktFloorReq) == -1) {
@@ -432,11 +427,16 @@ void* GameplayController(void* ipcSocks) {
 			//get information from floor move request
 			playerFloor = bufFloorMoveReq->current_floor;
 			newFloor = bufFloorMoveReq->desired_floor;
-			thisPlayer = bufFloorMoveReq->player_number;
+			thisPlayer = bufFloorMoveReq->playerNumber;
+
+            if(!floorArray[playerFloor].playersOnFloor[thisPlayer] || playerFloor == FLOOR_LOBBY){
+                DEBUG(DEBUG_WARN, "Player moving off wrong floor or escaping lobby rejected");
+                break;
+            }
 
 			//set information for floor move
 			bzero(bufFloorMove, sizeof(*bufFloorMove));
-			bufFloorMove->new_floor = newFloor;
+			bufFloorMove->newFloor = newFloor;
 			bufFloorMove->xPos = bufFloorMoveReq->desired_xPos;
 			bufFloorMove->yPos = bufFloorMoveReq->desired_yPos;
 
@@ -468,12 +468,12 @@ void* GameplayController(void* ipcSocks) {
 			outPType = MIN_11;
 
 			//remove this player from the floor
-			floorArray[playerFloor].players_on_floor[thisPlayer] = 0;
+			floorArray[playerFloor].playersOnFloor[thisPlayer] = 0;
 
 			//set outbound mask for outbound server
 			OUT_ZERO(m);
 			for (i = 0; i < MAX_PLAYERS; i++) {
-				if (floorArray[playerFloor].players_on_floor[i] == 1) {
+				if (floorArray[playerFloor].playersOnFloor[i] == 1) {
 					OUT_SET(m, i);
 				}
 			}
@@ -502,12 +502,12 @@ void* GameplayController(void* ipcSocks) {
 			floorArray[newFloor].yVel[thisPlayer] = 0;
 
 			//add this player to the new floor
-			floorArray[newFloor].players_on_floor[thisPlayer] = 1;
+			floorArray[newFloor].playersOnFloor[thisPlayer] = 1;
 
 			//set outbound mask for outbound server
 			OUT_ZERO(m);
 			for (i = 0; i < MAX_PLAYERS; i++) {
-				if (floorArray[newFloor].players_on_floor[i] == 1) {
+				if (floorArray[newFloor].playersOnFloor[i] == 1) {
 					OUT_SET(m, i);
 				}
 			}

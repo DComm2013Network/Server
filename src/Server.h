@@ -22,7 +22,40 @@
 #ifndef SERVER
 #define SERVER
 
-// Everything you could possibly need
+
+// ************************************************************************************************
+//                                         CONTROL PANEL
+// ************************************************************************************************
+
+    // Version no
+    #define SERVER_VERSION          1.8
+
+    // Net comm control
+    #define TCP_PORT                42337
+    #define UDP_PORT                42338
+
+    // Debug control
+    #define DEBUG_ON                1       // Toggle all debug statements on or off
+    #define DEBUG_LEVEL             2       // Print only debugs of this level or higher
+
+    // Movement updates control
+    #define MOVE_UPDATE_FREQUENCY   60      // Movement updates per second (~0.18KB/second/client)
+
+    // Chat
+    #define CHAT_DECRYPT_TIME       450     // seconds until chat is fully decrypted
+
+    // Keep Alive Control
+    #define CHECK_CONNECTIONS       0       // Toggle keep-alive protocols on or off
+    #define CHECK_FREQUENCY         5       // Seconds between checks
+    #define PRESUME_DEAD_FREQUENCY  15      // Seconds until loss is assumed
+
+
+// ************************************************************************************************
+// ************************************************************************************************
+
+
+
+// Includes
 #include <stdio.h>
 #include <netdb.h>
 #include <sys/types.h>
@@ -42,44 +75,43 @@
 
 #include "NetComm.h"
 
-#define NUM_IPC_PACKETS 5
-
-#define SERVER_VERSION 1.3
-
-#define TCP_PORT 42337
-#define UDP_PORT 42338
-
-// **********************************
-//             DEBUG
-// **********************************
-#define DEBUG_ON 1
-#define DEBUG_INFO  1
-#define DEBUG_WARN  2
-#define DEBUG_ALRM  3
-#define DEBUG_LEVEL 2
-#define DEBUG(lvl, msg) if(DEBUG_ON && lvl >= DEBUG_LEVEL){printf("Debug: %s\n", msg);fflush(stdout);}
-
+// bool defs
 #define TRUE    1
 #define FALSE   0
 
-
-// **********************************
-//           MOVE UPDATES
-// **********************************
-#define MOVE_UPDATE_FREQUENCY 60 // Updates per seoncd
-
+// socket def
 typedef int     SOCKET;
 
-//function prototypes for server-utils
+
+// ********************************************************************************
+
+
+// server-util functions
 packet_t    getPacketType(SOCKET socket);
 int         getPacket(SOCKET socket, void* buffer, int sizeOfBuffer);
 
-//function prototypes for game-utils
+// game-util functions
 void getSpawn(playerNo_t player, floorNo_t floor, pos_t* xPos, pos_t* yPos);
 
-// min-utils
+// min-util functions
 void encapsulate_all_pos_update(PKT_ALL_POS_UPDATE *old_pkt, PKT_MIN_ALL_POS_UPDATE *pkt);
 void decapsulate_pos_update(PKT_MIN_POS_UPDATE *pkt, PKT_POS_UPDATE* old_pkt);
+
+// Keep alive functions
+time_t clientHeartbeat[MAX_PLAYERS];
+time_t serverHeartbeat[MAX_PLAYERS];
+void clientPulse(playerNo_t plyr);
+void serverPulse(playerNo_t plyr);
+
+// Chat functions
+void chatGameStart();
+void sendChat(PKT_CHAT* chat, teamNo_t teams[MAX_PLAYERS], SOCKET outswitch);
+
+typedef int     SOCKET;
+
+
+// ********************************************************************************
+
 
 // Controllers
 void* ConnectionManager(void* ipcSocks);
@@ -91,7 +123,14 @@ void* OutboundSwitchboard(void* ipcSocks);
 void* KeepAlive(void* outSock);
 void* MovementTimer(void* ipcSocks);
 
+
+
+// ********************************************************************************
+
+
 // structures
+#define NUM_IPC_PACKETS 5
+
 typedef struct pktB0{
 	char				serverName[MAX_NAME];
 	int					maxPlayers;
@@ -102,7 +141,7 @@ typedef struct pktB0{
 typedef struct pktB1{
 	playerNo_t			playerNo;
 	character_t         character;
-	char 				client_player_name[MAX_NAME];
+	char 				playerName[MAX_NAME];
 } PKT_NEW_CLIENT;
 
 #define IPC_PKT_1 0xB1
@@ -123,14 +162,25 @@ typedef struct pktB3{
 // Packet B4 is alarm packet
 #define IPC_PKT_4 0xB4
 
-// **********************************
-//           OUT MASK
-// **********************************
+
+
+// ********************************************************************************
+
+
+// MACROS
 #define OUTMASK int_fast32_t
 #define OUT_SET(mask, pos) mask|=(1<<(pos))
 #define OUT_SETALL(mask) mask=0xFFFFFFFF
 #define OUT_ZERO(mask) mask=0x00000000
 #define OUT_ISSET(mask, pos) ((mask&(1<<(pos)))==(1<<(pos)))
+
+#define DEBUG_INFO  1
+#define DEBUG_WARN  2
+#define DEBUG_ALRM  3
+#define DEBUG(lvl, msg) if(DEBUG_ON && lvl >= DEBUG_LEVEL){printf("Debug: %s\n", msg);fflush(stdout);}
+
+
+// ********************************************************************************
 
 // global data stores
 SOCKET 				tcpConnections[MAX_PLAYERS];
@@ -143,18 +193,6 @@ int ipcPacketSizes[NUM_IPC_PACKETS + 1];
 int largestNetPacket, largestIpcPacket, largestPacket;
 
 
-// **********************************
-//            KEEP ALIVE
-// **********************************
-#define CHECK_CONNECTIONS 0
-#define CLEANUP_FREQUENCY 5
-#define PRESUME_DEAD_FREQUENCY 15
-time_t clientHeartbeat[MAX_PLAYERS];
-time_t serverHeartbeat[MAX_PLAYERS];
-void clientPulse(playerNo_t plyr);
-void serverPulse(playerNo_t plyr);
+// ********************************************************************************
 
-
-void chatGameStart();
-void sendChat(PKT_CHAT* chat, teamNo_t teams[MAX_PLAYERS], SOCKET outswitch);
 #endif
