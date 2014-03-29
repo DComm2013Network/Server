@@ -129,7 +129,7 @@ typedef struct pkt07{
 } PKT_7;
 
 typedef struct pkt08{
-	bool_t		objectiveStates[MAX_OBJECTIVES];
+	status_t	objectiveStates[MAX_OBJECTIVES];
 	status_t	game_status;
 } PKT_GAME_STATUS;
 

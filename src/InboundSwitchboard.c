@@ -264,13 +264,13 @@ void getUdpInput(){
 -- NOTES:
 -- Reads a live socket.
 ----------------------------------------------------------------------------------------------------------------------*/
-int getTcpInput(int pos){
+int getTcpInput(SOCKET tcp){
 
 	packet_t ctrl = 0;
 	void* packet = malloc(largestPacket);
 
 	// Get the packet type
-	ctrl = getPacketType(tcpConnections[pos]);
+	ctrl = getPacketType(tcp);
 
 
 	if(ctrl == -1){
@@ -284,7 +284,7 @@ int getTcpInput(int pos){
         return 1;
 	}
 
-	getPacket(tcpConnections[pos], packet, netPacketSizes[ctrl]);
+	getPacket(tcp, packet, netPacketSizes[ctrl]);
 
 	relayPacket(packet, ctrl);
 
@@ -419,8 +419,13 @@ void* InboundSwitchboard(void* ipcSocks){
 		FD_SET(udpConnection, &fdset);
 		highSocket = (udpConnection > highSocket) ? udpConnection : highSocket;
 
+        // Add the keep alive socket
         FD_SET(Inswitch_keepAliveSocket, &fdset);
         highSocket = (Inswitch_keepAliveSocket > highSocket) ? Inswitch_keepAliveSocket : highSocket;
+
+        // Add the UI socket
+        FD_SET(Inswitch_uiSocket, &fdset);
+        highSocket = (Inswitch_uiSocket > highSocket) ? Inswitch_uiSocket : highSocket;
 
 		// Find all active Sockets
 		numLiveSockets = select(highSocket + 1, &fdset, NULL, NULL, NULL);
@@ -435,7 +440,7 @@ void* InboundSwitchboard(void* ipcSocks){
         for(i = 0; i < MAX_PLAYERS; ++i){
 			if(tcpConnections[i]){
 				if(FD_ISSET(tcpConnections[i], &fdset)){
-					if(!getTcpInput(i)){
+					if(!getTcpInput(tcpConnections[i])){
 						cleanupSocket(i);
 					}
 					else{
@@ -448,6 +453,11 @@ void* InboundSwitchboard(void* ipcSocks){
 		// Check master UDP socket
 		if(FD_ISSET(udpConnection, &fdset)){
 			getUdpInput();
+		}
+
+		if(FD_ISSET(Inswitch_uiSocket, &fdset)){
+            // pretend it's normal input
+            getTcpInput(Inswitch_uiSocket);
 		}
 
 		// Check for incomming connection
@@ -467,6 +477,7 @@ void* InboundSwitchboard(void* ipcSocks){
         if(FD_ISSET(Inswitch_keepAliveSocket, &fdset)){
             removePlayer(Inswitch_keepAliveSocket);
         }
+
 		if(FD_ISSET(Inswitch_timerSocket, &fdset)){
             getIPC(Inswitch_timerSocket);
 		}
