@@ -120,8 +120,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
     SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
     SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 
-//    size_t numPlayers = countActivePlayers(pLists->playerTeams);
-
+    size_t team1Count = 0, team2Count = 0;
 
     PKT_NEW_CLIENT  inIPC1;
     PKT_LOST_CLIENT inIPC2;
@@ -159,10 +158,25 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
             pLists->playerValid[inIPC2.playerNo] = FALSE;
             pLists->readystatus[inIPC2.playerNo] = PLAYER_STATE_DROPPED;
             writePacket(out, pLists, 3);
-
-            #warning TODO (German#9#): Check if player count triggers win condition
-
             DEBUG(DEBUG_WARN, "GC> Player removed");
+
+
+            #warning TODO (German#9#): Test dropped player win logic
+
+            if(gameInfo->game_status == GAME_STATE_ACTIVE)
+            {
+                countTeams(pLists->playerTeams, &team1Count, &team2Count);
+                if(team1Count == 0) {
+                    gameInfo->game_status = GAME_TEAM2_WIN;
+                    DEBUG(DEBUG_INFO, "GC> Team 2 (Robbers) won - no cops left");
+                }
+
+                if(team2Count == 0) {
+                    gameInfo->game_status = GAME_TEAM1_WIN;
+                    DEBUG(DEBUG_INFO, "GC> Team 1 (Cops) won - no robbers left");
+                }
+                writePacket(out, gameInfo, 8);
+            }
             break;
 
         case 4: // chat
