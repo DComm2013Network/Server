@@ -41,6 +41,9 @@
     // Movement updates control
     #define MOVE_UPDATE_FREQUENCY   60      // Movement updates per second (~0.18KB/second/client)
 
+    // Chat
+    #define CHAT_DECRYPT_TIME       450     // seconds until chat is fully decrypted
+
     // Keep Alive Control
     #define CHECK_CONNECTIONS       0       // Toggle keep-alive protocols on or off
     #define CHECK_FREQUENCY         5       // Seconds between checks
@@ -104,6 +107,7 @@ void serverPulse(playerNo_t plyr);
 void chatGameStart();
 void sendChat(PKT_CHAT* chat, teamNo_t teams[MAX_PLAYERS], SOCKET outswitch);
 
+typedef int     SOCKET;
 
 
 // ********************************************************************************
