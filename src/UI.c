@@ -27,6 +27,7 @@ extern int RUNNING;
 inline PKT_SERVER_SETUP createSetupPacket(const char* servName, const int maxPlayers);
 inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt);
 inline void listAllCommands();
+void injectPacket(packet_t type, SOCKET out);
 
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	...
@@ -51,6 +52,7 @@ void* UIController(void* ipcSocks) {
 
 	// prompt setup info
 	int maxPlayers = 0;
+	packet_t type;
 	char servName[MAX_NAME];
 	PKT_SERVER_SETUP pkt;
 	SOCKET outSock;
@@ -58,17 +60,11 @@ void* UIController(void* ipcSocks) {
 
 	do{
         printf("Enter a server name: ");
-        #if DEBUG_ON
-            fprintf(stdin, "Test");
-        #endif
 	}while(scanf("%s", servName) != 1);
 
 
 	do {
 		printf("Enter the maximum number of players: ");
-        #if DEBUG_ON
-            fprintf(stdin, "%d", MAX_PLAYERS);
-        #endif
 	} while(scanf("%d", &maxPlayers) != 1);
 
     if(maxPlayers > MAX_PLAYERS)
@@ -89,7 +85,7 @@ void* UIController(void* ipcSocks) {
 	write(outSock, &pType, sizeof(packet_t));
 	write(outSock, &pkt, sizeof(pkt));
 
-    printf("Server Running!\n");
+    printf("Server Running!\n\n");
 	/* populate list of commands
 	char commands[3][15];
 	strcpy(commands[0], "quit");
@@ -101,6 +97,7 @@ void* UIController(void* ipcSocks) {
     // while running
 	while(RUNNING)
 	{
+	    printf("> ");
 		// get input
 		if(scanf("%s", input) != 1)
 		{
@@ -130,8 +127,14 @@ void* UIController(void* ipcSocks) {
 			continue;
 		}
 
-        // if other
-            // other
+		if(strcmp(input, "pkt") == 0){
+            if(scanf("%d", &type) == 1){
+                injectPacket(type, outSock);
+            }
+            continue;
+		}
+
+        printf("Not a valid command. Try 'help' for commands.\n");
 	}
 	return 0;
 }
@@ -152,5 +155,92 @@ inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt)
 inline void listAllCommands()
 {
 	printf("Possible commands:\n");
-	printf("quit\nget-stats\nhelp\n");
+	printf("quit\nget-stats\nhelp\npkt <type>\n");
+}
+
+void injectPacket(packet_t type, SOCKET out){
+    void* data;
+
+    PKT_CHAT            pkt4;
+    PKT_READY_STATUS    pkt5;
+    PKT_SPECIAL_TILE    pkt6;
+
+    playerNo_t player;
+    teamNo_t team;
+    status_t status;
+    pos_t pos;
+    vel_t vel;
+    floorNo_t floor;
+    tile_t tile;
+    char* string = 0;
+    size_t strSize = 0;
+
+    int relay = 1;
+
+    switch(type){
+        case 4:
+            printf("Send message from player no: ");
+            while(!scanf("%d", &player)){}
+            printf("Message: ");
+            getchar(); // clear the \n
+            getline(&string, &strSize, stdin);
+            strSize = (strSize > MAX_MESSAGE) ? MAX_MESSAGE : strSize;
+            pkt4.sendingPlayer = player;
+            memcpy(&pkt4.message, string, strSize);
+            data = &pkt4;
+            break;
+
+        case 5:
+            printf("Send Ready Status from player no: ");
+            while(!scanf("%d", &player)){}
+            pkt5.playerNumber = player;
+            printf("Add to team: ");
+            while(!scanf("%d", &team)){}
+            pkt5.team_number = team;
+            printf("Status: ");
+            while(!scanf("%d", &status)){}
+            pkt5.ready_status = status;
+            data = &pkt5;
+            break;
+
+        case 6:
+            printf("Place special tile on floor: ");
+            while(!scanf("%d", &floor)){}
+            pkt6.floor = floor;
+            printf("At X: ");
+            while(!scanf("%d", &pos)){}
+            pkt6.xPos = pos;
+            printf("At Y: ");
+            while(!scanf("%d", &pos)){}
+            pkt6.yPos = pos;
+            data = &pkt6;
+            break;
+
+        case 8:
+
+            break;
+
+        case 10:
+
+            break;
+
+        case 12:
+
+            break;
+
+        case 14:
+
+            break;
+
+        default:
+            printf("Packet %d is not a spoofable packet\n", type);
+            relay = 0;
+            break;
+    }
+
+    if(relay){
+        write(out, &type, sizeof(packet_t));
+        write(out, data, netPacketSizes[type]);
+    }
+
 }
