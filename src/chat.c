@@ -30,7 +30,7 @@ void sendChat(PKT_CHAT* chat, teamNo_t teams[MAX_PLAYERS], SOCKET outswitch){
     // If robber chat, send encrypted to cops
 
     // determine % decryped
-    decryptLvl = ((time() - gameStart) / CHAT_DECRYPT_TIME) * 100;
+    decryptLvl = ((time(NULL) - gameStart) / CHAT_DECRYPT_TIME) * 100;
     // cap at 100%
     decryptLvl = (decryptLvl > 100) ? 100 : decryptLvl;
 
@@ -52,7 +52,7 @@ void sendChat(PKT_CHAT* chat, teamNo_t teams[MAX_PLAYERS], SOCKET outswitch){
         }
         write(outswitch, &type, sizeof(packet_t));
         write(outswitch, chat, netPacketSizes[type]);
-        write(outswitch, &m, sizeof(OUTMASK));
+        write(outswitch, &outM, sizeof(OUTMASK));
 
     }
 }

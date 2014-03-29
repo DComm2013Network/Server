@@ -29,7 +29,7 @@
 #define MIN_PLAYER_TEAM 1   // for mercy rule? if too many people
 
 extern int RUNNING;
-double WIN_RATIO = MAX_OBJECTIVES * 0.75;
+int WIN_RATIO = MAX_OBJECTIVES * 0.75;
 
 // Controllers
 void* GeneralController(void* ipcSocks);
@@ -134,8 +134,6 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
         DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_1");
         getPacket(in, &inIPC1, ipcPacketSizes[1]);
 
-  //      numPlayers++;
-
         // Assign no team and send him to the lobby
         pLists->playerTeams[inIPC1.playerNo] = TEAM_NONE;
         strcpy(pLists->playerNames[inIPC1.playerNo], inIPC1.playerName);
@@ -148,15 +146,6 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
         break;
 		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
 			DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_2");
-//			if (numPlayers < 1)
-//			{
-//                DEBUG(DEBUG_ALRM, "GC> numPlayers < 1 HOW COULD WE LOSE SOMEONE?!");
-//                if(pLists->playerValid[inIPC2.playerNo] == TRUE)
-//                {
-//                    DEBUG(DEBUG_WARN, "GC> ...because the playerNo is still valid..BUT WHY!?");
-//                }
-//                break;ff
-//			}
 
 			getPacket(in, &inIPC2, ipcPacketSizes[2]);
 			if(pLists->playerValid[inIPC2.playerNo] == FALSE)
@@ -165,15 +154,14 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
                 break;
 			}
 
-//			numPlayers--;
-
             pLists->playerNames[inIPC2.playerNo][0] = '\0';
             pLists->playerTeams[inIPC2.playerNo] = TEAM_NONE;
             pLists->playerValid[inIPC2.playerNo] = FALSE;
             pLists->readystatus[inIPC2.playerNo] = PLAYER_STATE_DROPPED;
             writePacket(out, pLists, 3);
 
-            //TO-DO check if that was the last player of a team and trigger a win condition
+            #warning TODO (German#9#): Check if player count triggers win condition
+
             DEBUG(DEBUG_WARN, "GC> Player removed");
             break;
 
@@ -261,8 +249,6 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
     totalPlayers = countActivePlayers(pLists->playerTeams);
 
-    #warning TODO (aburian#7#): Verify logic to base objective count off player count
-
     // start with half the player count
     objCount = totalPlayers / 2;
     // at least 3 floors
@@ -272,6 +258,9 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
     for(i = 0; i < objCount; ++i){
         gameInfo->objectiveStates[i] = OBJECTIVE_AVAILABLE;
+    }
+    for(i = i; i < MAX_OBJECTIVES; ++i){
+        gameInfo->objectiveStates[i] = OBJECTIVE_INVALID;
     }
 
 	DEBUG(DEBUG_INFO, "GC> In runningController");
@@ -289,22 +278,27 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         case IPC_PKT_2:
         case 4:
             ongoingController(sockets, pType, pLists, gameInfo);
-        break;
+            break;
         case 8:
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 8");
             getPacket(in, &inPkt8, netPacketSizes[8]);
 
-            memcpy(gameInfo->objectiveStates, &(inPkt8.objectiveStates), MAX_OBJECTIVES);
+            // Update any new captures
+            for(i = 0; i < MAX_OBJECTIVES; ++i){
+                if(inPkt8.objectiveStates[i] == OBJECTIVE_CAPTURED){
+                    gameInfo->objectiveStates[i] = OBJECTIVE_CAPTURED;
+                }
+            }
 
             // Check win
-            objCount = countObjectives(inPkt8.objectiveStates);
-            if((objCount/MAX_OBJECTIVES) >= WIN_RATIO){
+            objCount = countObjectives(gameInfo->objectiveStates);
+            if(objCount >= WIN_RATIO){
                 gameInfo->game_status = GAME_TEAM2_WIN;
             } else {
                 gameInfo->game_status = GAME_STATE_ACTIVE;
             }
             writePacket(out, gameInfo, 8);
-        break;
+            break;
         case 14:
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 14");
             getPacket(in, &inPkt14, netPacketSizes[14]);
@@ -324,8 +318,10 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
                 writePacket(out, gameInfo, 8);
             }
 
-        break;
-        default: DEBUG(DEBUG_ALRM, "GC> Running> Receiving invalid packet"); break;
+            break;
+        default:
+            DEBUG(DEBUG_ALRM, "GC> Running> Receiving invalid packet");
+            break;
         }
     }
 }
@@ -336,7 +332,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
     SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
-
+    int i;
 
     if(!RUNNING) {
         return;
@@ -344,7 +340,9 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
 
     forceMoveAll(sockets, pLists, PLAYER_STATE_WAITING);
     // players are stripped of their teams when entering the lobby controller
-    // memset(pLists->playerTeams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
+    for(i = 0; i < MAX_PLAYERS; ++i){
+        pLists->playerTeams[i] = TEAM_NONE;
+    }
     writePacket(out, pLists, 3);
 }
 
@@ -402,7 +400,7 @@ size_t countObjectives(bool_t *objectives)
     int i, val = 0;
     for(i = 0; i < MAX_OBJECTIVES; ++i)
     {
-        if(*(objectives+i) == 1)
+        if(*(objectives+i) == OBJECTIVE_CAPTURED)
             val++;
     }
     return val;
@@ -430,10 +428,20 @@ size_t countTeams(const teamNo_t *playerTeams, size_t *team1, size_t *team2)
         state = *(playerTeams+i);
         switch(state)
         {
-            case TEAM_NONE: return (*team1) + (*team2);
-            case TEAM_COPS:     (*team1)++; break;
-            case TEAM_ROBBERS:  (*team2)++; break;
-            default: DEBUG(DEBUG_ALRM, "GC> Error getting player's team"); break;
+            case TEAM_NONE:
+                break;
+
+            case TEAM_COPS:
+                (*team1)++;
+                break;
+
+            case TEAM_ROBBERS:
+                (*team2)++;
+                break;
+
+            default:
+                DEBUG(DEBUG_ALRM, "GC> Error getting player's team");
+                break;
         }
 
     }
