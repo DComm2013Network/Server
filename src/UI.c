@@ -161,9 +161,13 @@ inline void listAllCommands()
 void injectPacket(packet_t type, SOCKET out){
     void* data;
 
-    PKT_CHAT            pkt4;
-    PKT_READY_STATUS    pkt5;
-    PKT_SPECIAL_TILE    pkt6;
+    PKT_CHAT                spoof_pkt4;
+    PKT_READY_STATUS        spoof_pkt5;
+    PKT_SPECIAL_TILE        spoof_pkt6;
+    PKT_GAME_STATUS         spoof_pkt8;
+    PKT_POS_UPDATE          spoof_pkt10;
+    PKT_FLOOR_MOVE_REQUEST  spoof_pkt12;
+    PKT_TAGGING             spoof_pkt14;
 
     playerNo_t player;
     teamNo_t team;
@@ -178,58 +182,115 @@ void injectPacket(packet_t type, SOCKET out){
     int relay = 1;
 
     switch(type){
+
         case 4:
             printf("Send message from player no: ");
             while(!scanf("%d", &player)){}
             printf("Message: ");
             getchar(); // clear the \n
             getline(&string, &strSize, stdin);
-            strSize = (strSize > MAX_MESSAGE) ? MAX_MESSAGE : strSize;
-            pkt4.sendingPlayer = player;
-            memcpy(&pkt4.message, string, strSize);
-            data = &pkt4;
+            if(strSize > MAX_MESSAGE){
+                strSize = MAX_MESSAGE;
+                string[strSize - 1] = 0;
+            }
+            spoof_pkt4.sendingPlayer = player;
+            memcpy(&spoof_pkt4.message, string, strSize);
+            data = &spoof_pkt4;
             break;
 
         case 5:
             printf("Send Ready Status from player no: ");
             while(!scanf("%d", &player)){}
-            pkt5.playerNumber = player;
+            spoof_pkt5.playerNumber = player;
             printf("Add to team: ");
             while(!scanf("%d", &team)){}
-            pkt5.team_number = team;
+            spoof_pkt5.team_number = team;
             printf("Status: ");
             while(!scanf("%d", &status)){}
-            pkt5.ready_status = status;
-            data = &pkt5;
+            spoof_pkt5.ready_status = status;
+            printf("Name: ");
+            getchar(); // clear the \n
+            getline(&string, &strSize, stdin);
+            if(strSize > MAX_MESSAGE){
+                strSize = MAX_MESSAGE;
+                string[strSize - 1] = 0;
+            }
+            memcpy(&spoof_pkt5.playerName, string, strSize);
+            data = &spoof_pkt5;
             break;
 
         case 6:
-            printf("Place special tile on floor: ");
+            printf("Place special tile: ");
+            while(!scanf("%d", &tile)){}
+            spoof_pkt6.tile = tile;
+            printf("On floor: ");
             while(!scanf("%d", &floor)){}
-            pkt6.floor = floor;
+            spoof_pkt6.floor = floor;
             printf("At X: ");
             while(!scanf("%d", &pos)){}
-            pkt6.xPos = pos;
+            spoof_pkt6.xPos = pos;
             printf("At Y: ");
             while(!scanf("%d", &pos)){}
-            pkt6.yPos = pos;
-            data = &pkt6;
+            spoof_pkt6.yPos = pos;
+            data = &spoof_pkt6;
             break;
 
         case 8:
-
+            printf("Capture objective: ");
+            while(!scanf("%d", &player)){}
+            spoof_pkt8.objectiveStates[player] = OBJECTIVE_CAPTURED;
+            data = &spoof_pkt8;
             break;
 
         case 10:
-
+            printf("Move player no: ");
+            while(!scanf("%d", &player)){}
+            spoof_pkt10.playerNumber = player;
+            printf("On floor: ");
+            while(!scanf("%d", &floor)){}
+            spoof_pkt10.floor = floor;
+            printf("To X: ");
+            while(!scanf("%d", &pos)){}
+            spoof_pkt10.xPos = pos;
+            printf("To Y: ");
+            while(!scanf("%d", &pos)){}
+            spoof_pkt10.yPos = pos;
+            printf("With Vel X: ");
+            while(!scanf("%f", &vel)){}
+            spoof_pkt10.xVel = vel;
+            printf("With Vel Y: ");
+            while(!scanf("%f", &vel)){}
+            spoof_pkt10.yVel = vel;
+            data = &spoof_pkt10;
             break;
 
         case 12:
-
+            printf("Teleport player no: ");
+            while(!scanf("%d", &player)){}
+            spoof_pkt12.playerNumber = player;
+            printf("From floor: ");
+            while(!scanf("%d", &floor)){}
+            spoof_pkt12.current_floor = floor;
+            printf("To floor: ");
+            while(!scanf("%d", &floor)){}
+            spoof_pkt12.desired_floor = floor;
+            printf("At X: ");
+            while(!scanf("%d", &pos)){}
+            spoof_pkt12.desired_xPos = pos;
+            printf("At Y: ");
+            while(!scanf("%d", &pos)){}
+            spoof_pkt12.desired_yPos = pos;
+            data = &spoof_pkt12;
             break;
 
         case 14:
-
+            printf("Tag player no: ");
+            while(!scanf("%d", &player)){}
+            spoof_pkt14.tagger_id = player;
+            printf("By player no: ");
+            while(!scanf("%d", &player)){}
+            spoof_pkt14.taggee_id = player;
+            data = &spoof_pkt14;
             break;
 
         default:
