@@ -347,9 +347,15 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 14");
             getPacket(in, &inPkt14, netPacketSizes[14]);
 
+            if(inPkt14.tagger_id >= MAX_PLAYERS || inPkt14.taggee_id >= MAX_PLAYERS){
+                DEBUG(DEBUG_WARN, "Invalid tag packet");
+                printf("tag: %d\n", inPkt14.taggee_id);
+                break;
+            }
+
             outIPC3.playerNo = inPkt14.taggee_id;
             outIPC3.newFloor = FLOOR_LOBBY;
-            writeIPC(out, &outIPC3, IPC_PKT_3);
+            writeIPC(in, &outIPC3, IPC_PKT_3);
 
             printf("%s [%d] captured robber %s [%d]\n", pLists->playerNames[inPkt14.tagger_id],
                    inPkt14.tagger_id, pLists->playerNames[inPkt14.taggee_id], inPkt14.taggee_id);
@@ -363,6 +369,8 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             if(team2 <= 0) {
                 printf("Robbers Eliminated!\n");
                 gameInfo->game_status = GAME_TEAM1_WIN;
+            }
+            else{
                 writePacket(out, gameInfo, 8);
             }
 

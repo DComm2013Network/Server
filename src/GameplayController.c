@@ -255,7 +255,8 @@ void* GameplayController(void* ipcSocks) {
 			if (i == bufipcPkt3->newFloor) {
 				// player is already on target floor
 				// do nothing
-				break;
+				//break;
+				#warning TODO (Andrew#1#): This Break is removed for testing
 			}
 
 			// remove player from floor
