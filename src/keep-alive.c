@@ -15,14 +15,14 @@ void* KeepAlive(void* outSock){
 
 
     while(RUNNING && CHECK_CONNECTIONS){
-        sleep(CLEANUP_FREQUENCY);
+        sleep(CHECK_FREQUENCY);
 
 
         // Send a heartbeat to the client if we haven't sent them anything in a while
         OUT_ZERO(m);
         send = 0;
         for(i = 0; i < MAX_PLAYERS; ++i){
-            if(tcpConnections[i] && ((time(NULL) - serverHeartbeat[i]) > CLEANUP_FREQUENCY)){
+            if(tcpConnections[i] && ((time(NULL) - serverHeartbeat[i]) > CHECK_FREQUENCY)){
                OUT_SET(m, i);
                send = 1;
             }
