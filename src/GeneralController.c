@@ -140,6 +140,8 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
         pLists->playerValid[inIPC1.playerNo] = TRUE;
         pLists->characters[inIPC1.playerNo] = inIPC1.character;
 
+        printf("%s [%d] has joined the game.\n", pLists->playerNames[inIPC1.playerNo], inIPC1.playerNo);
+
         writePacket(out, pLists, 3);
         writePacket(out, gameInfo, 8);
         break;
@@ -153,29 +155,30 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
                 break;
 			}
 
-            pLists->playerNames[inIPC2.playerNo][0] = '\0';
+            printf("%s [%d] has left the game.\n", pLists->playerNames[inIPC2.playerNo], inIPC2.playerNo);
+
+            bzero(pLists->playerNames[inIPC2.playerNo], MAX_NAME);
             pLists->playerTeams[inIPC2.playerNo] = TEAM_NONE;
             pLists->playerValid[inIPC2.playerNo] = FALSE;
             pLists->readystatus[inIPC2.playerNo] = PLAYER_STATE_DROPPED;
-            writePacket(out, pLists, 3);
             DEBUG(DEBUG_WARN, "GC> Player removed");
-
-
-            #warning TODO (German#9#): Test dropped player win logic
 
             if(gameInfo->game_status == GAME_STATE_ACTIVE)
             {
                 countTeams(pLists->playerTeams, &team1Count, &team2Count);
                 if(team1Count == 0) {
                     gameInfo->game_status = GAME_TEAM2_WIN;
+                    printf("Cops weren't getting paid enough.\n");
                     DEBUG(DEBUG_INFO, "GC> Team 2 (Robbers) won - no cops left");
                 }
-
-                if(team2Count == 0) {
+                else if(team2Count == 0) {
                     gameInfo->game_status = GAME_TEAM1_WIN;
+                    printf("Robbers Eliminated!\n");
                     DEBUG(DEBUG_INFO, "GC> Team 1 (Cops) won - no robbers left");
                 }
-                writePacket(out, gameInfo, 8);
+                else{
+                    writePacket(out, pLists, 3);
+                }
             }
             break;
 
@@ -202,6 +205,8 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
 
 	PKT_READY_STATUS    inPkt5;
 	packet_t pType;
+
+	int i;
 
     gameInfo->game_status = GAME_STATE_WAITING;
     memset(pLists->playerTeams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
@@ -233,6 +238,22 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
                 balanceTeams(desiredTeams, pLists->playerTeams);
                 forceMoveAll(sockets, pLists, PLAYER_STATE_ACTIVE);
                 DEBUG(DEBUG_WARN, "GC> Lobby> All players ready and moved to floor 1");
+
+                printf("Game Start!\n");
+                printf("*********************************\n");
+                printf("Robbers:\n");
+                for(i = 0; i < MAX_PLAYERS; ++i){
+                    if(pLists->playerTeams[i] == TEAM_ROBBERS){
+                        printf(" - %s [%d]\n", pLists->playerNames[i], i);
+                    }
+                }
+
+                printf("Cops:\n");
+                for(i = 0; i < MAX_PLAYERS; ++i){
+                    if(pLists->playerTeams[i] == TEAM_COPS){
+                        printf(" - %s [%d]\n", pLists->playerNames[i], i);
+                    }
+                }
             }
 
             writePacket(out, pLists, 3);
@@ -301,12 +322,14 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             for(i = 0; i < MAX_OBJECTIVES; ++i){
                 if(inPkt8.objectiveStates[i] == OBJECTIVE_CAPTURED){
                     gameInfo->objectiveStates[i] = OBJECTIVE_CAPTURED;
+                    printf("Objective %d has been captured!\n", i);
                 }
             }
 
             // Check win
             objCount = countObjectives(gameInfo->objectiveStates);
             if(objCount >= WIN_RATIO){
+                printf("All Objectives Captured!\n");
                 gameInfo->game_status = GAME_TEAM2_WIN;
             } else {
                 gameInfo->game_status = GAME_STATE_ACTIVE;
@@ -321,6 +344,9 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             outIPC3.newFloor = FLOOR_LOBBY;
             writeIPC(out, &outIPC3, IPC_PKT_3);
 
+            printf("%s [%d] captured robber %s [%d]\n", pLists->playerNames[inPkt14.tagger_id],
+                   inPkt14.tagger_id, pLists->playerNames[inPkt14.taggee_id], inPkt14.taggee_id);
+
             pLists->playerTeams[inPkt14.taggee_id] = TEAM_NONE;
             pLists->readystatus[inPkt14.taggee_id] = PLAYER_STATE_OUT;
             writePacket(out, pLists, 3);
@@ -328,6 +354,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             //Check win
             countTeams(pLists->playerTeams, &team1, &team2);
             if(team2 <= 0) {
+                printf("Robbers Eliminated!\n");
                 gameInfo->game_status = GAME_TEAM1_WIN;
                 writePacket(out, gameInfo, 8);
             }
@@ -352,12 +379,24 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
         return;
     }
 
-    forceMoveAll(sockets, pLists, PLAYER_STATE_WAITING);
-    // players are stripped of their teams when entering the lobby controller
+    printf("Game Over!\n");
+    printf("*********************************\n");
+
+    // Send which team won
+    writePacket(out, gameInfo, 8);
+
+    // Send the game is over
+    gameInfo->game_status = GAME_STATE_OVER;
+    writePacket(out, gameInfo, 8);
+
+    // Send the player states
     for(i = 0; i < MAX_PLAYERS; ++i){
         pLists->playerTeams[i] = TEAM_NONE;
     }
     writePacket(out, pLists, 3);
+
+    // Move them to the lobby
+    forceMoveAll(sockets, pLists, PLAYER_STATE_WAITING);
 }
 
 /***********************************************************/
@@ -378,10 +417,10 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
     if(status == PLAYER_STATE_ACTIVE){
         for(i = 0; i < MAX_PLAYERS; ++i){
             if(pLists->playerTeams[i] == TEAM_COPS){
-                floor = 3;
+                floor = FLOOR_COP_START;
             }
             else if(pLists->playerTeams[i] == TEAM_ROBBERS){
-                floor = 1;
+                floor = FLOOR_ROBBER_START;
             }
 
             if(pLists->playerTeams[i] != TEAM_NONE){
@@ -395,12 +434,9 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
     // Game is ending
     if(status == PLAYER_STATE_WAITING){
         for(i = 0; i < MAX_PLAYERS; ++i){
-
-            if(pLists->playerTeams[i] != TEAM_NONE){
-                outIPC3.playerNo = i;
-                outIPC3.newFloor = FLOOR_LOBBY;
-                writeIPC(in, &outIPC3, IPC_PKT_3);
-            }
+            outIPC3.playerNo = i;
+            outIPC3.newFloor = FLOOR_LOBBY;
+            writeIPC(in, &outIPC3, IPC_PKT_3);
         }
     }
 
@@ -465,20 +501,33 @@ size_t countTeams(const teamNo_t *playerTeams, size_t *team1, size_t *team2)
 // in - teams chosed by the users
 // out- teams balanced by the server
 // created march 12
+// Unbalanced teams go to favour of the cops
 void balanceTeams(const teamNo_t *teamIn, teamNo_t *teamOut)
 {
     size_t team1Count = 0, team2Count = 0, i = 0;
     memcpy(teamOut, teamIn, sizeof(teamNo_t)*MAX_PLAYERS);
     countTeams(teamIn, &team1Count, &team2Count);
-    while(team1Count < team2Count)
+
+    // Add robbers until = or greater
+    for(i = 0; team2Count < team1Count; ++i)
     {
-        if(*(teamOut+i) == TEAM_ROBBERS)
+        if(teamOut[i] == TEAM_COPS)
         {
-            *(teamOut+i) = TEAM_COPS;
+            teamOut[i] = TEAM_ROBBERS;
+            team2Count++;
+            team1Count--;
+        }
+    }
+
+    // Add cops until = or greater
+    for(i = 0; team1Count < team2Count; ++i)
+    {
+        if(teamOut[i] == TEAM_ROBBERS)
+        {
+            teamOut[i] = TEAM_COPS;
             team1Count++;
             team2Count--;
         }
-        i++;
     }
 }
 
@@ -520,7 +569,7 @@ void zeroPlayerLists(PKT_PLAYERS_UPDATE *pLists, const int maxPlayers)
         pLists->playerValid[i] = FALSE;
         pLists->characters[i] = 0;
         for(j = 0; j < MAX_NAME; ++j) {
-            pLists->playerNames[i][j] = '\0';
+            bzero(pLists->playerNames[i], MAX_NAME);
         }
 
         if(i < maxPlayers){

@@ -11,7 +11,7 @@ void getSpawn(playerNo_t player, floorNo_t floor, pos_t* xPos, pos_t* yPos){
 
         case 1: // Robber Floor
             *yPos = ((player / 4) * 80) + 920;
-            *xPos = ((player % 4) * 80) + 2240;
+            *xPos = ((player % 4) * 80) + 2260;
             break;
 
         case 3: // Cops Floor

@@ -130,7 +130,6 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 		DEBUG(DEBUG_INFO, "CM> Space available, adding player");
 
         connectedPlayers++;
-        printf("Added player %d to game.\n", i);
 		replyToClient.connectCode = connectCode_ACCEPTED;
 		replyToClient.clients_playerNumber = i;
 

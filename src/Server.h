@@ -28,14 +28,14 @@
 // ************************************************************************************************
 
     // Version no
-    #define SERVER_VERSION          1.8
+    #define SERVER_VERSION          1.9
 
     // Net comm control
     #define TCP_PORT                42337
     #define UDP_PORT                42338
 
     // Debug control
-    #define DEBUG_ON                1       // Toggle all debug statements on or off
+    #define DEBUG_ON                0       // Toggle all debug statements on or off
     #define DEBUG_LEVEL             2       // Print only debugs of this level or higher
 
     // Movement updates control
@@ -48,6 +48,10 @@
     #define CHECK_CONNECTIONS       0       // Toggle keep-alive protocols on or off
     #define CHECK_FREQUENCY         5       // Seconds between checks
     #define PRESUME_DEAD_FREQUENCY  15      // Seconds until loss is assumed
+
+    // Floor control
+    #define FLOOR_COP_START         1       // The floor the cops start on
+    #define FLOOR_ROBBER_START      1       // The floor the robbers start on
 
 
 // ************************************************************************************************

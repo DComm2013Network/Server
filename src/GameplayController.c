@@ -182,8 +182,7 @@ void* GameplayController(void* ipcSocks) {
 			}
 
 			//send packet 11 to players on floor
-			DEBUG(DEBUG_INFO, "GP> Sending packet 11 to floor 0")
-			;
+			DEBUG(DEBUG_INFO, "GP> Sending packet 11 to floor 0");
 
 			outPType = MIN_11;
 			floorArray[playerFloor].xPos[thisPlayer] = bufFloorMove->xPos;
@@ -234,8 +233,7 @@ void* GameplayController(void* ipcSocks) {
 
 		case 0xB3:  // Force floor change
 
-			DEBUG(DEBUG_INFO, "GP> Received packet 0xB3")
-			;
+			DEBUG(DEBUG_INFO, "GP> Received packet 0xB3");
 
 			bzero(bufipcPkt3, ipcPacketSizes[3]);
 
@@ -315,8 +313,7 @@ void* GameplayController(void* ipcSocks) {
 			write(outswitchSock, &outPType, sizeof(packet_t));
 			write(outswitchSock, minAllPos, netPacketSizes[MIN_11]);
 			write(outswitchSock, &m, sizeof(OUTMASK));
-			DEBUG(DEBUG_INFO, "CP> Sending packet 16")
-			;
+			DEBUG(DEBUG_INFO, "CP> Sending packet 16");
 
 			break;
         case MIN_10:
@@ -362,11 +359,11 @@ void* GameplayController(void* ipcSocks) {
 				 * from this player we can figure out if we didn't get their
 				 * floor update.
 				 */
-				errFloor++;
-				fprintf(stderr, "Gameplay Controller - player %d floor incorrect: %d.  Count:%d\n", thisPlayer, playerFloor, errFloor);
-
-				//for now, we just assign the player to this floor
-				//floorArray[playerFloor].playersOnFloor[thisPlayer] = 1;
+                if(DEBUG_ON && DEBUG_LEVEL >= DEBUG_WARN){
+                    errFloor++;
+                    fprintf(stderr, "Gameplay Controller - player %d floor incorrect: %d.  Count:%d\n", thisPlayer, playerFloor, errFloor);
+                }
+                break;
 			}
 
 			//put position and velocity in update packet
@@ -415,9 +412,10 @@ void* GameplayController(void* ipcSocks) {
 			bzero(bufFloorMoveReq, sizeof(*bufFloorMoveReq));
 			if (getPacket(gameplaySock, bufFloorMoveReq, lenPktFloorReq) == -1) {
 				//couldn't read packet
-				errPacket++;
-				fprintf(stderr, "Gameplay Controller - error reading packet 12.  Count:%d\n", errPacket);
-
+				if(DEBUG_ON && DEBUG_LEVEL >= DEBUG_WARN){
+                    errPacket++;
+                    fprintf(stderr, "Gameplay Controller - error reading packet 12.  Count:%d\n", errPacket);
+				}
 				/*
 				 *  handle error here.  Perhaps check the size of the packet as well?
 				 */
@@ -530,9 +528,10 @@ void* GameplayController(void* ipcSocks) {
 
 			break;
 		default:
-			wrongPacket++;
-			fprintf(stderr, "Gameplay Controller - received unknown packet type:%d  Count:%d\n", pType, wrongPacket);
-
+            if(DEBUG_ON && DEBUG_LEVEL >= DEBUG_WARN){
+                wrongPacket++;
+                fprintf(stderr, "Gameplay Controller - received unknown packet type:%d  Count:%d\n", pType, wrongPacket);
+            }
 			break;
 		}
 

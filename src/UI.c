@@ -86,18 +86,11 @@ void* UIController(void* ipcSocks) {
 	write(outSock, &pkt, sizeof(pkt));
 
     printf("Server Running!\n\n");
-	/* populate list of commands
-	char commands[3][15];
-	strcpy(commands[0], "quit");
-	strcpy(commands[1], "get-stats");
-	strcpy(commands[2], "help");
-	*/
 
 	char input[24];
     // while running
 	while(RUNNING)
 	{
-	    printf("> ");
 		// get input
 		if(scanf("%s", input) != 1)
 		{
