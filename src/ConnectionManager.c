@@ -85,7 +85,7 @@ void connectionManagerSetup(SOCKET connectionSock, int* maxPlayers, char* gameNa
 -- Tries to add a new player to the server. If successful, notifies Switchboards.
 -- If the server is full, client is rejected, and the connection is closed.
 ----------------------------------------------------------------------------------------------------------------------*/
-void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSock){
+void addNewConnection(int maxPlayers, SOCKET connectionSock){
 
 	struct pktB1 newClientInfo;
 	struct pkt01 clientReg;
@@ -99,6 +99,10 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 	struct sockaddr_in client;
 	socklen_t addr_len = sizeof(struct sockaddr_in);
 	int i;
+
+	bzero(&newClientInfo, ipcPacketSizes[1]);
+	bzero(&clientReg, netPacketSizes[1]);
+	bzero(&replyToClient, netPacketSizes[2]);
 
 	DEBUG(DEBUG_INFO,"CM> Adding new connection");
 
@@ -157,8 +161,6 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSoc
 		// Notify switchboards
 		write(connectionSock, &newClientType, sizeof(packet_t));
 		write(connectionSock, &newClientInfo, sizeof(struct pktB1));
-		write(outswitchSock, &newClientType, sizeof(packet_t));
-		write(outswitchSock, &newClientInfo, sizeof(struct pktB1));
 
 		DEBUG(DEBUG_INFO, "CM> New client added");
 	}
@@ -249,7 +251,6 @@ void* ConnectionManager(void* ipcSocks){
 	SOCKET highSocket;
 
 	SOCKET connectionSock = ((SOCKET*)ipcSocks)[0];
-	SOCKET outswitchSock = ((SOCKET*)ipcSocks)[1];
 
 	struct	sockaddr_in server;
 	int addr_len = sizeof(struct sockaddr_in);
@@ -324,7 +325,7 @@ void* ConnectionManager(void* ipcSocks){
 
 		if(FD_ISSET(listenSock, &fdset)){
 			// New connection appeared on listen
-			addNewConnection(maxPlayers, connectionSock, outswitchSock);
+			addNewConnection(maxPlayers, connectionSock);
 		}
 	}
 

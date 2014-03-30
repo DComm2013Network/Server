@@ -43,6 +43,7 @@ size_t countObjectives(bool_t *objectives);
 size_t countTeams(const teamNo_t *playerTeams, size_t *team1, size_t *team2);
 size_t countActivePlayers(const teamNo_t *playerTeams);
 void zeroPlayerLists(PKT_PLAYERS_UPDATE *pLists, const int maxPlayers);
+void clearUnexpectedPacket(SOCKET sock, packet_t type);
 
 // Game Utility
 void balanceTeams(const teamNo_t *teamIn, teamNo_t *teamOut);
@@ -98,6 +99,9 @@ void* GeneralController(void* ipcSocks)
 
     SOCKET ipc   = ((SOCKET*) ipcSocks)[0];     // Socket to relay IPC messages
 
+    bzero(&pInfoLists, netPacketSizes[3]);
+    bzero(&gameInfo, netPacketSizes[8]);
+
     setup(ipc, &maxPlayers, &pInfoLists);
 	DEBUG(DEBUG_INFO, "GC> Setup Complete");
 	while (RUNNING) {
@@ -126,6 +130,11 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
     PKT_LOST_CLIENT inIPC2;
     PKT_CHAT pktchat;
     PKT_SPECIAL_TILE pktTile;
+
+    bzero(&inIPC1, ipcPacketSizes[1]);
+    bzero(&inIPC2, ipcPacketSizes[2]);
+    bzero(&pktchat, netPacketSizes[4]);
+    bzero(&pktTile, netPacketSizes[6]);
 
     switch(pType)
     {
@@ -211,6 +220,8 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
 
 	int i;
 
+	bzero(&inPkt5, netPacketSizes[5]);
+
     gameInfo->game_status = GAME_STATE_WAITING;
     memset(pLists->playerTeams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
 
@@ -265,6 +276,7 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
         break;
         default:
             DEBUG(DEBUG_ALRM, "GC> Lobby> Receiving invalid packet");
+            clearUnexpectedPacket(in, pType);
         break;
         }
     }
@@ -286,6 +298,10 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     int i;
 	packet_t pType;
     size_t team1 = 0, team2 = 0, objCount = 0, totalPlayers = 0;
+
+    // Zero out starting memeory
+    bzero(&inPkt14, netPacketSizes[14]);
+    bzero(&inPkt8, netPacketSizes[8]);
 
     printf("-- In Game --\n");
 
@@ -347,9 +363,19 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 14");
             getPacket(in, &inPkt14, netPacketSizes[14]);
 
+            printf("Tag\n");
+            #warning remove me
+
             if(inPkt14.tagger_id >= MAX_PLAYERS || inPkt14.taggee_id >= MAX_PLAYERS){
                 DEBUG(DEBUG_WARN, "Invalid tag packet");
                 printf("tag: %d\n", inPkt14.taggee_id);
+                #warning remove me
+                break;
+            }
+
+            if(pLists->playerTeams[inPkt14.taggee_id] != TEAM_ROBBERS){
+                DEBUG(DEBUG_WARN, "Capturing non-robber prohibited");
+                printf("Non robber cap: %d\n", inPkt14.taggee_id);
                 break;
             }
 
@@ -377,6 +403,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             break;
         default:
             DEBUG(DEBUG_ALRM, "GC> Running> Receiving invalid packet");
+            clearUnexpectedPacket(in, pType);
             break;
         }
     }
@@ -618,6 +645,13 @@ int setup(SOCKET in, int *maxPlayers, PKT_PLAYERS_UPDATE *pLists)
 
     zeroPlayerLists(pLists, *maxPlayers);
 	return 1;
+}
+
+void clearUnexpectedPacket(SOCKET sock, packet_t type){
+    void* data = malloc(netPacketSizes[type]);
+    getPacket(sock, data, netPacketSizes[type]);
+    free(data);
+
 }
 
 /***********************************************************/

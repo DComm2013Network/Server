@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
 	SOCKET out_keepal[2];
 
 	SOCKET uiParams[1];
-	SOCKET conManParams[2];
+	SOCKET conManParams[1];
 	SOCKET generalParams[2];
 	SOCKET gameplayParams[2];
 	SOCKET outboundParams[4];

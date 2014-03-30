@@ -95,27 +95,33 @@ void* GameplayController(void* ipcSocks) {
 	outswitchSock = ((SOCKET*) ipcSocks)[1];
 
 	//create structs for buffers
-	PKT_POS_UPDATE *bufPlayerIn = (PKT_POS_UPDATE*) malloc(sizeof(PKT_POS_UPDATE));
-	PKT_ALL_POS_UPDATE *bufPlayerAll = malloc(sizeof(PKT_ALL_POS_UPDATE));
-	PKT_FLOOR_MOVE_REQUEST *bufFloorMoveReq = malloc(sizeof(PKT_FLOOR_MOVE_REQUEST));
-	PKT_FLOOR_MOVE *bufFloorMove = malloc(sizeof(PKT_FLOOR_MOVE));
+	PKT_POS_UPDATE *bufPlayerIn =               malloc(sizeof(PKT_POS_UPDATE));
+	PKT_ALL_POS_UPDATE *bufPlayerAll =          malloc(sizeof(PKT_ALL_POS_UPDATE));
+	PKT_FLOOR_MOVE_REQUEST *bufFloorMoveReq =   malloc(sizeof(PKT_FLOOR_MOVE_REQUEST));
+	PKT_FLOOR_MOVE *bufFloorMove =              malloc(sizeof(PKT_FLOOR_MOVE));
 
-	PKT_MIN_ALL_POS_UPDATE *minAllPos = malloc(sizeof(PKT_MIN_ALL_POS_UPDATE));
-	PKT_MIN_POS_UPDATE *minPos = malloc(sizeof(PKT_MIN_POS_UPDATE));
+	PKT_MIN_ALL_POS_UPDATE *minAllPos =         malloc(sizeof(PKT_MIN_ALL_POS_UPDATE));
+	PKT_MIN_POS_UPDATE *minPos =                malloc(sizeof(PKT_MIN_POS_UPDATE));
 
-	PKT_SERVER_SETUP *bufipcPkt0 = malloc(sizeof(PKT_SERVER_SETUP));
-	PKT_NEW_CLIENT *bufipcPkt1 = malloc(sizeof(PKT_NEW_CLIENT));
-	PKT_LOST_CLIENT *bufipcPkt2 = malloc(sizeof(PKT_LOST_CLIENT));
-	PKT_FORCE_MOVE *bufipcPkt3 = malloc(sizeof(PKT_FORCE_MOVE));
+	PKT_SERVER_SETUP *bufipcPkt0 =              malloc(sizeof(PKT_SERVER_SETUP));
+	PKT_NEW_CLIENT *bufipcPkt1 =                malloc(sizeof(PKT_NEW_CLIENT));
+	PKT_LOST_CLIENT *bufipcPkt2 =               malloc(sizeof(PKT_LOST_CLIENT));
+	PKT_FORCE_MOVE *bufipcPkt3 =                malloc(sizeof(PKT_FORCE_MOVE));
 
-	//bzero(bufPlayerIn, sizeof(PKT_POS_UPDATE));
-	//bzero(bufPlayerAll, sizeof(PKT_ALL_POS_UPDATE));
-	//memset(bufPkt0, 0, sizeof(PKT_SERVER_SETUP));
+    // Zero out initial memory
+    bzero(bufPlayerIn,      sizeof(PKT_POS_UPDATE));
+    bzero(bufPlayerAll,     sizeof(PKT_ALL_POS_UPDATE));
+    bzero(bufFloorMoveReq,  sizeof(PKT_FLOOR_MOVE_REQUEST));
+    bzero(bufFloorMove,     sizeof(PKT_FLOOR_MOVE));
 
-	//assign struct lengths before the loop so as not to keep checking
-	size_t lenPktIn = sizeof(struct pkt10);
-	size_t lenPktFloorReq = sizeof(struct pkt12);
-	size_t lenPktFloor = sizeof(struct pkt13);
+	bzero(minAllPos,        sizeof(PKT_MIN_ALL_POS_UPDATE));
+	bzero(minPos,           sizeof(PKT_MIN_POS_UPDATE));
+
+	bzero(bufipcPkt0, sizeof(ipcPacketSizes[0]));
+	bzero(bufipcPkt1, sizeof(ipcPacketSizes[1]));
+	bzero(bufipcPkt2, sizeof(ipcPacketSizes[2]));
+	bzero(bufipcPkt3, sizeof(ipcPacketSizes[3]));
+
 
 	//Create array of floor structures
 	PKT_ALL_POS_UPDATE floorArray[MAX_FLOORS + 1];
@@ -172,7 +178,7 @@ void* GameplayController(void* ipcSocks) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
-			if (write(outswitchSock, bufFloorMove, lenPktFloor) == -1) {
+			if (write(outswitchSock, bufFloorMove, netPacketSizes[13]) == -1) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
@@ -252,13 +258,6 @@ void* GameplayController(void* ipcSocks) {
 				}
 			}
 
-			if (i == bufipcPkt3->newFloor) {
-				// player is already on target floor
-				// do nothing
-				//break;
-				#warning TODO (Andrew#1#): This Break is removed for testing
-			}
-
 			// remove player from floor
 			floorArray[i].playersOnFloor[bufipcPkt3->playerNo] = 0;
 
@@ -324,7 +323,7 @@ void* GameplayController(void* ipcSocks) {
 		case 10: //player position update
 
 			if(pType == 10){ // Not a min packet
-                if (getPacket(gameplaySock, bufPlayerIn, lenPktIn) == -1) {
+                if (getPacket(gameplaySock, bufPlayerIn, netPacketSizes[10]) == -1) {
                     //couldn't read packet
                     errPacket++;
                     fprintf(stderr, "Gameplay Controller - error reading packet 10.  Count:%d\n", errPacket);
@@ -411,7 +410,7 @@ void* GameplayController(void* ipcSocks) {
 			DEBUG(DEBUG_INFO, "GP> Received packet 12");
 
 			bzero(bufFloorMoveReq, sizeof(*bufFloorMoveReq));
-			if (getPacket(gameplaySock, bufFloorMoveReq, lenPktFloorReq) == -1) {
+			if (getPacket(gameplaySock, bufFloorMoveReq, netPacketSizes[12]) == -1) {
 				//couldn't read packet
 				if(DEBUG_ON && DEBUG_LEVEL >= DEBUG_WARN){
                     errPacket++;
@@ -451,7 +450,7 @@ void* GameplayController(void* ipcSocks) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
-			if (write(outswitchSock, bufFloorMove, lenPktFloor) == -1) {
+			if (write(outswitchSock, bufFloorMove, netPacketSizes[13]) == -1) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}

@@ -24,7 +24,7 @@
 
 extern int RUNNING;
 
-inline PKT_SERVER_SETUP createSetupPacket(const char* servName, const int maxPlayers);
+inline void createSetupPacket(const char* servName, const int maxPlayers, PKT_SERVER_SETUP* pkt);
 inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt);
 inline void listAllCommands();
 void injectPacket(packet_t type, SOCKET out);
@@ -53,10 +53,12 @@ void* UIController(void* ipcSocks) {
 	// prompt setup info
 	int maxPlayers = 0;
 	packet_t type;
-	char servName[MAX_NAME];
+	char servName[MAX_NAME] = {0};
 	PKT_SERVER_SETUP pkt;
 	SOCKET outSock;
-	packet_t pType=IPC_PKT_0;
+	packet_t pType = IPC_PKT_0;
+
+    bzero(&pkt, ipcPacketSizes[0]);
 
 	do{
         printf("Enter a server name: ");
@@ -79,7 +81,7 @@ void* UIController(void* ipcSocks) {
     }
 
 	// create setup packet
-	pkt = createSetupPacket(servName, maxPlayers);
+	createSetupPacket(servName, maxPlayers, &pkt);
 	printSetupPacketInfo(&pkt);
 
 	// get the socket
@@ -136,12 +138,10 @@ void* UIController(void* ipcSocks) {
 	return 0;
 }
 
-inline PKT_SERVER_SETUP createSetupPacket(const char* servName, const int maxPlayers) {
-	PKT_SERVER_SETUP pkt;
-	strcpy(pkt.serverName, servName);
-	pkt.maxPlayers = maxPlayers;
-//	pkt.port = port;
-	return pkt;
+inline void createSetupPacket(const char* servName, const int maxPlayers, PKT_SERVER_SETUP* pkt) {
+	bzero(pkt->serverName, MAX_NAME);
+	strcpy(pkt->serverName, servName);
+	pkt->maxPlayers = maxPlayers;
 }
 
 inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt)

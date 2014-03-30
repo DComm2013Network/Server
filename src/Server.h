@@ -28,7 +28,7 @@
 // ************************************************************************************************
 
     // Version no
-    #define SERVER_VERSION          2.1
+    #define SERVER_VERSION          2.3
 
     // Net comm control
     #define TCP_PORT                42337
