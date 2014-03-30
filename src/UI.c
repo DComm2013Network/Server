@@ -285,10 +285,10 @@ void injectPacket(packet_t type, SOCKET out){
         case 14:
             printf("Tag player no: ");
             while(!scanf("%d", &player)){}
-            spoof_pkt14.tagger_id = player;
+            spoof_pkt14.taggee_id = player;
             printf("By player no: ");
             while(!scanf("%d", &player)){}
-            spoof_pkt14.taggee_id = player;
+            spoof_pkt14.tagger_id = player;
             data = &spoof_pkt14;
             break;
 

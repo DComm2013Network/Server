@@ -144,7 +144,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 
         // Assign no team and send him to the lobby
         pLists->playerTeams[inIPC1.playerNo] = TEAM_NONE;
-        strcpy(pLists->playerNames[inIPC1.playerNo], inIPC1.playerName);
+        memcpy(pLists->playerNames[inIPC1.playerNo], inIPC1.playerName, MAX_NAME);
         pLists->readystatus[inIPC1.playerNo] = PLAYER_STATE_WAITING;
         pLists->playerValid[inIPC1.playerNo] = TRUE;
         pLists->characters[inIPC1.playerNo] = inIPC1.character;
@@ -364,12 +364,12 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             getPacket(in, &inPkt14, netPacketSizes[14]);
 
             printf("Tag\n");
-            #warning remove me
+            #warning for tag testing
 
             if(inPkt14.tagger_id >= MAX_PLAYERS || inPkt14.taggee_id >= MAX_PLAYERS){
                 DEBUG(DEBUG_WARN, "Invalid tag packet");
                 printf("tag: %d\n", inPkt14.taggee_id);
-                #warning remove me
+                #warning for tag testing
                 break;
             }
 
@@ -388,7 +388,6 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
             pLists->playerTeams[inPkt14.taggee_id] = TEAM_NONE;
             pLists->readystatus[inPkt14.taggee_id] = PLAYER_STATE_OUT;
-            writePacket(out, pLists, 3);
 
             //Check win
             countTeams(pLists->playerTeams, &team1, &team2);
@@ -397,6 +396,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
                 gameInfo->game_status = GAME_TEAM1_WIN;
             }
             else{
+                writePacket(out, pLists, 3);
                 writePacket(out, gameInfo, 8);
             }
 
