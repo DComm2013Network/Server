@@ -62,10 +62,14 @@ void* UIController(void* ipcSocks) {
         printf("Enter a server name: ");
 	}while(scanf("%s", servName) != 1);
 
-
-	do {
-		printf("Enter the maximum number of players: ");
-	} while(scanf("%d", &maxPlayers) != 1);
+    if(!RUN_AT_LIMIT){
+        do {
+            printf("Enter the maximum number of players: ");
+        } while(scanf("%d", &maxPlayers) != 1);
+    }
+    else{
+        maxPlayers = MAX_PLAYERS;
+    }
 
     if(maxPlayers > MAX_PLAYERS)
     {
@@ -142,7 +146,9 @@ inline PKT_SERVER_SETUP createSetupPacket(const char* servName, const int maxPla
 
 inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt)
 {
-	printf("Server name:\t%s\nMax Players:\t%d\n\n", pkt->serverName, pkt->maxPlayers);
+    printf("\n---\n");
+	printf("Server name:\t%s\nMax Players:\t%d\n", pkt->serverName, pkt->maxPlayers);
+	printf("---\n\n");
 }
 
 inline void listAllCommands()

@@ -28,11 +28,14 @@
 // ************************************************************************************************
 
     // Version no
-    #define SERVER_VERSION          1.9
+    #define SERVER_VERSION          2.1
 
     // Net comm control
     #define TCP_PORT                42337
     #define UDP_PORT                42338
+
+    // Presets
+    #define RUN_AT_LIMIT            1       // Default to running the server at MAX_PLAYERS
 
     // Debug control
     #define DEBUG_ON                0       // Toggle all debug statements on or off
@@ -46,8 +49,8 @@
 
     // Keep Alive Control
     #define CHECK_CONNECTIONS       0       // Toggle keep-alive protocols on or off
-    #define CHECK_FREQUENCY         5       // Seconds between checks
-    #define PRESUME_DEAD_FREQUENCY  15      // Seconds until loss is assumed
+    #define CHECK_FREQUENCY         3       // Seconds between checks
+    #define PRESUME_DEAD_FREQUENCY  5       // Seconds until loss is assumed
 
     // Floor control
     #define FLOOR_COP_START         1       // The floor the cops start on

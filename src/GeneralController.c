@@ -180,6 +180,9 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
                     writePacket(out, pLists, 3);
                 }
             }
+            else{
+                writePacket(out, pLists, 3);
+            }
             break;
 
         case 4: // chat
@@ -210,6 +213,8 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
 
     gameInfo->game_status = GAME_STATE_WAITING;
     memset(pLists->playerTeams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
+
+    printf("-- Lobby --\n");
 
 	while(gameInfo->game_status == GAME_STATE_WAITING)
     {
@@ -281,6 +286,8 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     int i;
 	packet_t pType;
     size_t team1 = 0, team2 = 0, objCount = 0, totalPlayers = 0;
+
+    printf("-- In Game --\n");
 
     totalPlayers = countActivePlayers(pLists->playerTeams);
 
@@ -385,13 +392,12 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
     // Send which team won
     writePacket(out, gameInfo, 8);
 
-    // Send the game is over
-    gameInfo->game_status = GAME_STATE_OVER;
-    writePacket(out, gameInfo, 8);
-
     // Send the player states
     for(i = 0; i < MAX_PLAYERS; ++i){
-        pLists->playerTeams[i] = TEAM_NONE;
+        if(pLists->playerTeams[i] != TEAM_NONE){
+            pLists->readystatus[i] = PLAYER_STATE_WAITING;
+            pLists->playerTeams[i] = TEAM_NONE;
+        }
     }
     writePacket(out, pLists, 3);
 
