@@ -356,20 +356,15 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
                 gameInfo->game_status = GAME_TEAM2_WIN;
             } else {
                 gameInfo->game_status = GAME_STATE_ACTIVE;
+                writePacket(out, gameInfo, 8);
             }
-            writePacket(out, gameInfo, 8);
             break;
         case 14:
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 14");
             getPacket(in, &inPkt14, netPacketSizes[14]);
 
-            printf("Tag\n");
-            #warning for tag testing
-
             if(inPkt14.tagger_id >= MAX_PLAYERS || inPkt14.taggee_id >= MAX_PLAYERS){
                 DEBUG(DEBUG_WARN, "Invalid tag packet");
-                printf("tag: %d\n", inPkt14.taggee_id);
-                #warning for tag testing
                 break;
             }
 

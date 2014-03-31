@@ -180,6 +180,14 @@ void injectPacket(packet_t type, SOCKET out){
 
     int relay = 1;
 
+    bzero(&spoof_pkt4, netPacketSizes[4]);
+    bzero(&spoof_pkt5, netPacketSizes[5]);
+    bzero(&spoof_pkt6, netPacketSizes[6]);
+    bzero(&spoof_pkt8, netPacketSizes[8]);
+    bzero(&spoof_pkt10, netPacketSizes[10]);
+    bzero(&spoof_pkt12, netPacketSizes[12]);
+    bzero(&spoof_pkt14, netPacketSizes[14]);
+
     switch(type){
 
         case 4:
