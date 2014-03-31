@@ -55,6 +55,9 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status);
 inline void writePacket(SOCKET sock, void* packet, packet_t type);
 inline void writeIPC(SOCKET sock, void* buf, packet_t type);
 
+// Desired teams are maintainted accross all states
+teamNo_t desiredTeams[MAX_PLAYERS] = {0};
+
 /*--------------------------------------------------------------------------------------------------------------------
  -- FUNCTION:	GeneralController
  --
@@ -152,7 +155,10 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
         printf("%s [%d] has joined the game.\n", pLists->playerNames[inIPC1.playerNo], inIPC1.playerNo);
 
         writePacket(out, pLists, 3);
-        writePacket(out, gameInfo, 8);
+
+        //writePacket(out, gameInfo, 8);
+        #warning not needed?
+
         break;
 		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
 			DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_2");
@@ -213,7 +219,6 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
 {
     SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
 	SOCKET out  = ((SOCKET*) sockets)[1];     // Socket to relay network messages
-	teamNo_t desiredTeams[MAX_PLAYERS] = {0};
 
 	PKT_READY_STATUS    inPkt5;
 	packet_t pType;
@@ -224,6 +229,11 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
 
     gameInfo->game_status = GAME_STATE_WAITING;
     memset(pLists->playerTeams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
+
+    for(i = 0; i < MAX_OBJECTIVES; ++i){
+        gameInfo->objectiveStates[i] = OBJECTIVE_INVALID;
+    }
+    gameInfo->game_status = GAME_STATE_WAITING;
 
     printf("-- Lobby --\n");
 
@@ -291,6 +301,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
 	SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 
+    PKT_READY_STATUS inPkt5;
     PKT_GAME_STATUS inPkt8;
     PKT_TAGGING     inPkt14;
     PKT_FORCE_MOVE  outIPC3;
@@ -302,6 +313,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     // Zero out starting memeory
     bzero(&inPkt14, netPacketSizes[14]);
     bzero(&inPkt8, netPacketSizes[8]);
+    bzero(&inPkt5, netPacketSizes[5]);
 
     printf("-- In Game --\n");
 
@@ -337,6 +349,20 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         case 4:
             ongoingController(sockets, pType, pLists, gameInfo);
             break;
+
+        case 5:
+            // Accept the packet 5, but don't allow game state to change
+            #warning experimental
+            getPacket(in, &inPkt5, netPacketSizes[5]);
+            if(pLists->playerTeams[inPkt5.playerNumber] != TEAM_NONE){
+                break;
+            }
+            pLists->readystatus[inPkt5.playerNumber] = inPkt5.ready_status;
+            strcpy(pLists->playerNames[inPkt5.playerNumber], inPkt5.playerName);
+            desiredTeams[inPkt5.playerNumber] = inPkt5.team_number;
+            writePacket(out, pLists, 3);
+            break;
+
         case 8:
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 8");
             getPacket(in, &inPkt8, netPacketSizes[8]);
@@ -419,7 +445,7 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
     printf("Game Over!\n");
     printf("*********************************\n");
 
-    // Send which team won
+    // Send objectives and who won
     writePacket(out, gameInfo, 8);
 
     // Send the player states
@@ -429,6 +455,8 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
             pLists->playerTeams[i] = TEAM_NONE;
         }
     }
+
+    // send new player info
     writePacket(out, pLists, 3);
 
     // Move them to the lobby
@@ -647,6 +675,8 @@ void clearUnexpectedPacket(SOCKET sock, packet_t type){
     getPacket(sock, data, netPacketSizes[type]);
     free(data);
 
+    printf("Discarded packet %d\n", type);
+    #warning remove for release
 }
 
 /***********************************************************/
