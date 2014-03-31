@@ -28,6 +28,7 @@ inline void createSetupPacket(const char* servName, const int maxPlayers, PKT_SE
 inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt);
 inline void listAllCommands();
 void injectPacket(packet_t type, SOCKET out);
+void say(SOCKET out);
 
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	...
@@ -133,6 +134,11 @@ void* UIController(void* ipcSocks) {
             continue;
 		}
 
+		if(strcmp(input, "say") == 0){
+            say(outSock);
+            continue;
+		}
+
         printf("Not a valid command. Try 'help' for commands.\n");
 	}
 	return 0;
@@ -155,6 +161,34 @@ inline void listAllCommands()
 {
 	printf("Possible commands:\n");
 	printf("quit\nget-stats\nhelp\npkt <type>\n");
+}
+
+void say(SOCKET out){
+
+    PKT_CHAT chatPkt;
+    bzero(&chatPkt, netPacketSizes[4]);
+    char* string = 0;
+    size_t strSize = 0;
+    packet_t type = 4;
+    int i;
+
+    getchar(); // clear the space or new line
+    getline(&string, &strSize, stdin);
+    if(strSize > MAX_MESSAGE){
+        strSize = MAX_MESSAGE;
+        string[strSize - 1] = 0;
+    }
+    for(i = 0; i < strSize; ++i){
+        if(string[i] == '\n'){
+            string[i] = 0;
+            break;
+        }
+    }
+    chatPkt.sendingPlayer = MAX_PLAYERS;
+    memcpy(&chatPkt.message, string, strSize);
+
+    write(out, &type, sizeof(packet_t));
+    write(out, &chatPkt, netPacketSizes[type]);
 }
 
 void injectPacket(packet_t type, SOCKET out){

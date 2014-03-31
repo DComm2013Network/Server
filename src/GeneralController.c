@@ -1,8 +1,3 @@
-/*
-    NOTE
-    DO I NEED TO VALIDATE THE PLAYER NUMBER WHEN RECEIVING PLAYER UPDATES AND TAGGING?
-*/
-
 /*-------------------------------------------------------------------------------------------------------------------*
  -- SOURCE FILE: GeneralController.c
  --		The Process that will ...
@@ -156,9 +151,6 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 
         writePacket(out, pLists, 3);
 
-        //writePacket(out, gameInfo, 8);
-        #warning not needed?
-
         break;
 		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
 			DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_2");
@@ -202,6 +194,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 
         case 4: // chat
             getPacket(in, &pktchat, netPacketSizes[4]);
+            printf("%s: \"%s\"\n", ((pktchat.sendingPlayer == MAX_PLAYERS) ? "Server" : pLists->playerNames[pktchat.sendingPlayer]), pktchat.message);
             sendChat(&pktchat, pLists->playerTeams, out);
             break;
 
@@ -352,7 +345,6 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
         case 5:
             // Accept the packet 5, but don't allow game state to change
-            #warning experimental
             getPacket(in, &inPkt5, netPacketSizes[5]);
             if(pLists->playerTeams[inPkt5.playerNumber] != TEAM_NONE){
                 break;
@@ -674,9 +666,6 @@ void clearUnexpectedPacket(SOCKET sock, packet_t type){
     void* data = malloc(netPacketSizes[type]);
     getPacket(sock, data, netPacketSizes[type]);
     free(data);
-
-    printf("Discarded packet %d\n", type);
-    #warning remove for release
 }
 
 /***********************************************************/
