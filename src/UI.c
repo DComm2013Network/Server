@@ -114,7 +114,7 @@ void* UIController(void* ipcSocks) {
 		}
 
 		// if get-stats
-		if(strcmp(input, "get-stats") == 0)
+		if(strcmp(input, "stats") == 0)
 		{
 			printSetupPacketInfo(&pkt);
 			continue;
@@ -125,6 +125,11 @@ void* UIController(void* ipcSocks) {
 		{
 			listAllCommands();
 			continue;
+		}
+
+		if(strcmp(input, "move") == 0){
+            injectPacket(12, outSock);
+            continue;
 		}
 
 		if(strcmp(input, "pkt") == 0){
@@ -160,7 +165,7 @@ inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt)
 inline void listAllCommands()
 {
 	printf("Possible commands:\n");
-	printf("quit\nget-stats\nhelp\npkt <type>\n");
+	printf(" - quit\n - stats\n - help\n - pkt <type>\n - say <message>\n - move\n");
 }
 
 void say(SOCKET out){

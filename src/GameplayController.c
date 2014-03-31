@@ -426,7 +426,7 @@ void* GameplayController(void* ipcSocks) {
 			newFloor = bufFloorMoveReq->desired_floor;
 			thisPlayer = bufFloorMoveReq->playerNumber;
 
-            if(!floorArray[playerFloor].playersOnFloor[thisPlayer] || playerFloor == FLOOR_LOBBY){
+            if(!floorArray[playerFloor].playersOnFloor[thisPlayer] || (playerFloor == FLOOR_LOBBY && newFloor != FLOOR_LOBBY)){
                 DEBUG(DEBUG_WARN, "Player moving off wrong floor or escaping lobby rejected");
                 break;
             }
@@ -537,11 +537,4 @@ void* GameplayController(void* ipcSocks) {
 	free(bufPlayerAll);
 	free(bufPlayerIn);
 	return 0;
-}
-
-//currently not used
-void writeType2(SOCKET sock, void* packet, packet_t type, OUTMASK m) {
-	write(sock, &type, sizeof(packet_t));
-	write(sock, packet, netPacketSizes[type]);
-	write(sock, &m, sizeof(OUTMASK));
 }
