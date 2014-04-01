@@ -22,7 +22,6 @@
 #define BUFFSIZE        64
 
 extern int RUNNING;
-int WIN_RATIO = MAX_OBJECTIVES * 0.75;
 
 // Controllers
 void* GeneralController(void* ipcSocks);
@@ -134,28 +133,43 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 
     switch(pType)
     {
-    case IPC_PKT_1: // New Player
-        DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_1");
-        getPacket(in, &inIPC1, ipcPacketSizes[1]);
+        case IPC_PKT_1: // New Player
+            DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_1");
+            getPacket(in, &inIPC1, ipcPacketSizes[1]);
 
-        // Assign no team and send him to the lobby
-        pLists->playerTeams[inIPC1.playerNo] = TEAM_NONE;
-        memcpy(pLists->playerNames[inIPC1.playerNo], inIPC1.playerName, MAX_NAME);
-        pLists->readystatus[inIPC1.playerNo] = PLAYER_STATE_WAITING;
-        pLists->playerValid[inIPC1.playerNo] = TRUE;
-        pLists->characters[inIPC1.playerNo] = inIPC1.character;
+            // Assign no team and send him to the lobby
+            pLists->playerTeams[inIPC1.playerNo] = TEAM_NONE;
+            memcpy(pLists->playerNames[inIPC1.playerNo], inIPC1.playerName, MAX_NAME);
+            pLists->readystatus[inIPC1.playerNo] = PLAYER_STATE_WAITING;
+            pLists->playerValid[inIPC1.playerNo] = TRUE;
+            pLists->characters[inIPC1.playerNo] = inIPC1.character;
 
-        printf("%s [%d] has joined the game.\n", pLists->playerNames[inIPC1.playerNo], inIPC1.playerNo);
+            // Join message
+            printf("%s [%d] has joined the game.\n", pLists->playerNames[inIPC1.playerNo], inIPC1.playerNo);
+            if(SERVER_MESSAGES){
+                sprintf(pktchat.message, "has joined the game.");
+                pktchat.sendingPlayer = inIPC1.playerNo;
+                sendChat(&pktchat, pLists->playerTeams, out);
+                bzero(pktchat.message, MAX_MESSAGE);
+            }
 
-        writePacket(out, pLists, 3);
+            writePacket(out, pLists, 3);
 
-        break;
+            break;
 		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
 			DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_2");
 
 			getPacket(in, &inIPC2, ipcPacketSizes[2]);
 
+            // leave message
             printf("%s [%d] has left the game.\n", pLists->playerNames[inIPC2.playerNo], inIPC2.playerNo);
+
+            if(SERVER_MESSAGES){
+                sprintf(pktchat.message, "has left the game.");
+                pktchat.sendingPlayer = inIPC2.playerNo;
+                sendChat(&pktchat, pLists->playerTeams, out);
+                bzero(pktchat.message, MAX_MESSAGE);
+            }
 
             bzero(pLists->playerNames[inIPC2.playerNo], MAX_NAME);
             pLists->playerTeams[inIPC2.playerNo] = TEAM_NONE;
@@ -198,9 +212,9 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
             getPacket(in, &pktTile, netPacketSizes[6]);
             writePacket(out, &pktTile, 6);
             break;
-    default:
-        DEBUG(DEBUG_ALRM, "GC> This should never be possible... gg");
-        break;
+        default:
+            DEBUG(DEBUG_ALRM, "GC> This should never be possible... gg");
+            break;
     }
 }
 
@@ -211,10 +225,13 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
 
 	PKT_READY_STATUS    inPkt5;
 	packet_t pType;
+	PKT_CHAT serverChat;
 
 	int i;
 
 	bzero(&inPkt5, netPacketSizes[5]);
+	bzero(serverChat.message, MAX_MESSAGE);
+	serverChat.sendingPlayer = MAX_PLAYERS;
 
     gameInfo->game_status = GAME_STATE_WAITING;
     memset(pLists->playerTeams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
@@ -300,18 +317,20 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     PKT_GAME_STATUS inPkt8;
     PKT_TAGGING     inPkt14;
     PKT_FORCE_MOVE  outIPC3;
+    PKT_CHAT serverChat;
 
     int i;
 	packet_t pType;
-	int winCount = 0;
-    size_t team1 = 0, team2 = 0, objCount = 0, totalPlayers = 0;
+	int objCount = 0, winCount = 0;
+    size_t team1 = 0, team2 = 0, totalPlayers = 0;
 
     // Zero out starting memeory
     bzero(&inPkt14, netPacketSizes[14]);
     bzero(&inPkt8, netPacketSizes[8]);
     bzero(&inPkt5, netPacketSizes[5]);
+    bzero(&serverChat, netPacketSizes[4]);
 
-    printf("-- In Game --\n");
+    serverChat.sendingPlayer = MAX_PLAYERS;
 
     totalPlayers = countActivePlayers(pLists->playerTeams);
 
@@ -322,7 +341,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     // rounded to the nearest full floor
     objCount += objCount % 4;
 
-    winCount = 0.75 * objCount;
+    winCount = WIN_RATIO * objCount;
 
     for(i = 0; i < objCount; ++i){
         gameInfo->objectiveStates[i] = OBJECTIVE_AVAILABLE;
@@ -331,8 +350,22 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         gameInfo->objectiveStates[i] = OBJECTIVE_INVALID;
     }
 
+    writePacket(out, gameInfo, 8);
+
+    // Start of game message
+    if(SERVER_MESSAGES){
+        printf("There are %d objectives over %d floors.\nCapture %d to win!\n", objCount, objCount / 4, winCount);
+        sprintf(serverChat.message, "There are %d objectives over %d floors.", objCount, objCount / 4);
+        sendChat(&serverChat, NULL, out);
+        bzero(serverChat.message, MAX_MESSAGE);
+        sprintf(serverChat.message, "Capture %d to win!", winCount);
+        sendChat(&serverChat, NULL, out);
+        bzero(serverChat.message, MAX_MESSAGE);
+    }
+
+    printf("-- In Game --\n");
+
 	DEBUG(DEBUG_INFO, "GC> In runningController");
-	writePacket(out, gameInfo, 8);
 	chatGameStart();
     while(gameInfo->game_status == GAME_STATE_ACTIVE)
     {
@@ -439,6 +472,9 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
 {
     SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
     int i;
+    PKT_CHAT serverChat;
+
+    serverChat.sendingPlayer = MAX_PLAYERS;
 
     if(!RUNNING) {
         return;
@@ -455,6 +491,29 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
         if(pLists->playerTeams[i] != TEAM_NONE){
             pLists->readystatus[i] = PLAYER_STATE_WAITING;
             pLists->playerTeams[i] = TEAM_NONE;
+        }
+    }
+
+    if(SERVER_MESSAGES){
+        if(gameInfo->game_status == GAME_TEAM1_WIN){
+            sprintf(serverChat.message, "Robbers Eliminated!");
+            sendChat(&serverChat, NULL, out);
+            bzero(serverChat.message, MAX_MESSAGE);
+            sleep(500);
+            sprintf(serverChat.message, "Cops Win!");
+            sendChat(&serverChat, NULL, out);
+            bzero(serverChat.message, MAX_MESSAGE);
+            sleep(1000);
+        }
+        else{
+            sprintf(serverChat.message, "Takedown successful!");
+            sendChat(&serverChat, NULL, out);
+            bzero(serverChat.message, MAX_MESSAGE);
+            sleep(500);
+            sprintf(serverChat.message, "Robbers Win!");
+            sendChat(&serverChat, NULL, out);
+            bzero(serverChat.message, MAX_MESSAGE);
+            sleep(1000);
         }
     }
 
@@ -575,25 +634,41 @@ void balanceTeams(teamNo_t *teamIn, teamNo_t *teamOut)
     countTeams(teamIn, &team1Count, &team2Count);
     bzero(teamIn, sizeof(teamNo_t) * MAX_PLAYERS);
 
-    // Add robbers until = or greater
-    for(i = 0; team2Count < team1Count; ++i)
-    {
-        if(teamOut[i] == TEAM_COPS)
-        {
-            teamOut[i] = TEAM_ROBBERS;
-            team2Count++;
-            team1Count--;
-        }
-    }
+    if(BALANCE_TEAMS){
 
-    // Add cops until = or greater
-    for(i = 0; team1Count < team2Count; ++i)
-    {
-        if(teamOut[i] == TEAM_ROBBERS)
+        if(FAVOR_COPS){
+            for(i = 0; team2Count < team1Count; ++i)
+            {
+                if(teamOut[i] == TEAM_COPS)
+                {
+                    teamOut[i] = TEAM_ROBBERS;
+                    team2Count++;
+                    team1Count--;
+                }
+            }
+        }
+
+        // Add cops until = or greater
+        for(i = 0; team1Count < team2Count; ++i)
         {
-            teamOut[i] = TEAM_COPS;
-            team1Count++;
-            team2Count--;
+            if(teamOut[i] == TEAM_ROBBERS)
+            {
+                teamOut[i] = TEAM_COPS;
+                team1Count++;
+                team2Count--;
+            }
+        }
+
+        if(!FAVOR_COPS){
+            for(i = 0; team2Count < team1Count; ++i)
+            {
+                if(teamOut[i] == TEAM_COPS)
+                {
+                    teamOut[i] = TEAM_ROBBERS;
+                    team2Count++;
+                    team1Count--;
+                }
+            }
         }
     }
 }
