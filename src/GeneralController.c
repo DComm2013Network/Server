@@ -303,6 +303,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
     int i;
 	packet_t pType;
+	int winCount = 0;
     size_t team1 = 0, team2 = 0, objCount = 0, totalPlayers = 0;
 
     // Zero out starting memeory
@@ -320,6 +321,8 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     objCount = (objCount < 12) ? 12 : objCount;
     // rounded to the nearest full floor
     objCount += objCount % 4;
+
+    winCount = 0.75 * objCount;
 
     for(i = 0; i < objCount; ++i){
         gameInfo->objectiveStates[i] = OBJECTIVE_AVAILABLE;
@@ -376,7 +379,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
             // Check win
             objCount = countObjectives(gameInfo->objectiveStates);
-            if(objCount >= WIN_RATIO){
+            if(objCount >= winCount){
                 printf("All Objectives Captured!\n");
                 gameInfo->game_status = GAME_TEAM2_WIN;
             } else {
