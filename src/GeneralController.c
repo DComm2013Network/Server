@@ -272,6 +272,16 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
             gameInfo->game_status = getGameStatus(pLists->readystatus, desiredTeams);
             if(gameInfo->game_status == GAME_STATE_ACTIVE)
             {
+
+                if(SERVER_MESSAGES){
+                    for(i = COUNTDOWN_TIME; i > 0; --i){
+                        bzero(serverChat.message, MAX_MESSAGE);
+                        sprintf(serverChat.message, "Game Start in %d...", i);
+                        sendChat(&serverChat, NULL, out);
+                        sleep(1);
+                    }
+                }
+
                 balanceTeams(desiredTeams, pLists->playerTeams);
                 forceMoveAll(sockets, pLists, PLAYER_STATE_ACTIVE);
                 DEBUG(DEBUG_WARN, "GC> Lobby> All players ready and moved to floor 1");
@@ -350,15 +360,6 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         gameInfo->objectiveStates[i] = OBJECTIVE_INVALID;
     }
 
-    if(SERVER_MESSAGES){
-        for(i = COUNTDOWN_TIME; i > 0; --i){
-            bzero(serverChat.message, MAX_MESSAGE);
-            sprintf(serverChat.message, "Game Start in %d...", i);
-            sendChat(&serverChat, NULL, out);
-            sleep(1);
-        }
-    }
-
     writePacket(out, gameInfo, 8);
 
     printf("There are %d objectives over %d floors.\nCapture %d to win!\n", objCount, objCount / 4, winCount);
@@ -366,6 +367,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     // Start of game message
     if(SERVER_MESSAGES){
         bzero(serverChat.message, MAX_MESSAGE);
+        serverChat.sendingPlayer = MAX_PLAYERS;
         sprintf(serverChat.message, "There are %d objectives over %d floors.", objCount, objCount / 4);
         sendChat(&serverChat, NULL, out);
         bzero(serverChat.message, MAX_MESSAGE);
@@ -416,8 +418,14 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             // Update any new captures
             for(i = 0; i < MAX_OBJECTIVES; ++i){
                 if(inPkt8.objectiveStates[i] == OBJECTIVE_CAPTURED){
-                    gameInfo->objectiveStates[i] = OBJECTIVE_CAPTURED;
-                    printf("Objective %d has been captured!\n", i);
+                    if(gameInfo->objectiveStates[i] != OBJECTIVE_CAPTURED){
+                        gameInfo->objectiveStates[i] = OBJECTIVE_CAPTURED;
+                        printf("Objective %d has been captured!\n", i);
+                    }
+                    else{
+                        // ignore duplicate captures
+                        break;
+                    }
                 }
             }
 
