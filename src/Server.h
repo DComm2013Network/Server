@@ -45,6 +45,7 @@
     #define MOVE_UPDATE_FREQUENCY   60      // Movement updates per second (~0.18KB/second/client)
 
     // Chat
+    #define PRINT_CHAT_TO_SERVER    0       // Turn the text display on the server on or off
     #define CHAT_DECRYPT_TIME       450     // seconds until chat is fully decrypted
 
     // Keep Alive Control
@@ -55,6 +56,9 @@
     // Floor control
     #define FLOOR_COP_START         1       // The floor the cops start on
     #define FLOOR_ROBBER_START      1       // The floor the robbers start on
+
+    // Min players
+    #define MIN_PLAYERS             2       // min players to start the game
 
 
 // ************************************************************************************************

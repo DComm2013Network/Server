@@ -29,6 +29,7 @@ inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt);
 inline void listAllCommands();
 void injectPacket(packet_t type, SOCKET out);
 void say(SOCKET out);
+void tag(SOCKET out, playerNo_t player);
 
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	...
@@ -58,6 +59,7 @@ void* UIController(void* ipcSocks) {
 	PKT_SERVER_SETUP pkt;
 	SOCKET outSock;
 	packet_t pType = IPC_PKT_0;
+	playerNo_t player = 0;
 
     bzero(&pkt, ipcPacketSizes[0]);
 
@@ -132,6 +134,13 @@ void* UIController(void* ipcSocks) {
             continue;
 		}
 
+        if(strcmp(input, "tag") == 0){
+            if(scanf("%d", &player) == 1){
+                tag(outSock, player);
+            }
+            continue;
+		}
+
 		if(strcmp(input, "pkt") == 0){
             if(scanf("%d", &type) == 1){
                 injectPacket(type, outSock);
@@ -165,7 +174,16 @@ inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt)
 inline void listAllCommands()
 {
 	printf("Possible commands:\n");
-	printf(" - quit\n - stats\n - help\n - pkt <type>\n - say <message>\n - move\n");
+	printf(" - quit\n - stats\n - help\n - pkt <type>\n - say <message>\n - move\n - tag <player>\n");
+}
+
+void tag(SOCKET out, playerNo_t player){
+    packet_t type = 14;
+    PKT_TAGGING tag;
+    tag.taggee_id = player;
+    tag.tagger_id = player;
+    write(out, &type, sizeof(packet_t));
+    write(out, &tag, netPacketSizes[type]);
 }
 
 void say(SOCKET out){
