@@ -28,6 +28,8 @@ inline void createSetupPacket(const char* servName, const int maxPlayers, PKT_SE
 inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt);
 inline void listAllCommands();
 void injectPacket(packet_t type, SOCKET out);
+void say(SOCKET out);
+void tag(SOCKET out, playerNo_t player);
 
 /*--------------------------------------------------------------------------------------------------------------------
 -- FUNCTION:	...
@@ -57,6 +59,7 @@ void* UIController(void* ipcSocks) {
 	PKT_SERVER_SETUP pkt;
 	SOCKET outSock;
 	packet_t pType = IPC_PKT_0;
+	playerNo_t player = 0;
 
     bzero(&pkt, ipcPacketSizes[0]);
 
@@ -113,7 +116,7 @@ void* UIController(void* ipcSocks) {
 		}
 
 		// if get-stats
-		if(strcmp(input, "get-stats") == 0)
+		if(strcmp(input, "stats") == 0)
 		{
 			printSetupPacketInfo(&pkt);
 			continue;
@@ -126,10 +129,27 @@ void* UIController(void* ipcSocks) {
 			continue;
 		}
 
+		if(strcmp(input, "move") == 0){
+            injectPacket(12, outSock);
+            continue;
+		}
+
+        if(strcmp(input, "tag") == 0){
+            if(scanf("%d", &player) == 1){
+                tag(outSock, player);
+            }
+            continue;
+		}
+
 		if(strcmp(input, "pkt") == 0){
             if(scanf("%d", &type) == 1){
                 injectPacket(type, outSock);
             }
+            continue;
+		}
+
+		if(strcmp(input, "say") == 0){
+            say(outSock);
             continue;
 		}
 
@@ -154,7 +174,44 @@ inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt)
 inline void listAllCommands()
 {
 	printf("Possible commands:\n");
-	printf("quit\nget-stats\nhelp\npkt <type>\n");
+	printf(" - quit\n - stats\n - help\n - pkt <type>\n - say <message>\n - move\n - tag <player>\n");
+}
+
+void tag(SOCKET out, playerNo_t player){
+    packet_t type = 14;
+    PKT_TAGGING tag;
+    tag.taggee_id = player;
+    tag.tagger_id = player;
+    write(out, &type, sizeof(packet_t));
+    write(out, &tag, netPacketSizes[type]);
+}
+
+void say(SOCKET out){
+
+    PKT_CHAT chatPkt;
+    bzero(&chatPkt, netPacketSizes[4]);
+    char* string = 0;
+    size_t strSize = 0;
+    packet_t type = 4;
+    int i;
+
+    getchar(); // clear the space or new line
+    getline(&string, &strSize, stdin);
+    if(strSize > MAX_MESSAGE){
+        strSize = MAX_MESSAGE;
+        string[strSize - 1] = 0;
+    }
+    for(i = 0; i < strSize; ++i){
+        if(string[i] == '\n'){
+            string[i] = 0;
+            break;
+        }
+    }
+    chatPkt.sendingPlayer = MAX_PLAYERS;
+    memcpy(&chatPkt.message, string, strSize);
+
+    write(out, &type, sizeof(packet_t));
+    write(out, &chatPkt, netPacketSizes[type]);
 }
 
 void injectPacket(packet_t type, SOCKET out){
@@ -179,6 +236,14 @@ void injectPacket(packet_t type, SOCKET out){
     size_t strSize = 0;
 
     int relay = 1;
+
+    bzero(&spoof_pkt4, netPacketSizes[4]);
+    bzero(&spoof_pkt5, netPacketSizes[5]);
+    bzero(&spoof_pkt6, netPacketSizes[6]);
+    bzero(&spoof_pkt8, netPacketSizes[8]);
+    bzero(&spoof_pkt10, netPacketSizes[10]);
+    bzero(&spoof_pkt12, netPacketSizes[12]);
+    bzero(&spoof_pkt14, netPacketSizes[14]);
 
     switch(type){
 

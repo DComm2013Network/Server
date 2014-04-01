@@ -3,8 +3,8 @@
 CC=gcc
 CFLAGS=-c -Wall
 GBD=-g
-LIBS=-lpthread
-OBJECTS=server-utils.o Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o keep-alive.o game-utils.o
+LIBS=-lpthread -lm
+OBJECTS=server-utils.o Startup.o ConnectionManager.o GameplayController.o GeneralController.o InboundSwitchboard.o OutboundSwitchboard.o UI.o keep-alive.o game-utils.o chat.o min-packet-utils.o move-timer.o
 
 all: Server
 
@@ -40,6 +40,15 @@ keep-alive.o: ../src/keep-alive.c
 
 game-utils.o: ../src/game-utils.c
 	$(CC) $(CFLAGS) ../src/game-utils.c
+
+chat.o: ../src/chat.c
+	$(CC) $(CFLAGS) ../src/chat.c
+
+min-packet-utils.o: ../src/min-packet-utils.c
+	$(CC) $(CFLAGS) ../src/min-packet-utils.c
+
+move-timer.o: ../src/move-timer.c
+	$(CC) $(CFLAGS) ../src/move-timer.c
 
 clean:
 	rm -rf *o ../bin/Server

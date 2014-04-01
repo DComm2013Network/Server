@@ -1,8 +1,3 @@
-/*
-    NOTE
-    DO I NEED TO VALIDATE THE PLAYER NUMBER WHEN RECEIVING PLAYER UPDATES AND TAGGING?
-*/
-
 /*-------------------------------------------------------------------------------------------------------------------*
  -- SOURCE FILE: GeneralController.c
  --		The Process that will ...
@@ -25,11 +20,8 @@
 
 #include "Server.h"
 #define BUFFSIZE        64
-#define MIN_PLAYERS     2   // min players to trigger GAME_STATE_ACTIVE
-#define MIN_PLAYER_TEAM 1   // for mercy rule? if too many people
 
 extern int RUNNING;
-int WIN_RATIO = MAX_OBJECTIVES * 0.75;
 
 // Controllers
 void* GeneralController(void* ipcSocks);
@@ -46,7 +38,7 @@ void zeroPlayerLists(PKT_PLAYERS_UPDATE *pLists, const int maxPlayers);
 void clearUnexpectedPacket(SOCKET sock, packet_t type);
 
 // Game Utility
-void balanceTeams(const teamNo_t *teamIn, teamNo_t *teamOut);
+void balanceTeams(teamNo_t *teamIn, teamNo_t *teamOut);
 status_t getGameStatus(const status_t *playerStatus, const teamNo_t *playerTeams);
 int setup(SOCKET in, int *maxPlayers, PKT_PLAYERS_UPDATE *pLists);
 void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status);
@@ -54,6 +46,9 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status);
 // Socket Utility
 inline void writePacket(SOCKET sock, void* packet, packet_t type);
 inline void writeIPC(SOCKET sock, void* buf, packet_t type);
+
+// Desired teams are maintainted accross all states
+teamNo_t desiredTeams[MAX_PLAYERS] = {0};
 
 /*--------------------------------------------------------------------------------------------------------------------
  -- FUNCTION:	GeneralController
@@ -138,38 +133,49 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 
     switch(pType)
     {
-    case IPC_PKT_1: // New Player
-        DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_1");
-        getPacket(in, &inIPC1, ipcPacketSizes[1]);
+        case IPC_PKT_1: // New Player
+            DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_1");
+            getPacket(in, &inIPC1, ipcPacketSizes[1]);
 
-        // Assign no team and send him to the lobby
-        pLists->playerTeams[inIPC1.playerNo] = TEAM_NONE;
-        memcpy(pLists->playerNames[inIPC1.playerNo], inIPC1.playerName, MAX_NAME);
-        pLists->readystatus[inIPC1.playerNo] = PLAYER_STATE_WAITING;
-        pLists->playerValid[inIPC1.playerNo] = TRUE;
-        pLists->characters[inIPC1.playerNo] = inIPC1.character;
+            // Assign no team and send him to the lobby
+            pLists->playerTeams[inIPC1.playerNo] = TEAM_NONE;
+            memcpy(pLists->playerNames[inIPC1.playerNo], inIPC1.playerName, MAX_NAME);
+            pLists->readystatus[inIPC1.playerNo] = PLAYER_STATE_WAITING;
+            pLists->playerValid[inIPC1.playerNo] = TRUE;
+            pLists->characters[inIPC1.playerNo] = inIPC1.character;
 
-        printf("%s [%d] has joined the game.\n", pLists->playerNames[inIPC1.playerNo], inIPC1.playerNo);
+            // Join message
+            printf("%s [%d] has joined the game.\n", pLists->playerNames[inIPC1.playerNo], inIPC1.playerNo);
+            if(SERVER_MESSAGES){
+                sprintf(pktchat.message, "has joined the game.");
+                pktchat.sendingPlayer = inIPC1.playerNo;
+                sendChat(&pktchat, pLists->playerTeams, out);
+                bzero(pktchat.message, MAX_MESSAGE);
+            }
 
-        writePacket(out, pLists, 3);
-        writePacket(out, gameInfo, 8);
-        break;
+            writePacket(out, pLists, 3);
+
+            break;
 		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
 			DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_2");
 
 			getPacket(in, &inIPC2, ipcPacketSizes[2]);
-			if(pLists->playerValid[inIPC2.playerNo] == FALSE)
-			{
-                DEBUG(DEBUG_WARN, "GC> Sources tell me this player is already not valid.. at least he's actrually gone now");
-                break;
-			}
 
+            // leave message
             printf("%s [%d] has left the game.\n", pLists->playerNames[inIPC2.playerNo], inIPC2.playerNo);
+
+            if(SERVER_MESSAGES){
+                sprintf(pktchat.message, "has left the game.");
+                pktchat.sendingPlayer = inIPC2.playerNo;
+                sendChat(&pktchat, pLists->playerTeams, out);
+                bzero(pktchat.message, MAX_MESSAGE);
+            }
 
             bzero(pLists->playerNames[inIPC2.playerNo], MAX_NAME);
             pLists->playerTeams[inIPC2.playerNo] = TEAM_NONE;
             pLists->playerValid[inIPC2.playerNo] = FALSE;
             pLists->readystatus[inIPC2.playerNo] = PLAYER_STATE_DROPPED;
+            desiredTeams[inIPC2.playerNo] = TEAM_NONE;
             DEBUG(DEBUG_WARN, "GC> Player removed");
 
             if(gameInfo->game_status == GAME_STATE_ACTIVE)
@@ -196,6 +202,9 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 
         case 4: // chat
             getPacket(in, &pktchat, netPacketSizes[4]);
+            if(PRINT_CHAT_TO_SERVER){
+                printf("%s: \"%s\"\n", ((pktchat.sendingPlayer == MAX_PLAYERS) ? "Server" : pLists->playerNames[pktchat.sendingPlayer]), pktchat.message);
+            }
             sendChat(&pktchat, pLists->playerTeams, out);
             break;
 
@@ -203,9 +212,9 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
             getPacket(in, &pktTile, netPacketSizes[6]);
             writePacket(out, &pktTile, 6);
             break;
-    default:
-        DEBUG(DEBUG_ALRM, "GC> This should never be possible... gg");
-        break;
+        default:
+            DEBUG(DEBUG_ALRM, "GC> This should never be possible... gg");
+            break;
     }
 }
 
@@ -213,17 +222,24 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
 {
     SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
 	SOCKET out  = ((SOCKET*) sockets)[1];     // Socket to relay network messages
-	teamNo_t desiredTeams[MAX_PLAYERS] = {0};
 
 	PKT_READY_STATUS    inPkt5;
 	packet_t pType;
+	PKT_CHAT serverChat;
 
 	int i;
 
 	bzero(&inPkt5, netPacketSizes[5]);
+	bzero(serverChat.message, MAX_MESSAGE);
+	serverChat.sendingPlayer = MAX_PLAYERS;
 
     gameInfo->game_status = GAME_STATE_WAITING;
     memset(pLists->playerTeams, TEAM_NONE, sizeof(teamNo_t)*MAX_PLAYERS);
+
+    for(i = 0; i < MAX_OBJECTIVES; ++i){
+        gameInfo->objectiveStates[i] = OBJECTIVE_INVALID;
+    }
+    gameInfo->game_status = GAME_STATE_WAITING;
 
     printf("-- Lobby --\n");
 
@@ -244,16 +260,33 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
             DEBUG(DEBUG_INFO, "GC> Lobby> Received pakcet 5");
             getPacket(in, &inPkt5, netPacketSizes[5]);
 
+            if(!pLists->playerValid[inPkt5.playerNumber]){
+                break;
+            }
+
             pLists->readystatus[inPkt5.playerNumber] = inPkt5.ready_status;
-            strcpy(pLists->playerNames[inPkt5.playerNumber], inPkt5.playerName);
+            memcpy(pLists->playerNames[inPkt5.playerNumber], inPkt5.playerName, MAX_NAME);
+            pLists->playerNames[inPkt5.playerNumber][MAX_NAME - 1] = 0;
             desiredTeams[inPkt5.playerNumber] = inPkt5.team_number;
 
             gameInfo->game_status = getGameStatus(pLists->readystatus, desiredTeams);
             if(gameInfo->game_status == GAME_STATE_ACTIVE)
             {
+
+                if(SERVER_MESSAGES){
+                    for(i = COUNTDOWN_TIME; i > 0; --i){
+                        bzero(serverChat.message, MAX_MESSAGE);
+                        sprintf(serverChat.message, "Game Start in %d...", i);
+                        sendChat(&serverChat, NULL, out);
+                        sleep(1);
+                    }
+                }
+
                 balanceTeams(desiredTeams, pLists->playerTeams);
                 forceMoveAll(sockets, pLists, PLAYER_STATE_ACTIVE);
                 DEBUG(DEBUG_WARN, "GC> Lobby> All players ready and moved to floor 1");
+
+                writePacket(out, pLists, 3);
 
                 printf("Game Start!\n");
                 printf("*********************************\n");
@@ -272,7 +305,6 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
                 }
             }
 
-            writePacket(out, pLists, 3);
         break;
         default:
             DEBUG(DEBUG_ALRM, "GC> Lobby> Receiving invalid packet");
@@ -291,19 +323,24 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
 	SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
 
+    PKT_READY_STATUS inPkt5;
     PKT_GAME_STATUS inPkt8;
     PKT_TAGGING     inPkt14;
     PKT_FORCE_MOVE  outIPC3;
+    PKT_CHAT serverChat;
 
     int i;
 	packet_t pType;
-    size_t team1 = 0, team2 = 0, objCount = 0, totalPlayers = 0;
+	int objCount = 0, winCount = 0;
+    size_t team1 = 0, team2 = 0, totalPlayers = 0;
 
     // Zero out starting memeory
     bzero(&inPkt14, netPacketSizes[14]);
     bzero(&inPkt8, netPacketSizes[8]);
+    bzero(&inPkt5, netPacketSizes[5]);
+    bzero(&serverChat, netPacketSizes[4]);
 
-    printf("-- In Game --\n");
+    serverChat.sendingPlayer = MAX_PLAYERS;
 
     totalPlayers = countActivePlayers(pLists->playerTeams);
 
@@ -314,6 +351,8 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     // rounded to the nearest full floor
     objCount += objCount % 4;
 
+    winCount = WIN_RATIO * objCount;
+
     for(i = 0; i < objCount; ++i){
         gameInfo->objectiveStates[i] = OBJECTIVE_AVAILABLE;
     }
@@ -321,8 +360,25 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         gameInfo->objectiveStates[i] = OBJECTIVE_INVALID;
     }
 
+    writePacket(out, gameInfo, 8);
+
+    printf("There are %d objectives over %d floors.\nCapture %d to win!\n", objCount, objCount / 4, winCount);
+
+    // Start of game message
+    if(SERVER_MESSAGES){
+        bzero(serverChat.message, MAX_MESSAGE);
+        serverChat.sendingPlayer = MAX_PLAYERS;
+        sprintf(serverChat.message, "There are %d objectives over %d floors.", objCount, objCount / 4);
+        sendChat(&serverChat, NULL, out);
+        bzero(serverChat.message, MAX_MESSAGE);
+        sprintf(serverChat.message, "Capture %d to win!", winCount);
+        sendChat(&serverChat, NULL, out);
+        bzero(serverChat.message, MAX_MESSAGE);
+    }
+
+    printf("-- In Game --\n");
+
 	DEBUG(DEBUG_INFO, "GC> In runningController");
-	writePacket(out, gameInfo, 8);
 	chatGameStart();
     while(gameInfo->game_status == GAME_STATE_ACTIVE)
     {
@@ -337,6 +393,24 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         case 4:
             ongoingController(sockets, pType, pLists, gameInfo);
             break;
+
+        case 5:
+            // Accept the packet 5, but don't allow game state to change
+            getPacket(in, &inPkt5, netPacketSizes[5]);
+
+            if(!pLists->playerValid[inPkt5.playerNumber]){
+                break;
+            }
+
+            if(pLists->playerTeams[inPkt5.playerNumber] != TEAM_NONE){
+                break;
+            }
+            pLists->readystatus[inPkt5.playerNumber] = inPkt5.ready_status;
+            memcpy(pLists->playerNames[inPkt5.playerNumber], inPkt5.playerName, MAX_NAME);
+            pLists->playerNames[inPkt5.playerNumber][MAX_NAME - 1] = 0;
+            desiredTeams[inPkt5.playerNumber] = inPkt5.team_number;
+            break;
+
         case 8:
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 8");
             getPacket(in, &inPkt8, netPacketSizes[8]);
@@ -344,32 +418,33 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             // Update any new captures
             for(i = 0; i < MAX_OBJECTIVES; ++i){
                 if(inPkt8.objectiveStates[i] == OBJECTIVE_CAPTURED){
-                    gameInfo->objectiveStates[i] = OBJECTIVE_CAPTURED;
-                    printf("Objective %d has been captured!\n", i);
+                    if(gameInfo->objectiveStates[i] != OBJECTIVE_CAPTURED){
+                        gameInfo->objectiveStates[i] = OBJECTIVE_CAPTURED;
+                        printf("Objective %d has been captured!\n", i);
+                    }
+                    else{
+                        // ignore duplicate captures
+                        break;
+                    }
                 }
             }
 
             // Check win
             objCount = countObjectives(gameInfo->objectiveStates);
-            if(objCount >= WIN_RATIO){
+            if(objCount >= winCount){
                 printf("All Objectives Captured!\n");
                 gameInfo->game_status = GAME_TEAM2_WIN;
             } else {
                 gameInfo->game_status = GAME_STATE_ACTIVE;
+                writePacket(out, gameInfo, 8);
             }
-            writePacket(out, gameInfo, 8);
             break;
         case 14:
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 14");
             getPacket(in, &inPkt14, netPacketSizes[14]);
 
-            printf("Tag\n");
-            #warning for tag testing
-
             if(inPkt14.tagger_id >= MAX_PLAYERS || inPkt14.taggee_id >= MAX_PLAYERS){
                 DEBUG(DEBUG_WARN, "Invalid tag packet");
-                printf("tag: %d\n", inPkt14.taggee_id);
-                #warning for tag testing
                 break;
             }
 
@@ -416,6 +491,9 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
 {
     SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
     int i;
+    PKT_CHAT serverChat;
+
+    serverChat.sendingPlayer = MAX_PLAYERS;
 
     if(!RUNNING) {
         return;
@@ -424,7 +502,7 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
     printf("Game Over!\n");
     printf("*********************************\n");
 
-    // Send which team won
+    // Send objectives and who won
     writePacket(out, gameInfo, 8);
 
     // Send the player states
@@ -434,6 +512,31 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
             pLists->playerTeams[i] = TEAM_NONE;
         }
     }
+
+    if(SERVER_MESSAGES){
+        if(gameInfo->game_status == GAME_TEAM1_WIN){
+            sprintf(serverChat.message, "Robbers Eliminated!");
+            sendChat(&serverChat, NULL, out);
+            bzero(serverChat.message, MAX_MESSAGE);
+            sleep(500);
+            sprintf(serverChat.message, "Cops Win!");
+            sendChat(&serverChat, NULL, out);
+            bzero(serverChat.message, MAX_MESSAGE);
+            sleep(1000);
+        }
+        else{
+            sprintf(serverChat.message, "Takedown successful!");
+            sendChat(&serverChat, NULL, out);
+            bzero(serverChat.message, MAX_MESSAGE);
+            sleep(500);
+            sprintf(serverChat.message, "Robbers Win!");
+            sendChat(&serverChat, NULL, out);
+            bzero(serverChat.message, MAX_MESSAGE);
+            sleep(1000);
+        }
+    }
+
+    // send new player info
     writePacket(out, pLists, 3);
 
     // Move them to the lobby
@@ -543,31 +646,48 @@ size_t countTeams(const teamNo_t *playerTeams, size_t *team1, size_t *team2)
 // out- teams balanced by the server
 // created march 12
 // Unbalanced teams go to favour of the cops
-void balanceTeams(const teamNo_t *teamIn, teamNo_t *teamOut)
+void balanceTeams(teamNo_t *teamIn, teamNo_t *teamOut)
 {
     size_t team1Count = 0, team2Count = 0, i = 0;
     memcpy(teamOut, teamIn, sizeof(teamNo_t)*MAX_PLAYERS);
     countTeams(teamIn, &team1Count, &team2Count);
+    bzero(teamIn, sizeof(teamNo_t) * MAX_PLAYERS);
 
-    // Add robbers until = or greater
-    for(i = 0; team2Count < team1Count; ++i)
-    {
-        if(teamOut[i] == TEAM_COPS)
-        {
-            teamOut[i] = TEAM_ROBBERS;
-            team2Count++;
-            team1Count--;
+    if(BALANCE_TEAMS){
+
+        if(FAVOR_COPS){
+            for(i = 0; team2Count < team1Count; ++i)
+            {
+                if(teamOut[i] == TEAM_COPS)
+                {
+                    teamOut[i] = TEAM_ROBBERS;
+                    team2Count++;
+                    team1Count--;
+                }
+            }
         }
-    }
 
-    // Add cops until = or greater
-    for(i = 0; team1Count < team2Count; ++i)
-    {
-        if(teamOut[i] == TEAM_ROBBERS)
+        // Add cops until = or greater
+        for(i = 0; team1Count < team2Count; ++i)
         {
-            teamOut[i] = TEAM_COPS;
-            team1Count++;
-            team2Count--;
+            if(teamOut[i] == TEAM_ROBBERS)
+            {
+                teamOut[i] = TEAM_COPS;
+                team1Count++;
+                team2Count--;
+            }
+        }
+
+        if(!FAVOR_COPS){
+            for(i = 0; team2Count < team1Count; ++i)
+            {
+                if(teamOut[i] == TEAM_COPS)
+                {
+                    teamOut[i] = TEAM_ROBBERS;
+                    team2Count++;
+                    team1Count--;
+                }
+            }
         }
     }
 }
@@ -651,7 +771,6 @@ void clearUnexpectedPacket(SOCKET sock, packet_t type){
     void* data = malloc(netPacketSizes[type]);
     getPacket(sock, data, netPacketSizes[type]);
     free(data);
-
 }
 
 /***********************************************************/

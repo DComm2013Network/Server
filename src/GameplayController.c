@@ -296,8 +296,7 @@ void* GameplayController(void* ipcSocks) {
 			write(outswitchSock, &outPType, sizeof(packet_t));
 			write(outswitchSock, minAllPos, netPacketSizes[MIN_11]);
 			write(outswitchSock, &m, sizeof(OUTMASK));
-			DEBUG(DEBUG_INFO, "CP> Sending packet 16")
-			;
+			DEBUG(DEBUG_INFO, "CP> Sending packet 16");
 
 			//send updated data to all players on new floor
 			//set outbound mask for outbound server
@@ -427,7 +426,7 @@ void* GameplayController(void* ipcSocks) {
 			newFloor = bufFloorMoveReq->desired_floor;
 			thisPlayer = bufFloorMoveReq->playerNumber;
 
-            if(!floorArray[playerFloor].playersOnFloor[thisPlayer] || playerFloor == FLOOR_LOBBY){
+            if(!floorArray[playerFloor].playersOnFloor[thisPlayer] || (playerFloor == FLOOR_LOBBY && newFloor != FLOOR_LOBBY)){
                 DEBUG(DEBUG_WARN, "Player moving off wrong floor or escaping lobby rejected");
                 break;
             }
@@ -438,8 +437,7 @@ void* GameplayController(void* ipcSocks) {
 			bufFloorMove->xPos = bufFloorMoveReq->desired_xPos;
 			bufFloorMove->yPos = bufFloorMoveReq->desired_yPos;
 
-			DEBUG(DEBUG_INFO, "GP> Sending packet 13")
-			;
+			DEBUG(DEBUG_INFO, "GP> Sending packet 13");
 
 			//set outbound mask to send only to this player
 			OUT_ZERO(m);
@@ -459,8 +457,7 @@ void* GameplayController(void* ipcSocks) {
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
 
-			DEBUG(DEBUG_INFO, "GP> Sending packet 16 to old floor")
-			;
+			DEBUG(DEBUG_INFO, "GP> Sending packet 16 to old floor");
 
 			//send updated data to all players on old floor
 			outPType = MIN_11;
@@ -540,11 +537,4 @@ void* GameplayController(void* ipcSocks) {
 	free(bufPlayerAll);
 	free(bufPlayerIn);
 	return 0;
-}
-
-//currently not used
-void writeType2(SOCKET sock, void* packet, packet_t type, OUTMASK m) {
-	write(sock, &type, sizeof(packet_t));
-	write(sock, packet, netPacketSizes[type]);
-	write(sock, &m, sizeof(OUTMASK));
 }
