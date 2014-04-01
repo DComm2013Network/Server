@@ -350,11 +350,22 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         gameInfo->objectiveStates[i] = OBJECTIVE_INVALID;
     }
 
+    if(SERVER_MESSAGES){
+        for(i = COUNTDOWN_TIME; i > 0; --i){
+            bzero(serverChat.message, MAX_MESSAGE);
+            sprintf(serverChat.message, "Game Start in %d...", i);
+            sendChat(&serverChat, NULL, out);
+            sleep(1);
+        }
+    }
+
     writePacket(out, gameInfo, 8);
+
+    printf("There are %d objectives over %d floors.\nCapture %d to win!\n", objCount, objCount / 4, winCount);
 
     // Start of game message
     if(SERVER_MESSAGES){
-        printf("There are %d objectives over %d floors.\nCapture %d to win!\n", objCount, objCount / 4, winCount);
+        bzero(serverChat.message, MAX_MESSAGE);
         sprintf(serverChat.message, "There are %d objectives over %d floors.", objCount, objCount / 4);
         sendChat(&serverChat, NULL, out);
         bzero(serverChat.message, MAX_MESSAGE);
