@@ -147,8 +147,9 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
             // Join message
             printf("%s [%d] has joined the game.\n", pLists->playerNames[inIPC1.playerNo], inIPC1.playerNo);
             if(SERVER_MESSAGES){
-                sprintf(pktchat.message, "has joined the game.");
-                pktchat.sendingPlayer = inIPC1.playerNo;
+                bzero(pktchat.message, MAX_MESSAGE);
+                sprintf(pktchat.message, "%s has joined the game.", pLists->playerNames[inIPC1.playerNo]);
+                pktchat.sendingPlayer = MAX_PLAYERS;
                 sendChat(&pktchat, pLists->playerTeams, out);
                 bzero(pktchat.message, MAX_MESSAGE);
             }
@@ -165,8 +166,9 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
             printf("%s [%d] has left the game.\n", pLists->playerNames[inIPC2.playerNo], inIPC2.playerNo);
 
             if(SERVER_MESSAGES){
-                sprintf(pktchat.message, "has left the game.");
-                pktchat.sendingPlayer = inIPC2.playerNo;
+                bzero(pktchat.message, MAX_MESSAGE);
+                sprintf(pktchat.message, "%s has left the game.", pLists->playerNames[inIPC2.playerNo]);
+                pktchat.sendingPlayer = MAX_PLAYERS;
                 sendChat(&pktchat, pLists->playerTeams, out);
                 bzero(pktchat.message, MAX_MESSAGE);
             }
@@ -274,9 +276,14 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
             {
 
                 if(SERVER_MESSAGES){
-                    for(i = COUNTDOWN_TIME; i > 0; --i){
+                    i = COUNTDOWN_TIME;
+                    bzero(serverChat.message, MAX_MESSAGE);
+                    sprintf(serverChat.message, "Game Start in %d...", i);
+                    sendChat(&serverChat, NULL, out);
+                    sleep(1);
+                    for(i = COUNTDOWN_TIME - 1; i > 0; --i){
                         bzero(serverChat.message, MAX_MESSAGE);
-                        sprintf(serverChat.message, "Game Start in %d...", i);
+                        sprintf(serverChat.message, "%d...", i);
                         sendChat(&serverChat, NULL, out);
                         sleep(1);
                     }
@@ -366,6 +373,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
     // Start of game message
     if(SERVER_MESSAGES){
+        sleep(1);
         bzero(serverChat.message, MAX_MESSAGE);
         serverChat.sendingPlayer = MAX_PLAYERS;
         sprintf(serverChat.message, "There are %d objectives over %d floors.", objCount, objCount / 4);
