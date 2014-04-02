@@ -331,7 +331,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
     int i;
 	packet_t pType;
-	int objCount = 0, winCount = 0;
+	int objCount = 0, winCount = 0, curCount = 0;
     size_t team1 = 0, team2 = 0, totalPlayers = 0;
 
     // Zero out starting memeory
@@ -416,22 +416,18 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             getPacket(in, &inPkt8, netPacketSizes[8]);
 
             // Update any new captures
-            for(i = 0; i < MAX_OBJECTIVES; ++i){
+            for(i = 0; i < objCount; ++i){
                 if(inPkt8.objectiveStates[i] == OBJECTIVE_CAPTURED){
                     if(gameInfo->objectiveStates[i] != OBJECTIVE_CAPTURED){
                         gameInfo->objectiveStates[i] = OBJECTIVE_CAPTURED;
                         printf("Objective %d has been captured!\n", i);
                     }
-                    else{
-                        // ignore duplicate captures
-                        break;
-                    }
                 }
             }
 
             // Check win
-            objCount = countObjectives(gameInfo->objectiveStates);
-            if(objCount >= winCount){
+            curCount = countObjectives(gameInfo->objectiveStates);
+            if(curCount >= winCount){
                 printf("All Objectives Captured!\n");
                 gameInfo->game_status = GAME_TEAM2_WIN;
             } else {
