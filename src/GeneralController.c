@@ -147,8 +147,9 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
             // Join message
             printf("%s [%d] has joined the game.\n", pLists->playerNames[inIPC1.playerNo], inIPC1.playerNo);
             if(SERVER_MESSAGES){
-                sprintf(pktchat.message, "has joined the game.");
-                pktchat.sendingPlayer = inIPC1.playerNo;
+                bzero(pktchat.message, MAX_MESSAGE);
+                sprintf(pktchat.message, "%s has joined the game.", pLists->playerNames[inIPC1.playerNo]);
+                pktchat.sendingPlayer = MAX_PLAYERS;
                 sendChat(&pktchat, pLists->playerTeams, out);
                 bzero(pktchat.message, MAX_MESSAGE);
             }
@@ -165,8 +166,9 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
             printf("%s [%d] has left the game.\n", pLists->playerNames[inIPC2.playerNo], inIPC2.playerNo);
 
             if(SERVER_MESSAGES){
-                sprintf(pktchat.message, "has left the game.");
-                pktchat.sendingPlayer = inIPC2.playerNo;
+                bzero(pktchat.message, MAX_MESSAGE);
+                sprintf(pktchat.message, "%s has left the game.", pLists->playerNames[inIPC2.playerNo]);
+                pktchat.sendingPlayer = MAX_PLAYERS;
                 sendChat(&pktchat, pLists->playerTeams, out);
                 bzero(pktchat.message, MAX_MESSAGE);
             }
@@ -274,9 +276,14 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
             {
 
                 if(SERVER_MESSAGES){
-                    for(i = COUNTDOWN_TIME; i > 0; --i){
+                    i = COUNTDOWN_TIME;
+                    bzero(serverChat.message, MAX_MESSAGE);
+                    sprintf(serverChat.message, "Game Start in %d...", i);
+                    sendChat(&serverChat, NULL, out);
+                    sleep(1);
+                    for(i = COUNTDOWN_TIME - 1; i > 0; --i){
                         bzero(serverChat.message, MAX_MESSAGE);
-                        sprintf(serverChat.message, "Game Start in %d...", i);
+                        sprintf(serverChat.message, "%d...", i);
                         sendChat(&serverChat, NULL, out);
                         sleep(1);
                     }
@@ -366,10 +373,12 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
     // Start of game message
     if(SERVER_MESSAGES){
+        sleep(2);
         bzero(serverChat.message, MAX_MESSAGE);
         serverChat.sendingPlayer = MAX_PLAYERS;
         sprintf(serverChat.message, "There are %d objectives over %d floors.", objCount, objCount / 4);
         sendChat(&serverChat, NULL, out);
+        sleep(1);
         bzero(serverChat.message, MAX_MESSAGE);
         sprintf(serverChat.message, "Capture %d to win!", winCount);
         sendChat(&serverChat, NULL, out);
@@ -421,6 +430,12 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
                     if(gameInfo->objectiveStates[i] != OBJECTIVE_CAPTURED){
                         gameInfo->objectiveStates[i] = OBJECTIVE_CAPTURED;
                         printf("Objective %d has been captured!\n", i);
+                        if(SERVER_MESSAGES){
+                            bzero(serverChat.message, MAX_MESSAGE);
+                            serverChat.sendingPlayer = MAX_PLAYERS;
+                            sprintf(serverChat.message, "** Objective %d has been compromised! **", i);
+                            sendChat(&serverChat, NULL, out);
+                        }
                     }
                 }
             }
@@ -456,6 +471,13 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
             printf("%s [%d] captured robber %s [%d]\n", pLists->playerNames[inPkt14.tagger_id],
                    inPkt14.tagger_id, pLists->playerNames[inPkt14.taggee_id], inPkt14.taggee_id);
+
+            if(SERVER_MESSAGES){
+                bzero(serverChat.message, MAX_MESSAGE);
+                serverChat.sendingPlayer = MAX_PLAYERS;
+                sprintf(serverChat.message, "** %s captured robber %s! **\n", pLists->playerNames[inPkt14.tagger_id], pLists->playerNames[inPkt14.taggee_id]);
+                sendChat(&serverChat, NULL, out);
+            }
 
             pLists->playerTeams[inPkt14.taggee_id] = TEAM_NONE;
             pLists->readystatus[inPkt14.taggee_id] = PLAYER_STATE_OUT;
@@ -514,21 +536,21 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
             sprintf(serverChat.message, "Robbers Eliminated!");
             sendChat(&serverChat, NULL, out);
             bzero(serverChat.message, MAX_MESSAGE);
-            sleep(500);
+            sleep(2);
             sprintf(serverChat.message, "Cops Win!");
             sendChat(&serverChat, NULL, out);
             bzero(serverChat.message, MAX_MESSAGE);
-            sleep(1000);
+            sleep(3);
         }
         else{
             sprintf(serverChat.message, "Takedown successful!");
             sendChat(&serverChat, NULL, out);
             bzero(serverChat.message, MAX_MESSAGE);
-            sleep(500);
+            sleep(2);
             sprintf(serverChat.message, "Robbers Win!");
             sendChat(&serverChat, NULL, out);
             bzero(serverChat.message, MAX_MESSAGE);
-            sleep(1000);
+            sleep(3);
         }
     }
 
@@ -546,7 +568,7 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
 // created march 24
 // sends ipc3 for all players
 // moves all players to specified floor and sets their specified state
-void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
+    void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
 {
     int i;
     floorNo_t floor = FLOOR_LOBBY;
@@ -574,9 +596,11 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
     // Game is ending
     if(status == PLAYER_STATE_WAITING){
         for(i = 0; i < MAX_PLAYERS; ++i){
-            outIPC3.playerNo = i;
-            outIPC3.newFloor = FLOOR_LOBBY;
-            writeIPC(in, &outIPC3, IPC_PKT_3);
+            if(pLists->readystatus[i] == PLAYER_STATE_WAITING){
+                outIPC3.playerNo = i;
+                outIPC3.newFloor = FLOOR_LOBBY;
+                writeIPC(in, &outIPC3, IPC_PKT_3);
+            }
         }
     }
 
@@ -652,7 +676,7 @@ void balanceTeams(teamNo_t *teamIn, teamNo_t *teamOut)
     if(BALANCE_TEAMS){
 
         if(FAVOR_COPS){
-            for(i = 0; team2Count < team1Count; ++i)
+            for(i = rand() % MAX_PLAYERS; team2Count < team1Count; ++i)
             {
                 if(teamOut[i] == TEAM_COPS)
                 {
@@ -660,11 +684,15 @@ void balanceTeams(teamNo_t *teamIn, teamNo_t *teamOut)
                     team2Count++;
                     team1Count--;
                 }
+
+                if(i == MAX_PLAYERS - 1){
+                    i = 0;
+                }
             }
         }
 
         // Add cops until = or greater
-        for(i = 0; team1Count < team2Count; ++i)
+        for(i = rand() % MAX_PLAYERS; team1Count < team2Count; ++i)
         {
             if(teamOut[i] == TEAM_ROBBERS)
             {
@@ -672,16 +700,24 @@ void balanceTeams(teamNo_t *teamIn, teamNo_t *teamOut)
                 team1Count++;
                 team2Count--;
             }
+
+            if(i == MAX_PLAYERS - 1){
+                    i = 0;
+            }
         }
 
         if(!FAVOR_COPS){
-            for(i = 0; team2Count < team1Count; ++i)
+            for(i = rand() % MAX_PLAYERS; team2Count < team1Count; ++i)
             {
                 if(teamOut[i] == TEAM_COPS)
                 {
                     teamOut[i] = TEAM_ROBBERS;
                     team2Count++;
                     team1Count--;
+                }
+
+                if(i == MAX_PLAYERS - 1){
+                    i = 0;
                 }
             }
         }

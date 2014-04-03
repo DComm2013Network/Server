@@ -125,8 +125,8 @@ void handleOut(SOCKET liveSock){
 		case 16:
 			sendToPlayers(SOCK_DGRAM, mask, packet, type);
 			break;
-
 	}
+	free(packet);
 }
 
 /*--------------------------------------------------------------------------------------------------------------------

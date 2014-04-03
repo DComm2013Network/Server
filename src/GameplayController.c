@@ -87,6 +87,8 @@ void* GameplayController(void* ipcSocks) {
 	int errOut = 0;
 	int wrongPacket = 0;
 
+    int updated[MAX_PLAYERS] = {0};
+
 	int maxPlayers = 0;
 
 	OUTMASK m;
@@ -371,6 +373,8 @@ void* GameplayController(void* ipcSocks) {
 			floorArray[playerFloor].xVel[thisPlayer] = bufPlayerIn->xVel;
 			floorArray[playerFloor].yVel[thisPlayer] = bufPlayerIn->yVel;
 
+			updated[thisPlayer] = 1;
+
 			break;
 		case 0xB4:
             // Timer tick, send update
@@ -385,6 +389,14 @@ void* GameplayController(void* ipcSocks) {
                 for (i = 0; i < MAX_PLAYERS; i++) {
                     if (floorArray[j].playersOnFloor[i] == 1) {
                         OUT_SET(m, i);
+                    }
+                }
+
+                for(i = 0; i < MAX_PLAYERS; ++i){
+                    if(!updated[i] && floorArray[j].playersOnFloor[i]){
+                        // Player on this floor needs predictive update
+                        floorArray[i].xPos[i] += floorArray[i].xVel[i];
+                        floorArray[i].yPos[i] += floorArray[i].yVel[i];
                     }
                 }
 
@@ -404,6 +416,11 @@ void* GameplayController(void* ipcSocks) {
                     fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
                 }
 			}
+
+			for(i = 0; i < MAX_PLAYERS; ++i){
+                updated[i] = 0;
+			}
+
 			break;
 		case 12: //floor change
 			DEBUG(DEBUG_INFO, "GP> Received packet 12");

@@ -28,7 +28,7 @@
 // ************************************************************************************************
 
     // Version no
-    #define SERVER_VERSION          2.8
+    #define SERVER_VERSION          3.0
 
     // Net comm control
     #define TCP_PORT                42337
@@ -45,7 +45,7 @@
     #define MOVE_UPDATE_FREQUENCY   60      // Movement updates per second (~0.18KB/second/client)
 
     // Chat
-    #define SERVER_MESSAGES         0       // Joined / Left / Game start / End messages
+    #define SERVER_MESSAGES         1       // Joined / Left / Game start / End messages
     #define PRINT_CHAT_TO_SERVER    0       // Turn the text display on the server on or off
     #define CHAT_DECRYPT_TIME       450     // seconds until chat is fully decrypted
 
@@ -55,7 +55,7 @@
     #define PRESUME_DEAD_FREQUENCY  5       // Seconds until loss is assumed
 
     // Floor control
-    #define FLOOR_COP_START         1       // The floor the cops start on
+    #define FLOOR_COP_START         3       // The floor the cops start on
     #define FLOOR_ROBBER_START      1       // The floor the robbers start on
 
     // Players
