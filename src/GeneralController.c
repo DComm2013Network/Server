@@ -334,9 +334,11 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     PKT_GAME_STATUS inPkt8;
     PKT_TAGGING     inPkt14;
     PKT_FORCE_MOVE  outIPC3;
+    PKT_SPECIAL_TILE    inTile;
     PKT_CHAT serverChat;
 
     int i;
+    int capCount[MAX_PLAYERS] = {0};
 	packet_t pType;
 	int objCount = 0, winCount = 0, curCount = 0;
     size_t team1 = 0, team2 = 0, totalPlayers = 0;
@@ -420,6 +422,12 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             desiredTeams[inPkt5.playerNumber] = inPkt5.team_number;
             break;
 
+        case 6:
+            // Echo a special tile
+            getPacket(in, &inTile, netPacketSizes[6]);
+            writePacket(out, &inTile, 6);
+            break;
+
         case 8:
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 8");
             getPacket(in, &inPkt8, netPacketSizes[8]);
@@ -433,7 +441,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
                         if(SERVER_MESSAGES){
                             bzero(serverChat.message, MAX_MESSAGE);
                             serverChat.sendingPlayer = MAX_PLAYERS;
-                            sprintf(serverChat.message, "** Objective %d has been compromised! **", i);
+                            sprintf(serverChat.message, "** An objective has been compromised on floor %d! **", (i / 4 )+ 1);
                             sendChat(&serverChat, NULL, out);
                         }
                     }
@@ -446,6 +454,12 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
                 printf("All Objectives Captured!\n");
                 gameInfo->game_status = GAME_TEAM2_WIN;
             } else {
+                if(SERVER_MESSAGES){
+                    bzero(serverChat.message, MAX_MESSAGE);
+                    serverChat.sendingPlayer = MAX_PLAYERS;
+                    sprintf(serverChat.message, "** %d remain! **", winCount - curCount);
+                    sendChat(&serverChat, NULL, out);
+                }
                 gameInfo->game_status = GAME_STATE_ACTIVE;
                 writePacket(out, gameInfo, 8);
             }
@@ -471,6 +485,14 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
             printf("%s [%d] captured robber %s [%d]\n", pLists->playerNames[inPkt14.tagger_id],
                    inPkt14.tagger_id, pLists->playerNames[inPkt14.taggee_id], inPkt14.taggee_id);
+            capCount[inPkt14.tagger_id]++;
+
+            if(capCount[inPkt14.tagger_id] > team2 / 2 && capCount[inPkt14.tagger_id] > 2 && SERVER_MESSAGES){
+                bzero(serverChat.message, MAX_MESSAGE);
+                serverChat.sendingPlayer = MAX_PLAYERS;
+                sprintf(serverChat.message, "** %s is on a Rampage!! **", pLists->playerNames[inPkt14.tagger_id]);
+                sendChat(&serverChat, NULL, out);
+            }
 
             if(SERVER_MESSAGES){
                 bzero(serverChat.message, MAX_MESSAGE);
