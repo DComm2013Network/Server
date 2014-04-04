@@ -45,10 +45,12 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status);
 
 // Socket Utility
 inline void writePacket(SOCKET sock, void* packet, packet_t type);
+inline void writePacketTo(SOCKET sock, void* packet, packet_t type, OUTMASK mask);
 inline void writeIPC(SOCKET sock, void* buf, packet_t type);
 
 // Desired teams are maintainted accross all states
 teamNo_t desiredTeams[MAX_PLAYERS] = {0};
+
 
 /*--------------------------------------------------------------------------------------------------------------------
  -- FUNCTION:	GeneralController
@@ -337,6 +339,8 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     PKT_SPECIAL_TILE    inTile;
     PKT_CHAT serverChat;
 
+    OUTMASK m;
+
     int i;
     int capCount[MAX_PLAYERS] = {0};
 	packet_t pType;
@@ -425,7 +429,13 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
         case 6:
             // Echo a special tile
             getPacket(in, &inTile, netPacketSizes[6]);
-            writePacket(out, &inTile, 6);
+            OUT_ZERO(m);
+            for(i = 0; i < MAX_PLAYERS; ++i){
+                if(i != inTile.placingPlayer){
+                    OUT_SET(m,i);
+                }
+            }
+            writePacketTo(out, &inTile, 6, m);
             break;
 
         case 8:
@@ -487,17 +497,17 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
                    inPkt14.tagger_id, pLists->playerNames[inPkt14.taggee_id], inPkt14.taggee_id);
             capCount[inPkt14.tagger_id]++;
 
-            if(capCount[inPkt14.tagger_id] > team2 / 2 && capCount[inPkt14.tagger_id] > 2 && SERVER_MESSAGES){
-                bzero(serverChat.message, MAX_MESSAGE);
-                serverChat.sendingPlayer = MAX_PLAYERS;
-                sprintf(serverChat.message, "** %s is on a Rampage!! **", pLists->playerNames[inPkt14.tagger_id]);
-                sendChat(&serverChat, NULL, out);
-            }
-
             if(SERVER_MESSAGES){
                 bzero(serverChat.message, MAX_MESSAGE);
                 serverChat.sendingPlayer = MAX_PLAYERS;
                 sprintf(serverChat.message, "** %s captured robber %s! **\n", pLists->playerNames[inPkt14.tagger_id], pLists->playerNames[inPkt14.taggee_id]);
+                sendChat(&serverChat, NULL, out);
+            }
+
+            if(capCount[inPkt14.tagger_id] > team2 / 2 && capCount[inPkt14.tagger_id] > 2 && SERVER_MESSAGES){
+                bzero(serverChat.message, MAX_MESSAGE);
+                serverChat.sendingPlayer = MAX_PLAYERS;
+                sprintf(serverChat.message, "** %s is on a Rampage!! **", pLists->playerNames[inPkt14.tagger_id]);
                 sendChat(&serverChat, NULL, out);
             }
 
@@ -852,6 +862,19 @@ inline void writePacket(SOCKET sock, void* packet, packet_t type)
 	write(sock, &type, sizeof(packet_t));
     write(sock, packet, netPacketSizes[type]);
     write(sock, &m, sizeof(OUTMASK));
+
+    #if DEBUG_ON
+        char buff[BUFFSIZE];
+        sprintf(buff, "GC> Sent packet: %d", type);
+        DEBUG(DEBUG_INFO, buff);
+    #endif
+}
+
+inline void writePacketTo(SOCKET sock, void* packet, packet_t type, OUTMASK mask){
+
+	write(sock, &type, sizeof(packet_t));
+    write(sock, packet, netPacketSizes[type]);
+    write(sock, &mask, sizeof(OUTMASK));
 
     #if DEBUG_ON
         char buff[BUFFSIZE];
