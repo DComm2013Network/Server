@@ -533,6 +533,21 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
                 printf("Robbers Eliminated!\n");
                 gameInfo->game_status = GAME_TEAM1_WIN;
             }
+            else if(team2 == 1 && SERVER_MESSAGES){
+                // last man standing message
+                for(i = 0; i < MAX_PLAYERS; ++i){
+                    if(pLists->playerTeams[i] == TEAM_ROBBERS){
+                        break;
+                    }
+                }
+
+                bzero(serverChat.message, MAX_MESSAGE);
+                serverChat.sendingPlayer = MAX_PLAYERS;
+                sprintf(serverChat.message, "%s is the last man standing!\n", pLists->playerNames[i]);
+                sendChat(&serverChat, NULL, out);
+                writePacket(out, pLists, 3);
+                writePacket(out, gameInfo, 8);
+            }
             else{
                 writePacket(out, pLists, 3);
                 writePacket(out, gameInfo, 8);

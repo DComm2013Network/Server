@@ -367,7 +367,7 @@ int checkName(char name[MAX_NAME]){
     }
 
     // ban non-standard ascii characters
-    for(i = 0; i < MAX_NAME; ++i){
+    for(i = 0; i < strlen(name); ++i){
         if(name[i] < 33 || name[i] > 126){
             return 0;
         }
