@@ -45,10 +45,14 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status);
 
 // Socket Utility
 inline void writePacket(SOCKET sock, void* packet, packet_t type);
+inline void writePacketTo(SOCKET sock, void* packet, packet_t type, OUTMASK mask);
 inline void writeIPC(SOCKET sock, void* buf, packet_t type);
 
 // Desired teams are maintainted accross all states
 teamNo_t desiredTeams[MAX_PLAYERS] = {0};
+
+char serverName[MAX_NAME] = {0};
+
 
 /*--------------------------------------------------------------------------------------------------------------------
  -- FUNCTION:	GeneralController
@@ -126,6 +130,8 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
     PKT_CHAT pktchat;
     PKT_SPECIAL_TILE pktTile;
 
+    OUTMASK m;
+
     bzero(&inIPC1, ipcPacketSizes[1]);
     bzero(&inIPC2, ipcPacketSizes[2]);
     bzero(&pktchat, netPacketSizes[4]);
@@ -156,6 +162,15 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 
             writePacket(out, pLists, 3);
 
+            if(SERVER_MESSAGES){
+                OUT_ZERO(m);
+                OUT_SET(m, inIPC1.playerNo);
+                bzero(pktchat.message, MAX_MESSAGE);
+                pktchat.sendingPlayer = MAX_PLAYERS;
+                sprintf(pktchat.message, "Welcome to the server %s [v%.1lf]", serverName, SERVER_VERSION);
+                writePacketTo(out, &pktchat, 4, m);
+            }
+
             break;
 		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
 			DEBUG(DEBUG_INFO, "GC> Received IPC_PKT_2");
@@ -185,13 +200,13 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
                 countTeams(pLists->playerTeams, &team1Count, &team2Count);
                 if(team1Count == 0) {
                     gameInfo->game_status = GAME_TEAM2_WIN;
-                    printf("Cops weren't getting paid enough.\n");
-                    DEBUG(DEBUG_INFO, "GC> Team 2 (Robbers) won - no cops left");
+                    printf("Guards weren't getting paid enough.\n");
+                    DEBUG(DEBUG_INFO, "GC> Team 2 (Hackers) won - no cops left");
                 }
                 else if(team2Count == 0) {
                     gameInfo->game_status = GAME_TEAM1_WIN;
-                    printf("Robbers Eliminated!\n");
-                    DEBUG(DEBUG_INFO, "GC> Team 1 (Cops) won - no robbers left");
+                    printf("Hackers Eliminated!\n");
+                    DEBUG(DEBUG_INFO, "GC> Team 1 (Guards) won - no robbers left");
                 }
                 else{
                     writePacket(out, pLists, 3);
@@ -297,14 +312,14 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
 
                 printf("Game Start!\n");
                 printf("*********************************\n");
-                printf("Robbers:\n");
+                printf("Hackers:\n");
                 for(i = 0; i < MAX_PLAYERS; ++i){
                     if(pLists->playerTeams[i] == TEAM_ROBBERS){
                         printf(" - %s [%d]\n", pLists->playerNames[i], i);
                     }
                 }
 
-                printf("Cops:\n");
+                printf("Guards:\n");
                 for(i = 0; i < MAX_PLAYERS; ++i){
                     if(pLists->playerTeams[i] == TEAM_COPS){
                         printf(" - %s [%d]\n", pLists->playerNames[i], i);
@@ -334,9 +349,13 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     PKT_GAME_STATUS inPkt8;
     PKT_TAGGING     inPkt14;
     PKT_FORCE_MOVE  outIPC3;
+    PKT_SPECIAL_TILE    inTile;
     PKT_CHAT serverChat;
 
+    OUTMASK m;
+
     int i;
+    int capCount[MAX_PLAYERS] = {0};
 	packet_t pType;
 	int objCount = 0, winCount = 0, curCount = 0;
     size_t team1 = 0, team2 = 0, totalPlayers = 0;
@@ -420,6 +439,18 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             desiredTeams[inPkt5.playerNumber] = inPkt5.team_number;
             break;
 
+        case 6:
+            // Echo a special tile
+            getPacket(in, &inTile, netPacketSizes[6]);
+            OUT_ZERO(m);
+            for(i = 0; i < MAX_PLAYERS; ++i){
+                if(i != inTile.placingPlayer){
+                    OUT_SET(m,i);
+                }
+            }
+            writePacketTo(out, &inTile, 6, m);
+            break;
+
         case 8:
             DEBUG(DEBUG_INFO, "GC> Running> Received packet 8");
             getPacket(in, &inPkt8, netPacketSizes[8]);
@@ -433,7 +464,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
                         if(SERVER_MESSAGES){
                             bzero(serverChat.message, MAX_MESSAGE);
                             serverChat.sendingPlayer = MAX_PLAYERS;
-                            sprintf(serverChat.message, "** Objective %d has been compromised! **", i);
+                            sprintf(serverChat.message, "** An objective has been compromised on floor %d! **", (i / 4 )+ 1);
                             sendChat(&serverChat, NULL, out);
                         }
                     }
@@ -446,6 +477,12 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
                 printf("All Objectives Captured!\n");
                 gameInfo->game_status = GAME_TEAM2_WIN;
             } else {
+                if(SERVER_MESSAGES){
+                    bzero(serverChat.message, MAX_MESSAGE);
+                    serverChat.sendingPlayer = MAX_PLAYERS;
+                    sprintf(serverChat.message, "** %d remain! **", winCount - curCount);
+                    sendChat(&serverChat, NULL, out);
+                }
                 gameInfo->game_status = GAME_STATE_ACTIVE;
                 writePacket(out, gameInfo, 8);
             }
@@ -471,11 +508,19 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
             printf("%s [%d] captured robber %s [%d]\n", pLists->playerNames[inPkt14.tagger_id],
                    inPkt14.tagger_id, pLists->playerNames[inPkt14.taggee_id], inPkt14.taggee_id);
+            capCount[inPkt14.tagger_id]++;
 
             if(SERVER_MESSAGES){
                 bzero(serverChat.message, MAX_MESSAGE);
                 serverChat.sendingPlayer = MAX_PLAYERS;
                 sprintf(serverChat.message, "** %s captured robber %s! **\n", pLists->playerNames[inPkt14.tagger_id], pLists->playerNames[inPkt14.taggee_id]);
+                sendChat(&serverChat, NULL, out);
+            }
+
+            if(capCount[inPkt14.tagger_id] > team2 / 2 && capCount[inPkt14.tagger_id] > 2 && SERVER_MESSAGES){
+                bzero(serverChat.message, MAX_MESSAGE);
+                serverChat.sendingPlayer = MAX_PLAYERS;
+                sprintf(serverChat.message, "** %s is on a Rampage!! **", pLists->playerNames[inPkt14.tagger_id]);
                 sendChat(&serverChat, NULL, out);
             }
 
@@ -485,8 +530,23 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             //Check win
             countTeams(pLists->playerTeams, &team1, &team2);
             if(team2 <= 0) {
-                printf("Robbers Eliminated!\n");
+                printf("Hackers Eliminated!\n");
                 gameInfo->game_status = GAME_TEAM1_WIN;
+            }
+            else if(team2 == 1 && SERVER_MESSAGES){
+                // last man standing message
+                for(i = 0; i < MAX_PLAYERS; ++i){
+                    if(pLists->playerTeams[i] == TEAM_ROBBERS){
+                        break;
+                    }
+                }
+
+                bzero(serverChat.message, MAX_MESSAGE);
+                serverChat.sendingPlayer = MAX_PLAYERS;
+                sprintf(serverChat.message, "%s is the last man standing!\n", pLists->playerNames[i]);
+                sendChat(&serverChat, NULL, out);
+                writePacket(out, pLists, 3);
+                writePacket(out, gameInfo, 8);
             }
             else{
                 writePacket(out, pLists, 3);
@@ -533,11 +593,11 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
 
     if(SERVER_MESSAGES){
         if(gameInfo->game_status == GAME_TEAM1_WIN){
-            sprintf(serverChat.message, "Robbers Eliminated!");
+            sprintf(serverChat.message, "Hackers Eliminated!");
             sendChat(&serverChat, NULL, out);
             bzero(serverChat.message, MAX_MESSAGE);
             sleep(2);
-            sprintf(serverChat.message, "Cops Win!");
+            sprintf(serverChat.message, "Guards Win!");
             sendChat(&serverChat, NULL, out);
             bzero(serverChat.message, MAX_MESSAGE);
             sleep(3);
@@ -547,7 +607,7 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
             sendChat(&serverChat, NULL, out);
             bzero(serverChat.message, MAX_MESSAGE);
             sleep(2);
-            sprintf(serverChat.message, "Robbers Win!");
+            sprintf(serverChat.message, "Hackers Win!");
             sendChat(&serverChat, NULL, out);
             bzero(serverChat.message, MAX_MESSAGE);
             sleep(3);
@@ -568,7 +628,7 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
 // created march 24
 // sends ipc3 for all players
 // moves all players to specified floor and sets their specified state
-    void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
+void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
 {
     int i;
     floorNo_t floor = FLOOR_LOBBY;
@@ -795,6 +855,8 @@ int setup(SOCKET in, int *maxPlayers, PKT_PLAYERS_UPDATE *pLists)
     getPacket(in, &pkt0, ipcPacketSizes[0]);
     *maxPlayers = pkt0.maxPlayers;
 
+    memcpy(serverName, pkt0.serverName, MAX_NAME);
+
     zeroPlayerLists(pLists, *maxPlayers);
 	return 1;
 }
@@ -830,6 +892,19 @@ inline void writePacket(SOCKET sock, void* packet, packet_t type)
 	write(sock, &type, sizeof(packet_t));
     write(sock, packet, netPacketSizes[type]);
     write(sock, &m, sizeof(OUTMASK));
+
+    #if DEBUG_ON
+        char buff[BUFFSIZE];
+        sprintf(buff, "GC> Sent packet: %d", type);
+        DEBUG(DEBUG_INFO, buff);
+    #endif
+}
+
+inline void writePacketTo(SOCKET sock, void* packet, packet_t type, OUTMASK mask){
+
+	write(sock, &type, sizeof(packet_t));
+    write(sock, packet, netPacketSizes[type]);
+    write(sock, &mask, sizeof(OUTMASK));
 
     #if DEBUG_ON
         char buff[BUFFSIZE];

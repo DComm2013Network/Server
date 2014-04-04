@@ -94,6 +94,7 @@ typedef struct pkt02{
 	status_t 	connectCode;
 	playerNo_t 	clients_playerNumber;
 	teamNo_t 	clients_team_number;
+	char        playerName[MAX_NAME];
 } PKT_JOIN_RESPONSE;
 
 typedef struct pkt03{
@@ -117,6 +118,7 @@ typedef struct pkt05{
 } PKT_READY_STATUS;
 
 typedef struct pkt06{
+    playerNo_t  placingPlayer;
     floorNo_t   floor;
     pos_t       xPos;
     pos_t       yPos;

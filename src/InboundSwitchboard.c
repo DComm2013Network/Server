@@ -174,6 +174,7 @@ void relayPacket(void* packet, packet_t type){
 			break;
 
 		case 6:
+            writeType(Inswitch_generalSocket,       packet, type);
 			break;
 
 		case 7:

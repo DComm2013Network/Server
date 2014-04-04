@@ -22,7 +22,10 @@
 *-------------------------------------------------------------------------------------------------------------------*/
 
 #include "Server.h"
+#include <ctype.h>
 
+int checkName(char name[MAX_NAME]);
+void makeRandomName(char name[MAX_NAME]);
 
 // Globals
 SOCKET listenSock;
@@ -137,6 +140,13 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock){
 		replyToClient.connectCode = connectCode_ACCEPTED;
 		replyToClient.clients_playerNumber = i;
 
+		if(!checkName(clientReg.playerName)){
+            makeRandomName(clientReg.playerName);
+        }
+
+        // give the player either his name back or the revised name
+        memcpy(replyToClient.playerName, clientReg.playerName, MAX_NAME);
+
 		// The client's inital team number is 0. This will be later assigned by the Conn Man
 		replyToClient.clients_team_number = 0;
 
@@ -146,7 +156,7 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock){
 		DEBUG(DEBUG_INFO, "CM> Sent pkt 2");
 
 		newClientInfo.playerNo = i;
-		memcpy(&newClientInfo.playerName, &clientReg.playerName, MAX_NAME);
+		memcpy(newClientInfo.playerName, clientReg.playerName, MAX_NAME);
 		newClientInfo.character = clientReg.selectedChatacter;
 
 		// add TCP connection to list
@@ -330,4 +340,103 @@ void* ConnectionManager(void* ipcSocks){
 	}
 
 	return NULL;
+}
+
+int checkName(char name[MAX_NAME]){
+
+    int i;
+
+    // must be at least 3 long
+    if(strlen(name) < 3){
+        return 0;
+    }
+
+    // first letter cannot be a space
+    if(isspace(name[0])){
+        return 0;
+    }
+
+    // has to not be all spaces
+    for(i = 0; i < MAX_NAME; ++i){
+        if(!isspace(name[i])){
+            break;
+        }
+    }
+    if(i == MAX_NAME){
+        return 0;
+    }
+
+    // ban non-standard ascii characters
+    for(i = 0; i < strlen(name); ++i){
+        if(name[i] < 33 || name[i] > 126){
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+void makeRandomName(char name[MAX_NAME]){
+
+    int names = 16; // num cases + 1
+
+    bzero(name, MAX_NAME);
+    srand(time(0));
+
+    switch(rand() % names){
+        case 0:
+            snprintf(name, MAX_NAME, "Bandy Avocado");
+            break;
+        case 1:
+            snprintf(name, MAX_NAME, "Fredrick");
+            break;
+        case 2:
+            snprintf(name, MAX_NAME, "J-Beibs");
+            break;
+        case 3:
+            snprintf(name, MAX_NAME, "Gandalf Orange");
+            break;
+        case 4:
+            snprintf(name, MAX_NAME, "A Dancing bear");
+            break;
+        case 5:
+            snprintf(name, MAX_NAME, "Autocratic tar");
+            break;
+        case 6:
+            snprintf(name, MAX_NAME, "Johnny Bravo");
+            break;
+        case 7:
+            snprintf(name, MAX_NAME, "missingName");
+            break;
+        case 8:
+            snprintf(name, MAX_NAME, "Failed grade 4");
+            break;
+        case 9:
+            snprintf(name, MAX_NAME, "Uncreative");
+            break;
+        case 10:
+            snprintf(name, MAX_NAME, "Frodo Swaggins");
+            break;
+        case 11:
+            snprintf(name, MAX_NAME, "Dilbert's boss");
+            break;
+        case 12:
+            snprintf(name, MAX_NAME, "Casual Server");
+            break;
+        case 13:
+            snprintf(name, MAX_NAME, "Not-a-cop");
+            break;
+        case 14:
+            snprintf(name, MAX_NAME, "The real Sam");
+            break;
+        case 15:
+            snprintf(name, MAX_NAME, "Not slim-shady");
+            break;
+        case 16:
+            snprintf(name, MAX_NAME, "Mike Hunt");
+            break;
+
+    }
+            //--------------------------------------
+
 }
