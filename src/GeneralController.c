@@ -51,6 +51,8 @@ inline void writeIPC(SOCKET sock, void* buf, packet_t type);
 // Desired teams are maintainted accross all states
 teamNo_t desiredTeams[MAX_PLAYERS] = {0};
 
+char serverName[MAX_NAME] = {0};
+
 
 /*--------------------------------------------------------------------------------------------------------------------
  -- FUNCTION:	GeneralController
@@ -128,6 +130,8 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
     PKT_CHAT pktchat;
     PKT_SPECIAL_TILE pktTile;
 
+    OUTMASK m;
+
     bzero(&inIPC1, ipcPacketSizes[1]);
     bzero(&inIPC2, ipcPacketSizes[2]);
     bzero(&pktchat, netPacketSizes[4]);
@@ -157,6 +161,15 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
             }
 
             writePacket(out, pLists, 3);
+
+            if(SERVER_MESSAGES){
+                OUT_ZERO(m);
+                OUT_SET(m, inIPC1.playerNo);
+                bzero(pktchat.message, MAX_MESSAGE);
+                pktchat.sendingPlayer = MAX_PLAYERS;
+                sprintf(pktchat.message, "Welcome to the server %s [v%.1lf]", serverName, SERVER_VERSION);
+                writePacketTo(out, &pktchat, 4, m);
+            }
 
             break;
 		case IPC_PKT_2: // Player Lost -> Sends pkt 3 Players Update
@@ -826,6 +839,8 @@ int setup(SOCKET in, int *maxPlayers, PKT_PLAYERS_UPDATE *pLists)
 
     getPacket(in, &pkt0, ipcPacketSizes[0]);
     *maxPlayers = pkt0.maxPlayers;
+
+    memcpy(serverName, pkt0.serverName, MAX_NAME);
 
     zeroPlayerLists(pLists, *maxPlayers);
 	return 1;
