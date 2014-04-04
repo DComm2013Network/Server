@@ -412,19 +412,19 @@ void makeRandomName(char name[MAX_NAME]){
             snprintf(name, MAX_NAME, "Failed grade 4");
             break;
         case 9:
-            snprintf(name, MAX_NAME, "Assquatch");
+            snprintf(name, MAX_NAME, "Uncreative");
             break;
         case 10:
             snprintf(name, MAX_NAME, "Frodo Swaggins");
             break;
         case 11:
-            snprintf(name, MAX_NAME, "SUBTLE AS F*CK");
+            snprintf(name, MAX_NAME, "Dilbert's boss");
             break;
         case 12:
             snprintf(name, MAX_NAME, "Casual Server");
             break;
         case 13:
-            snprintf(name, MAX_NAME, "Dick Chow");
+            snprintf(name, MAX_NAME, "Not-a-cop");
             break;
         case 14:
             snprintf(name, MAX_NAME, "The real Sam");

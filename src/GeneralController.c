@@ -200,13 +200,13 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
                 countTeams(pLists->playerTeams, &team1Count, &team2Count);
                 if(team1Count == 0) {
                     gameInfo->game_status = GAME_TEAM2_WIN;
-                    printf("Cops weren't getting paid enough.\n");
-                    DEBUG(DEBUG_INFO, "GC> Team 2 (Robbers) won - no cops left");
+                    printf("Guards weren't getting paid enough.\n");
+                    DEBUG(DEBUG_INFO, "GC> Team 2 (Hackers) won - no cops left");
                 }
                 else if(team2Count == 0) {
                     gameInfo->game_status = GAME_TEAM1_WIN;
-                    printf("Robbers Eliminated!\n");
-                    DEBUG(DEBUG_INFO, "GC> Team 1 (Cops) won - no robbers left");
+                    printf("Hackers Eliminated!\n");
+                    DEBUG(DEBUG_INFO, "GC> Team 1 (Guards) won - no robbers left");
                 }
                 else{
                     writePacket(out, pLists, 3);
@@ -312,14 +312,14 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
 
                 printf("Game Start!\n");
                 printf("*********************************\n");
-                printf("Robbers:\n");
+                printf("Hackers:\n");
                 for(i = 0; i < MAX_PLAYERS; ++i){
                     if(pLists->playerTeams[i] == TEAM_ROBBERS){
                         printf(" - %s [%d]\n", pLists->playerNames[i], i);
                     }
                 }
 
-                printf("Cops:\n");
+                printf("Guards:\n");
                 for(i = 0; i < MAX_PLAYERS; ++i){
                     if(pLists->playerTeams[i] == TEAM_COPS){
                         printf(" - %s [%d]\n", pLists->playerNames[i], i);
@@ -530,7 +530,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
             //Check win
             countTeams(pLists->playerTeams, &team1, &team2);
             if(team2 <= 0) {
-                printf("Robbers Eliminated!\n");
+                printf("Hackers Eliminated!\n");
                 gameInfo->game_status = GAME_TEAM1_WIN;
             }
             else if(team2 == 1 && SERVER_MESSAGES){
@@ -593,11 +593,11 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
 
     if(SERVER_MESSAGES){
         if(gameInfo->game_status == GAME_TEAM1_WIN){
-            sprintf(serverChat.message, "Robbers Eliminated!");
+            sprintf(serverChat.message, "Hackers Eliminated!");
             sendChat(&serverChat, NULL, out);
             bzero(serverChat.message, MAX_MESSAGE);
             sleep(2);
-            sprintf(serverChat.message, "Cops Win!");
+            sprintf(serverChat.message, "Guards Win!");
             sendChat(&serverChat, NULL, out);
             bzero(serverChat.message, MAX_MESSAGE);
             sleep(3);
@@ -607,7 +607,7 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
             sendChat(&serverChat, NULL, out);
             bzero(serverChat.message, MAX_MESSAGE);
             sleep(2);
-            sprintf(serverChat.message, "Robbers Win!");
+            sprintf(serverChat.message, "Hackers Win!");
             sendChat(&serverChat, NULL, out);
             bzero(serverChat.message, MAX_MESSAGE);
             sleep(3);
@@ -628,7 +628,7 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
 // created march 24
 // sends ipc3 for all players
 // moves all players to specified floor and sets their specified state
-    void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
+void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
 {
     int i;
     floorNo_t floor = FLOOR_LOBBY;
