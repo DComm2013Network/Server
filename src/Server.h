@@ -28,26 +28,46 @@
 // ************************************************************************************************
 
     // Version no
-    #define SERVER_VERSION          1.8
+    #define SERVER_VERSION          3.3
 
     // Net comm control
     #define TCP_PORT                42337
     #define UDP_PORT                42338
 
+    // Presets
+    #define RUN_AT_LIMIT            1       // Default to running the server at MAX_PLAYERS
+
     // Debug control
-    #define DEBUG_ON                1       // Toggle all debug statements on or off
+    #define DEBUG_ON                0       // Toggle all debug statements on or off
     #define DEBUG_LEVEL             2       // Print only debugs of this level or higher
 
     // Movement updates control
     #define MOVE_UPDATE_FREQUENCY   60      // Movement updates per second (~0.18KB/second/client)
 
     // Chat
+    #define SERVER_MESSAGES         1       // Joined / Left / Game start / End messages
+    #define PRINT_CHAT_TO_SERVER    0       // Turn the text display on the server on or off
     #define CHAT_DECRYPT_TIME       450     // seconds until chat is fully decrypted
 
     // Keep Alive Control
     #define CHECK_CONNECTIONS       0       // Toggle keep-alive protocols on or off
-    #define CHECK_FREQUENCY         5       // Seconds between checks
-    #define PRESUME_DEAD_FREQUENCY  15      // Seconds until loss is assumed
+    #define CHECK_FREQUENCY         3       // Seconds between checks
+    #define PRESUME_DEAD_FREQUENCY  5       // Seconds until loss is assumed
+
+    // Floor control
+    #define FLOOR_COP_START         3       // The floor the cops start on
+    #define FLOOR_ROBBER_START      1       // The floor the robbers start on
+
+    // Players
+    #define MIN_PLAYERS             2       // min players to start the game
+    #define BALANCE_TEAMS           1       // Toggle forced balancing on or off
+    #define FAVOR_COPS              1       // Set cops to be favored over robbers in balancing
+
+    // Objectives
+    #define WIN_RATIO               0.75    // Percent of objective caputred that will end game
+
+    // Start
+    #define COUNTDOWN_TIME          5
 
 
 // ************************************************************************************************

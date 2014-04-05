@@ -87,6 +87,8 @@ void* GameplayController(void* ipcSocks) {
 	int errOut = 0;
 	int wrongPacket = 0;
 
+    int updated[MAX_PLAYERS] = {0};
+
 	int maxPlayers = 0;
 
 	OUTMASK m;
@@ -95,27 +97,33 @@ void* GameplayController(void* ipcSocks) {
 	outswitchSock = ((SOCKET*) ipcSocks)[1];
 
 	//create structs for buffers
-	PKT_POS_UPDATE *bufPlayerIn = (PKT_POS_UPDATE*) malloc(sizeof(PKT_POS_UPDATE));
-	PKT_ALL_POS_UPDATE *bufPlayerAll = malloc(sizeof(PKT_ALL_POS_UPDATE));
-	PKT_FLOOR_MOVE_REQUEST *bufFloorMoveReq = malloc(sizeof(PKT_FLOOR_MOVE_REQUEST));
-	PKT_FLOOR_MOVE *bufFloorMove = malloc(sizeof(PKT_FLOOR_MOVE));
+	PKT_POS_UPDATE *bufPlayerIn =               malloc(sizeof(PKT_POS_UPDATE));
+	PKT_ALL_POS_UPDATE *bufPlayerAll =          malloc(sizeof(PKT_ALL_POS_UPDATE));
+	PKT_FLOOR_MOVE_REQUEST *bufFloorMoveReq =   malloc(sizeof(PKT_FLOOR_MOVE_REQUEST));
+	PKT_FLOOR_MOVE *bufFloorMove =              malloc(sizeof(PKT_FLOOR_MOVE));
 
-	PKT_MIN_ALL_POS_UPDATE *minAllPos = malloc(sizeof(PKT_MIN_ALL_POS_UPDATE));
-	PKT_MIN_POS_UPDATE *minPos = malloc(sizeof(PKT_MIN_POS_UPDATE));
+	PKT_MIN_ALL_POS_UPDATE *minAllPos =         malloc(sizeof(PKT_MIN_ALL_POS_UPDATE));
+	PKT_MIN_POS_UPDATE *minPos =                malloc(sizeof(PKT_MIN_POS_UPDATE));
 
-	PKT_SERVER_SETUP *bufipcPkt0 = malloc(sizeof(PKT_SERVER_SETUP));
-	PKT_NEW_CLIENT *bufipcPkt1 = malloc(sizeof(PKT_NEW_CLIENT));
-	PKT_LOST_CLIENT *bufipcPkt2 = malloc(sizeof(PKT_LOST_CLIENT));
-	PKT_FORCE_MOVE *bufipcPkt3 = malloc(sizeof(PKT_FORCE_MOVE));
+	PKT_SERVER_SETUP *bufipcPkt0 =              malloc(sizeof(PKT_SERVER_SETUP));
+	PKT_NEW_CLIENT *bufipcPkt1 =                malloc(sizeof(PKT_NEW_CLIENT));
+	PKT_LOST_CLIENT *bufipcPkt2 =               malloc(sizeof(PKT_LOST_CLIENT));
+	PKT_FORCE_MOVE *bufipcPkt3 =                malloc(sizeof(PKT_FORCE_MOVE));
 
-	//bzero(bufPlayerIn, sizeof(PKT_POS_UPDATE));
-	//bzero(bufPlayerAll, sizeof(PKT_ALL_POS_UPDATE));
-	//memset(bufPkt0, 0, sizeof(PKT_SERVER_SETUP));
+    // Zero out initial memory
+    bzero(bufPlayerIn,      sizeof(PKT_POS_UPDATE));
+    bzero(bufPlayerAll,     sizeof(PKT_ALL_POS_UPDATE));
+    bzero(bufFloorMoveReq,  sizeof(PKT_FLOOR_MOVE_REQUEST));
+    bzero(bufFloorMove,     sizeof(PKT_FLOOR_MOVE));
 
-	//assign struct lengths before the loop so as not to keep checking
-	size_t lenPktIn = sizeof(struct pkt10);
-	size_t lenPktFloorReq = sizeof(struct pkt12);
-	size_t lenPktFloor = sizeof(struct pkt13);
+	bzero(minAllPos,        sizeof(PKT_MIN_ALL_POS_UPDATE));
+	bzero(minPos,           sizeof(PKT_MIN_POS_UPDATE));
+
+	bzero(bufipcPkt0, sizeof(ipcPacketSizes[0]));
+	bzero(bufipcPkt1, sizeof(ipcPacketSizes[1]));
+	bzero(bufipcPkt2, sizeof(ipcPacketSizes[2]));
+	bzero(bufipcPkt3, sizeof(ipcPacketSizes[3]));
+
 
 	//Create array of floor structures
 	PKT_ALL_POS_UPDATE floorArray[MAX_FLOORS + 1];
@@ -172,7 +180,7 @@ void* GameplayController(void* ipcSocks) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
-			if (write(outswitchSock, bufFloorMove, lenPktFloor) == -1) {
+			if (write(outswitchSock, bufFloorMove, netPacketSizes[13]) == -1) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
@@ -182,8 +190,7 @@ void* GameplayController(void* ipcSocks) {
 			}
 
 			//send packet 11 to players on floor
-			DEBUG(DEBUG_INFO, "GP> Sending packet 11 to floor 0")
-			;
+			DEBUG(DEBUG_INFO, "GP> Sending packet 11 to floor 0");
 
 			outPType = MIN_11;
 			floorArray[playerFloor].xPos[thisPlayer] = bufFloorMove->xPos;
@@ -234,8 +241,7 @@ void* GameplayController(void* ipcSocks) {
 
 		case 0xB3:  // Force floor change
 
-			DEBUG(DEBUG_INFO, "GP> Received packet 0xB3")
-			;
+			DEBUG(DEBUG_INFO, "GP> Received packet 0xB3");
 
 			bzero(bufipcPkt3, ipcPacketSizes[3]);
 
@@ -252,12 +258,6 @@ void* GameplayController(void* ipcSocks) {
 					// found player
 					break;
 				}
-			}
-
-			if (i == bufipcPkt3->newFloor) {
-				// player is already on target floor
-				// do nothing
-				break;
 			}
 
 			// remove player from floor
@@ -278,7 +278,7 @@ void* GameplayController(void* ipcSocks) {
 			OUT_ZERO(m);
 			OUT_SET(m, bufipcPkt3->playerNo);
 			write(outswitchSock, &outPType, sizeof(packet_t));
-			write(outswitchSock, &bufFloorMove, netPacketSizes[13]);
+			write(outswitchSock, bufFloorMove, netPacketSizes[13]);
 			write(outswitchSock, &m, sizeof(OUTMASK));
 			DEBUG(DEBUG_INFO, "CP> Sending packet 13");
 
@@ -298,8 +298,7 @@ void* GameplayController(void* ipcSocks) {
 			write(outswitchSock, &outPType, sizeof(packet_t));
 			write(outswitchSock, minAllPos, netPacketSizes[MIN_11]);
 			write(outswitchSock, &m, sizeof(OUTMASK));
-			DEBUG(DEBUG_INFO, "CP> Sending packet 16")
-			;
+			DEBUG(DEBUG_INFO, "CP> Sending packet 16");
 
 			//send updated data to all players on new floor
 			//set outbound mask for outbound server
@@ -315,8 +314,7 @@ void* GameplayController(void* ipcSocks) {
 			write(outswitchSock, &outPType, sizeof(packet_t));
 			write(outswitchSock, minAllPos, netPacketSizes[MIN_11]);
 			write(outswitchSock, &m, sizeof(OUTMASK));
-			DEBUG(DEBUG_INFO, "CP> Sending packet 16")
-			;
+			DEBUG(DEBUG_INFO, "CP> Sending packet 16");
 
 			break;
         case MIN_10:
@@ -326,7 +324,7 @@ void* GameplayController(void* ipcSocks) {
 		case 10: //player position update
 
 			if(pType == 10){ // Not a min packet
-                if (getPacket(gameplaySock, bufPlayerIn, lenPktIn) == -1) {
+                if (getPacket(gameplaySock, bufPlayerIn, netPacketSizes[10]) == -1) {
                     //couldn't read packet
                     errPacket++;
                     fprintf(stderr, "Gameplay Controller - error reading packet 10.  Count:%d\n", errPacket);
@@ -362,11 +360,11 @@ void* GameplayController(void* ipcSocks) {
 				 * from this player we can figure out if we didn't get their
 				 * floor update.
 				 */
-				errFloor++;
-				fprintf(stderr, "Gameplay Controller - player %d floor incorrect: %d.  Count:%d\n", thisPlayer, playerFloor, errFloor);
-
-				//for now, we just assign the player to this floor
-				//floorArray[playerFloor].playersOnFloor[thisPlayer] = 1;
+                if(DEBUG_ON && DEBUG_LEVEL >= DEBUG_WARN){
+                    errFloor++;
+                    fprintf(stderr, "Gameplay Controller - player %d floor incorrect: %d.  Count:%d\n", thisPlayer, playerFloor, errFloor);
+                }
+                break;
 			}
 
 			//put position and velocity in update packet
@@ -374,6 +372,8 @@ void* GameplayController(void* ipcSocks) {
 			floorArray[playerFloor].yPos[thisPlayer] = bufPlayerIn->yPos;
 			floorArray[playerFloor].xVel[thisPlayer] = bufPlayerIn->xVel;
 			floorArray[playerFloor].yVel[thisPlayer] = bufPlayerIn->yVel;
+
+			updated[thisPlayer] = 1;
 
 			break;
 		case 0xB4:
@@ -389,6 +389,14 @@ void* GameplayController(void* ipcSocks) {
                 for (i = 0; i < MAX_PLAYERS; i++) {
                     if (floorArray[j].playersOnFloor[i] == 1) {
                         OUT_SET(m, i);
+                    }
+                }
+
+                for(i = 0; i < MAX_PLAYERS; ++i){
+                    if(!updated[i] && floorArray[j].playersOnFloor[i]){
+                        // Player on this floor needs predictive update
+                        floorArray[i].xPos[i] += floorArray[i].xVel[i];
+                        floorArray[i].yPos[i] += floorArray[i].yVel[i];
                     }
                 }
 
@@ -408,16 +416,22 @@ void* GameplayController(void* ipcSocks) {
                     fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
                 }
 			}
+
+			for(i = 0; i < MAX_PLAYERS; ++i){
+                updated[i] = 0;
+			}
+
 			break;
 		case 12: //floor change
 			DEBUG(DEBUG_INFO, "GP> Received packet 12");
 
 			bzero(bufFloorMoveReq, sizeof(*bufFloorMoveReq));
-			if (getPacket(gameplaySock, bufFloorMoveReq, lenPktFloorReq) == -1) {
+			if (getPacket(gameplaySock, bufFloorMoveReq, netPacketSizes[12]) == -1) {
 				//couldn't read packet
-				errPacket++;
-				fprintf(stderr, "Gameplay Controller - error reading packet 12.  Count:%d\n", errPacket);
-
+				if(DEBUG_ON && DEBUG_LEVEL >= DEBUG_WARN){
+                    errPacket++;
+                    fprintf(stderr, "Gameplay Controller - error reading packet 12.  Count:%d\n", errPacket);
+				}
 				/*
 				 *  handle error here.  Perhaps check the size of the packet as well?
 				 */
@@ -429,7 +443,7 @@ void* GameplayController(void* ipcSocks) {
 			newFloor = bufFloorMoveReq->desired_floor;
 			thisPlayer = bufFloorMoveReq->playerNumber;
 
-            if(!floorArray[playerFloor].playersOnFloor[thisPlayer] || playerFloor == FLOOR_LOBBY){
+            if(!floorArray[playerFloor].playersOnFloor[thisPlayer] || (playerFloor == FLOOR_LOBBY && newFloor != FLOOR_LOBBY)){
                 DEBUG(DEBUG_WARN, "Player moving off wrong floor or escaping lobby rejected");
                 break;
             }
@@ -440,8 +454,7 @@ void* GameplayController(void* ipcSocks) {
 			bufFloorMove->xPos = bufFloorMoveReq->desired_xPos;
 			bufFloorMove->yPos = bufFloorMoveReq->desired_yPos;
 
-			DEBUG(DEBUG_INFO, "GP> Sending packet 13")
-			;
+			DEBUG(DEBUG_INFO, "GP> Sending packet 13");
 
 			//set outbound mask to send only to this player
 			OUT_ZERO(m);
@@ -452,7 +465,7 @@ void* GameplayController(void* ipcSocks) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
-			if (write(outswitchSock, bufFloorMove, lenPktFloor) == -1) {
+			if (write(outswitchSock, bufFloorMove, netPacketSizes[13]) == -1) {
 				errOut++;
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
@@ -461,8 +474,7 @@ void* GameplayController(void* ipcSocks) {
 				fprintf(stderr, "Gameplay Controller - sending to outbound switchboard.  Count:%d\n", errOut);
 			}
 
-			DEBUG(DEBUG_INFO, "GP> Sending packet 16 to old floor")
-			;
+			DEBUG(DEBUG_INFO, "GP> Sending packet 16 to old floor");
 
 			//send updated data to all players on old floor
 			outPType = MIN_11;
@@ -530,9 +542,10 @@ void* GameplayController(void* ipcSocks) {
 
 			break;
 		default:
-			wrongPacket++;
-			fprintf(stderr, "Gameplay Controller - received unknown packet type:%d  Count:%d\n", pType, wrongPacket);
-
+            if(DEBUG_ON && DEBUG_LEVEL >= DEBUG_WARN){
+                wrongPacket++;
+                fprintf(stderr, "Gameplay Controller - received unknown packet type:%d  Count:%d\n", pType, wrongPacket);
+            }
 			break;
 		}
 
@@ -541,11 +554,4 @@ void* GameplayController(void* ipcSocks) {
 	free(bufPlayerAll);
 	free(bufPlayerIn);
 	return 0;
-}
-
-//currently not used
-void writeType2(SOCKET sock, void* packet, packet_t type, OUTMASK m) {
-	write(sock, &type, sizeof(packet_t));
-	write(sock, packet, netPacketSizes[type]);
-	write(sock, &m, sizeof(OUTMASK));
 }
