@@ -1,9 +1,9 @@
 #include "Server.h"
 
 #define TILE_SIZE 40
-#define GRANULARITY_VEL 1.4
+#define GRANULARITY_VEL 6.35
 #define GRANULARITY_POS 2.0
-#define FACTOR 8
+#define FACTOR 128
 
 /**
  * This decapsulates a new packet into an old packet, allowing for
@@ -30,8 +30,8 @@ void decapsulate_pos_update(PKT_MIN_POS_UPDATE *pkt, PKT_POS_UPDATE* old_pkt) {
 	old_pkt->xPos = (float)(GRANULARITY_POS * ((pkt->data >> 11) & 0x7FF));
 	old_pkt->yPos = (float)(GRANULARITY_POS * (pkt->data & 0x7FF));
 
-	old_pkt->xVel = (float)((((pkt->vel >> 4) & 0xF) - FACTOR) / GRANULARITY_VEL);
-	old_pkt->yVel = (float)(((pkt->vel & 0xF) - FACTOR) / GRANULARITY_VEL);
+	old_pkt->xVel = (float)((((pkt->vel >> 8) & 0xFF) - FACTOR) / GRANULARITY_VEL);
+	old_pkt->yVel = (float)(((pkt->vel & 0xFF) - FACTOR) / GRANULARITY_VEL);
 
 }
 
@@ -70,9 +70,9 @@ void encapsulate_all_pos_update(PKT_ALL_POS_UPDATE *old_pkt, PKT_MIN_ALL_POS_UPD
 		n_xPos[i] = (uint32_t)round(old_pkt->xPos[i] / GRANULARITY_POS);
 		n_yPos[i] = (uint32_t)round(old_pkt->yPos[i] / GRANULARITY_POS);
 		pkt->vel[i] = 0;
-		pkt->vel[i] |= n_xVel & 0xF;
-		pkt->vel[i] <<= 4;
-		pkt->vel[i] |= n_yVel & 0xF;
+		pkt->vel[i] |= n_xVel & 0xFF;
+		pkt->vel[i] <<= 8;
+		pkt->vel[i] |= n_yVel & 0xFF;
 		pkt->playersOnFloor |= (old_pkt->playersOnFloor[i]) << i;
 	}
 
