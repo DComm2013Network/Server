@@ -130,6 +130,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
     PKT_CHAT pktchat;
     PKT_SPECIAL_TILE pktTile;
 
+    int i = 0;
     OUTMASK m;
 
     bzero(&inIPC1, ipcPacketSizes[1]);
@@ -227,7 +228,13 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 
         case 6: // special tile placed
             getPacket(in, &pktTile, netPacketSizes[6]);
-            writePacket(out, &pktTile, 6);
+            OUT_ZERO(m);
+            for(i = 0; i < MAX_PLAYERS; ++i){
+                if(i != pktTile.placingPlayer){
+                    OUT_SET(m, i);
+                }
+            }
+            writePacketTo(out, &pktTile, 6, m);
             break;
         default:
             DEBUG(DEBUG_ALRM, "GC> This should never be possible... gg");
