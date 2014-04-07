@@ -1,25 +1,17 @@
-/*-------------------------------------------------------------------------------------------------------------------*
--- SOURCE FILE: ConnectionManager.c
---		The Process that will deal with new connections being added, and potentially reconnecting lost ones.
---
--- FUNCTIONS:
--- 		int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock)
---		void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSock)
--- 		void removeConnection(SOCKET connectionSock)
---		void connectionManagerSetup()
---
---
--- DATE: 		February 16, 2014
---
--- REVISIONS: 	none
---
--- DESIGNER: 	Andrew Burian
---
--- PROGRAMMER: 	Andrew Burian
---
--- NOTES:
---
-*-------------------------------------------------------------------------------------------------------------------*/
+/** @ingroup Server */
+/** @{ */
+
+/**
+ * This file contains all methods responsible for handling inital connecting between server and client.
+ * This controller is in charge of determining whether new clients are accepted or rejected.
+ * It validates clients names, and assigns them a default if nessesary.
+ * When A connection is accepted, this controller notifies all others
+ *
+ *
+ * @file ConnectionManager.c
+ */
+
+/** @} */
 
 #include "Server.h"
 #include <ctype.h>
@@ -32,24 +24,22 @@ SOCKET listenSock;
 extern int RUNNING;
 
 
-/*--------------------------------------------------------------------------------------------------------------------
--- FUNCTION:	Setup
---
--- DATE: 		February 16, 2014
---
--- REVISIONS: 	none
---
--- DESIGNER: 	Andrew Burian
---
--- PROGRAMMER: 	Andrew Burian
---
--- INTERFACE: 	void connectionManagerSetup(SOCKET connectionSock, int* maxPlayers, char* gameName)
---
--- RETURNS: 	void
---
--- NOTES:
--- Reads in the setup packet send by the switchboard from the UI
-----------------------------------------------------------------------------------------------------------------------*/
+/**
+ * Sets up the connection manager with initial data
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   connectionSock      The Socket to communicate to the inbound switchboard
+ * @param[out]  maxPlayers          The maximum number of players that should be allowed to join
+ * @param[out]  gameName            The name of the server
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 16, 2014
+ */
 void connectionManagerSetup(SOCKET connectionSock, int* maxPlayers, char* gameName){
 
 	struct pktB0 setupPkt;
@@ -69,25 +59,21 @@ void connectionManagerSetup(SOCKET connectionSock, int* maxPlayers, char* gameNa
 	return;
 }
 
-/*--------------------------------------------------------------------------------------------------------------------
--- FUNCTION:	Add New Connection
---
--- DATE: 		February 16, 2014
---
--- REVISIONS: 	none
---
--- DESIGNER: 	Andrew Burian
---
--- PROGRAMMER: 	Andrew Burian
---
--- INTERFACE: 	void addNewConnection(int maxPlayers, SOCKET connectionSock, SOCKET outswitchSock)
---
--- RETURNS: 	void
---
--- NOTES:
--- Tries to add a new player to the server. If successful, notifies Switchboards.
--- If the server is full, client is rejected, and the connection is closed.
-----------------------------------------------------------------------------------------------------------------------*/
+/**
+ * Adds a new client if space is available, validates name
+ *
+ * Revisions:
+ *      -# April 5th    Added player name validation
+ *
+ * @param[out]  maxPlayers          The maximum number of players that should be allowed to join
+ * @param[in]   connectionSock      The socket to the inbound switchboard
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 16, 2014
+ */
 void addNewConnection(int maxPlayers, SOCKET connectionSock){
 
 	struct pktB1 newClientInfo;
@@ -186,25 +172,20 @@ void addNewConnection(int maxPlayers, SOCKET connectionSock){
 	return;
 }
 
-
-/*--------------------------------------------------------------------------------------------------------------------
--- FUNCTION:	Remove Connection
---
--- DATE: 		February 16, 2014
---
--- REVISIONS: 	none
---
--- DESIGNER: 	Andrew Burian
---
--- PROGRAMMER: 	Andrew Burian
---
--- INTERFACE: 	void removeConnection()
---
--- RETURNS: 	void
---
--- NOTES:
---
-----------------------------------------------------------------------------------------------------------------------*/
+/**
+ * Cleans up a removed player
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]  connectionSock      The socket to the inbound switchboard
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 16, 2014
+ */
 void removeConnection(SOCKET connectionSock){
 	// No need to send the remove to outswitch, inswich will have done it
 
@@ -228,27 +209,21 @@ void removeConnection(SOCKET connectionSock){
 }
 
 
-/*--------------------------------------------------------------------------------------------------------------------
--- FUNCTION:	Connection Manager
---
--- DATE: 		February 16, 2014
---
--- REVISIONS: 	none
---
--- DESIGNER: 	Andrew Burian
---
--- PROGRAMMER: 	Andrew Burian
---
--- INTERFACE: 	int ConnectionManager(SOCKET connectionSock, SOCKET outswitchSock)
---
--- RETURNS: 	int
---					failure:	-99 Not yet implemented
---								-1  Socket setup Failed
---					success: 	0
---
--- NOTES:
---
-----------------------------------------------------------------------------------------------------------------------*/
+/**
+ * The Connection Manager Controller
+ * Binds all the nessesary sockets, then listens for new connections or removed connections
+ *
+ * Revisions:
+ *      -# none
+ *
+ * @param[in] ipcSocks      The socket to the inbound switchboard
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 16, 2014
+ */
 void* ConnectionManager(void* ipcSocks){
 
 	int maxPlayers;
@@ -342,6 +317,20 @@ void* ConnectionManager(void* ipcSocks){
 	return NULL;
 }
 
+/**
+ * Determines whether a player name is valid and acceptabble
+ *
+ * Revisions:
+ *      -# none
+ *
+ * @param[in]  name          The name to be validated
+ * @return int  valid or invalid (bool)
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date April 5, 2014
+ */
 int checkName(char name[MAX_NAME]){
 
     int i;
@@ -376,6 +365,20 @@ int checkName(char name[MAX_NAME]){
     return 1;
 }
 
+/**
+ * Makes a random name for a player
+ *
+ * Revisions:
+ *      -# none
+ *
+ * @param[out]  name          The new random name
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date April 5, 2014
+ */
 void makeRandomName(char name[MAX_NAME]){
 
     int names = 16; // num cases + 1

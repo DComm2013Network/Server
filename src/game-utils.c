@@ -23,6 +23,11 @@ void getSpawn(playerNo_t player, floorNo_t floor, pos_t* xPos, pos_t* yPos){
             *xPos = ((player % 5) * 80) + 1280;
             break;
 
+        case 9: // Parking lot
+            *xPos = (((player / 4) * 80) + (40 * 9));
+            *yPos = (((player / 4) * 80) + (40 * 11));
+            break;
+
         default:
             *xPos = 100;
             *xPos = 100;

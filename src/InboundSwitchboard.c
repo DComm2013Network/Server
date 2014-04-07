@@ -1,24 +1,13 @@
-/*-------------------------------------------------------------------------------------------------------------------*
--- SOURCE FILE: InboundSwitchboard.c
---		The Process that will handle all traffic from already established client connections
---
--- FUNCTIONS:
--- 		int InboundSwitchboard(SOCKET connectionSockSet, SOCKET generalSockSet, SOCKET gameplaySockSet,
---					SOCKET outswitchSockSet)
---
---
--- DATE: 		February 14, 2014
---
--- REVISIONS: 	none
---
--- DESIGNER: 	Andrew Burian
---
--- PROGRAMMER: 	Andrew Burian
---
--- NOTES:
---
-*-------------------------------------------------------------------------------------------------------------------*/
+/** @ingroup Server */
+/** @{ */
 
+/**
+ * Handles all incomming traffic and routing functions
+ *
+ * @file InboundSwitchboard.c
+ */
+
+/** @} */
 #include "Server.h"
 
 

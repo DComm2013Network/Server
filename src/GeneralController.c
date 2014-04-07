@@ -8,7 +8,7 @@
  * accepted.
  *
  *
- * @file GeneralController.cpp
+ * @file GeneralController.c
  */
 
 /** @} */
@@ -228,7 +228,7 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
 
         case 6: // special tile placed
             getPacket(in, &pktTile, netPacketSizes[6]);
-            writePacket(out, &pktTile, 6);
+            writePacketTo(out, &pktTile, 6);
             break;
         default:
             DEBUG(DEBUG_ALRM, "GC> This should never be possible... gg");
