@@ -400,6 +400,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     OUTMASK m;
 
     int i;
+    int j;
     int capCount[MAX_PLAYERS] = {0};
 	packet_t pType;
 	int objCount = 0, winCount = 0, curCount = 0;
@@ -427,8 +428,8 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     for(i = 0; i < objCount; ++i){
         gameInfo->objectiveStates[i] = OBJECTIVE_AVAILABLE;
     }
-    for(i = i; i < MAX_OBJECTIVES; ++i){
-        gameInfo->objectiveStates[i] = OBJECTIVE_INVALID;
+    for(j = i; j < MAX_OBJECTIVES; ++j){
+        gameInfo->objectiveStates[j] = OBJECTIVE_INVALID;
     }
 
     writePacket(out, gameInfo, 8);
