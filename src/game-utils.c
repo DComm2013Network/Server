@@ -5,8 +5,8 @@ void getSpawn(playerNo_t player, floorNo_t floor, pos_t* xPos, pos_t* yPos){
     switch(floor){
 
         case 0: // Lobby floor
-            *yPos = ((player / 8) * 80) + 240;
-            *xPos = ((player % 8) * 40) + 440;
+            *yPos = ((player / 8) * 68) + 268;
+            *xPos = ((player % 8) * 40) + (((player % 8) / 4) * 120) + 420;
             break;
 
         case 1: // Robber Floor
