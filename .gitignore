@@ -1,0 +1,12 @@
+# generic files to ignore
+
+*~
+*.o
+bin/*
+*.gch
+*.geany
+/Debug
+/Release
+*.cbp
+*.depend
+*.layout
