@@ -1,23 +1,15 @@
-/*---------------------------------------------------------------------*
- -- SOURCE FILE: Startup.c 	The main entry point for the server process
- --
- --
- -- PROGRAM:		Game-Server
- --
- -- FUNCTIONS:
- -- 		int main(int argc, char* argv[])
- --
- -- DATE: 			January 30, 2014
- --
- -- REVISIONS: 		none
- --
- -- DESIGNER: 		Andrew Burian
- --
- -- PROGRAMMER: 	Andrew Burian
- --
- -- NOTES:
- --
- ----------------------------------------------------------------------*/
+/** @ingroup Server */
+/** @{ */
+
+/**
+ * This file contains the execution entry point for Cut the Power server. Functions consist of
+ * overall application setup and constant initilizations. Packet sizes and general control
+ * variables initialized and application structure set.
+ *
+ * @file Startup.c
+ */
+
+/** @} */
 
 #include "Server.h"
 
@@ -31,7 +23,21 @@ int RUNNING = 1;
 
 int KillHandler(int signo);
 
-
+/**
+ * Initializes global array consisting of the network packet sizes, and the
+ * ipc packet sizes. Also finds the largest packet of each type.
+ *
+ * Revisions:
+ *      -# none.
+ *
+ * @param[in]   ipcSocks     Array of 2 sockets for reading and writing.
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 1, 2014
+ */
 void setupPacketInfo(){
 
 	int i;
@@ -77,15 +83,22 @@ void setupPacketInfo(){
 
 }
 
-
-
-
-
-
-
-
-
-
+/**
+ * Execution entry point of the terminal server application. Launches each controller as a thread
+ * with its needed sockets for inter process communication.
+ *
+ * Revisions:
+ *      -# none.
+ *
+ * @param[in]   argc    Number of command line arguments.
+ * @param[in]   argv    Array of command line arguments.
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 1, 2014
+ */
 int main(int argc, char* argv[]) {
 	SOCKET uiSockSet[2];
 	SOCKET connectionSockSet[2];
@@ -263,7 +276,22 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 
-
+/**
+ * Signal handler, changes the server's running state allowing all threads
+ * to clean up and exit.
+ *
+ * Revisions:
+ *      -# none.
+ *
+ * @param[in]   signo   Signal read
+ *
+ * @return int
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 1, 2014
+ */
 int KillHandler(int signo){
     printf("Server Terminated by user keystroke!");
     RUNNING = 0;

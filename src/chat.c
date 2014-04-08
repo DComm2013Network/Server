@@ -1,13 +1,56 @@
+/** @ingroup Server */
+/** @{ */
+
+/**
+ * This file contains all methods responsible for handling chat between clients
+ *
+ *
+ * @file chat.c
+ */
+
+/** @} */
+
 #include "Server.h"
 #include <math.h>
 
 time_t gameStart;
 status_t currentState;
 
+/**
+ * Sets up the game start time with initial data
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   void
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date March 16, 2014
+ */
 void chatGameStart(){
     gameStart = time(NULL);
 }
 
+/**
+ * Sends chat messages to all players.  If the player is a 'robber', send
+ * 	the message encrypted to 'cop' players
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   chat      	The message to be sent
+ * @param[in]	teams[MAX_PLAYERS] The mask of active players
+ * @param[in]	outswitch	The Socket to communicate to the outbound switchboard
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date March 16, 2014
+ */
 void sendChat(PKT_CHAT* chat, teamNo_t teams[MAX_PLAYERS], SOCKET outswitch){
 
     OUTMASK outM;

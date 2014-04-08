@@ -1,24 +1,13 @@
-/*-------------------------------------------------------------------------------------------------------------------*
--- SOURCE FILE: InboundSwitchboard.c
---		The Process that will handle all traffic from already established client connections
---
--- FUNCTIONS:
--- 		int InboundSwitchboard(SOCKET connectionSockSet, SOCKET generalSockSet, SOCKET gameplaySockSet,
---					SOCKET outswitchSockSet)
---
---
--- DATE: 		February 14, 2014
---
--- REVISIONS: 	none
---
--- DESIGNER: 	Andrew Burian
---
--- PROGRAMMER: 	Andrew Burian
---
--- NOTES:
---
-*-------------------------------------------------------------------------------------------------------------------*/
+/** @ingroup Server */
+/** @{ */
 
+/**
+ * Handles all incomming traffic and routing functions
+ *
+ * @file InboundSwitchboard.c
+ */
+
+/** @} */
 #include "Server.h"
 
 
@@ -29,24 +18,20 @@ SOCKET Inswitch_uiSocket, Inswitch_connectionSocket, Inswitch_generalSocket, Ins
 
 void relayPacket(void* packet, packet_t type);
 
-/*--------------------------------------------------------------------------------------------------------------------
--- FUNCTION:	In-Switch Setup
---
--- DATE: 		February 19, 2014
---
--- REVISIONS: 	none
---
--- DESIGNER: 	Andrew Burian
---
--- PROGRAMMER: 	Andrew Burian
---
--- INTERFACE: 	void inswtichSetup()
---
--- RETURNS: 	void
---
--- NOTES:
--- Receives the setup packet from the UI and passes it to all who need it.
-----------------------------------------------------------------------------------------------------------------------*/
+
+/**
+ * Receives the setup packet from the UI and passes it to all who need it.
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 19, 2014
+ */
 void inswitchSetup(){
 	struct pktB0 setupPkt;
 	packet_t type = 0xB0;
@@ -62,25 +47,20 @@ void inswitchSetup(){
 	DEBUG(DEBUG_INFO, "IS> Setup Complete");
 }
 
-/*--------------------------------------------------------------------------------------------------------------------
--- FUNCTION:	Get Input
---
--- DATE: 		February 17, 2014
---
--- REVISIONS: 	none
---
--- DESIGNER: 	Andrew Burian
---
--- PROGRAMMER: 	Andrew Burian
---
--- INTERFACE: 	void addNewPlayer()
---
--- RETURNS: 	void
---
--- NOTES:
--- Adds a new player based on the data provided by the connection manager.
--- Opens both a TCP and UDP connection to the new client
-----------------------------------------------------------------------------------------------------------------------*/
+/**
+ *Adds a new player based on the data provided by the connection manager.
+ * Opens both a TCP and UDP connection to the new client *
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 17, 2014
+ */
 void addNewPlayer(){
 	// Socket handling all being done by Con Man. Just get and relay
 	void* packet = malloc(ipcPacketSizes[1]);
@@ -92,6 +72,22 @@ void addNewPlayer(){
 	free(packet);
 }
 
+/**
+ * Gets IPC messages.  Gets the packet type, the packet data and then routes it
+ *  according to type
+ *
+ * @param[in]    sock             Socket to read from.
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 16, 2014
+ */
 void getIPC(SOCKET sock){
     packet_t ctrl = 0;
 	void* packet = malloc(largestIpcPacket);
@@ -105,6 +101,22 @@ void getIPC(SOCKET sock){
 	free(packet);
 }
 
+/**
+ * Sends the specified packet with type header or type preceeding packet to the specified socket
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   sock      			The Socket to send the packet through
+ * @param[in]  	packet          	The packet data to send
+ * @param[in]  	type            	The packet type
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 16, 2014
+ */
 void writeType(SOCKET sock, void* packet, packet_t type){
 	write(sock, &type, sizeof(packet_t));
 	if(type >= 0xB0){
@@ -115,6 +127,21 @@ void writeType(SOCKET sock, void* packet, packet_t type){
 	}
 }
 
+/**
+ * Relays internal packets to the correct threads
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   packet      The packet data to send
+ * @param[in]  	type		The packet type
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 16, 2014
+ */
 void relayPacket(void* packet, packet_t type){
 
 	switch(type){
@@ -222,7 +249,19 @@ void relayPacket(void* packet, packet_t type){
 }
 
 
-
+/**
+ * Reads data from UDP socket and relays it to the appropriate thread
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 16, 2014
+ */
 void getUdpInput(){
 
 	packet_t type = 0;
@@ -246,26 +285,21 @@ void getUdpInput(){
 
 }
 
-/*--------------------------------------------------------------------------------------------------------------------
--- FUNCTION:	Get Input
---
--- DATE: 		February 17, 2014
---
--- REVISIONS: 	none
---
--- DESIGNER: 	Andrew Burian
---
--- PROGRAMMER: 	Andrew Burian
---
--- INTERFACE: 	int getInput(SOCKET liveSocket)
---
--- RETURNS: 	int
---					success: 1
---					failure: 0 - Socket Closed
---
--- NOTES:
--- Reads a live socket.
-----------------------------------------------------------------------------------------------------------------------*/
+/**
+ * Reads a live socket.
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   tcp      	The tcp socket to read
+
+ * @return int
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 17, 2014
+ */
 int getTcpInput(SOCKET tcp){
 
 	packet_t ctrl = 0;
@@ -295,25 +329,22 @@ int getTcpInput(SOCKET tcp){
 	return 1;
 }
 
-/*--------------------------------------------------------------------------------------------------------------------
--- FUNCTION:	Cleanup Socket
---
--- DATE: 		February 17, 2014
---
--- REVISIONS: 	none
---
--- DESIGNER: 	Andrew Burian
---
--- PROGRAMMER: 	Andrew Burian
---
--- INTERFACE: 	void cleanupSocket(int pos)
---
--- RETURNS: 	void
---
--- NOTES:
--- Removes both TCP and UDP sockets for a certain player position, then notifies the connection manager and
--- the outbound switchboard to do likewise.
-----------------------------------------------------------------------------------------------------------------------*/
+
+/**
+ *  Removes both TCP and UDP sockets for a certain player position, then notifies the connection manager and
+ * 	the outbound switchboard to do likewise.
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   pos				    The player number/position in the array for the sockets to close
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 20, 2014
+ */
 void cleanupSocket(int pos){
 	struct pktB2 lost;
 
@@ -329,6 +360,20 @@ void cleanupSocket(int pos){
 	DEBUG(DEBUG_INFO, "IS> Connection closed");
 }
 
+/**
+ * Removes a player based on their socket info
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   sock      			The Socket to communicate to the inbound switchboard
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 16, 2014
+ */
 void removePlayer(SOCKET sock){
     struct pktB2 lost;
 
@@ -351,29 +396,21 @@ void removePlayer(SOCKET sock){
 	DEBUG(DEBUG_WARN, "IS> Connection closed by outbound switch");
 }
 
-/*--------------------------------------------------------------------------------------------------------------------
--- FUNCTION:	Inbound Switchboard
---
--- DATE: 		February 4, 2014
---
--- REVISIONS: 	none
---
--- DESIGNER: 	Andrew Burian
---
--- PROGRAMMER: 	Andrew Burian
---
--- INTERFACE: 	int InboundSwitchboard(SOCKET connectionSockSet, SOCKET generalSockSet, SOCKET gameplaySockSet,
---					SOCKET outswitchSockSet)
---
--- RETURNS: 	int
---					failure:	-99 - Not yet implemented
---								-1  - Select failed
---								-2  - Connection Manager stopped responding
---					success: 	 0
---
--- NOTES:
---
-----------------------------------------------------------------------------------------------------------------------*/
+
+/**
+ * Method for the inbound switchboard
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   ipcSocks      		The struct of sockets used for IPC
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 16, 2014
+ */
 void* InboundSwitchboard(void* ipcSocks){
 
 	// Variable Declarations

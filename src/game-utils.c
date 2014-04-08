@@ -1,5 +1,35 @@
+/** @ingroup Server */
+/** @{ */
+
+/**
+ * Helper utility methods
+ *
+ * @file game-utils.c
+ */
+
+/** @} */
+
 #include "Server.h"
 
+
+/**
+ * Gives a player new coordinates when spawning into a game based on their
+ * 	player number so that players do not spawn on top of each other
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   player      	The player number
+ * @param[in]   floor      	The new floor number
+ * @param[out]  xPos      		The new x position
+ * @param[out]  yPos      		The new y position
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date April 2, 2014
+ **/
 void getSpawn(playerNo_t player, floorNo_t floor, pos_t* xPos, pos_t* yPos){
 
     switch(floor){
@@ -26,6 +56,7 @@ void getSpawn(playerNo_t player, floorNo_t floor, pos_t* xPos, pos_t* yPos){
         case 9:
             *yPos = ((player / 8) * 80) + 260;
             *xPos = ((player % 8) * 40) + 460;
+
             break;
 
         default:

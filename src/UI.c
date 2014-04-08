@@ -1,23 +1,16 @@
-/*-------------------------------------------------------------------------------------------------------------------*
--- SOURCE FILE: .c
---		The Process that will ...
---
--- FUNCTIONS:
--- 		int UI(SOCKET outSock)
---
---
--- DATE:
---
--- REVISIONS: 	none
---
--- DESIGNER:
---
--- PROGRAMMER:
---
--- NOTES:
---
-*-------------------------------------------------------------------------------------------------------------------*/
+/** @ingroup Server */
+/** @{ */
 
+/**
+ * This file contains all methods responsible for the server's user console interface. This controller
+ * is in charge of initializing the server and displaying relevant statistics and updates of the server's
+ * operating conditions. Input is also read from the console to allow for packet injection.
+ *
+ *
+ * @file UIController.c
+ */
+
+/** @} */
 
 #include "NetComm.h"
 #include "Server.h"
@@ -31,25 +24,20 @@ void injectPacket(packet_t type, SOCKET out);
 void say(SOCKET out);
 void tag(SOCKET out, playerNo_t player);
 
-/*--------------------------------------------------------------------------------------------------------------------
--- FUNCTION:	...
---
--- DATE:
---
--- REVISIONS: 	none
---
--- DESIGNER:
---
--- PROGRAMMER:
---
--- INTERFACE: 	int UI(SOCKET outSock)
---
--- RETURNS: 	int
---					1 when the server stops running
---
--- NOTES:
---
-----------------------------------------------------------------------------------------------------------------------*/
+/**
+ * Ongoing function while the server is running. Prompts setup info and listens for new commands.
+ *
+ * Revisions:
+ *      -# March 28 - Added code from client mockup.
+ *
+ * @param[in]   ipcSocks     Array of 2 sockets for reading and writing.
+ * @return void
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date February 20, 2014
+ */
 void* UIController(void* ipcSocks) {
 
 	// prompt setup info
@@ -158,12 +146,37 @@ void* UIController(void* ipcSocks) {
 	return 0;
 }
 
+/**
+ * Initializesthe setup packet variables.
+ *
+ *
+ * @param[in]   servName        Name of the server
+ * @param[in]   maxPlayers      Maximum number of players
+ * @param[out]   pkt            New setup packet.
+ * @return void
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date February 20, 2014
+ */
 inline void createSetupPacket(const char* servName, const int maxPlayers, PKT_SERVER_SETUP* pkt) {
 	bzero(pkt->serverName, MAX_NAME);
 	strcpy(pkt->serverName, servName);
 	pkt->maxPlayers = maxPlayers;
 }
 
+/**
+ * Prints the setup packet info.
+ *
+ * @param[in]   pkt            New setup packet.
+ * @return void
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date February 20, 2014
+ */
 inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt)
 {
     printf("\n---\n");
@@ -171,12 +184,36 @@ inline void printSetupPacketInfo(const PKT_SERVER_SETUP *pkt)
 	printf("---\n\n");
 }
 
+/**
+ * Prints a list of all available commands.
+ *
+ * @return void
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date February 20, 2014
+ */
 inline void listAllCommands()
 {
 	printf("Possible commands:\n");
 	printf(" - quit\n - stats\n - help\n - pkt <type>\n - say <message>\n - move\n - tag <player>\n");
+	printf(" - pkt <pktNum>\n ");
 }
 
+/**
+ * Prints a list of all available commands.
+ *
+ * @param[in] out       Socket to the main switchboard.
+ * @param[in] player    Tagged player number.
+ *
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 20, 2014
+ */
 void tag(SOCKET out, playerNo_t player){
     packet_t type = 14;
     PKT_TAGGING tag;
@@ -186,6 +223,18 @@ void tag(SOCKET out, playerNo_t player){
     write(out, &tag, netPacketSizes[type]);
 }
 
+/**
+ * Creates and sends a chat packet as broadcast.
+ *
+ * @param[in] out       Socket to the main switchboard.
+ *
+ * @return void
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 20, 2014
+ */
 void say(SOCKET out){
 
     PKT_CHAT chatPkt;
@@ -214,6 +263,20 @@ void say(SOCKET out){
     write(out, &chatPkt, netPacketSizes[type]);
 }
 
+/**
+ * Reads the specified packet to send and prompts for the user to enter the info.
+ * Then sends the packet to the inbound swichboard for it to be processed as a regular packet.
+ *
+ * @param[in] type      The type of packet to send.
+ * @param[in] out       Socket to the main switchboard.
+ *
+ * @return void
+ *
+ * @designer Chris Holisky
+ * @author Chris Holisky
+ *
+ * @date February 20, 2014
+ */
 void injectPacket(packet_t type, SOCKET out){
     void* data;
 

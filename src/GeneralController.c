@@ -1,22 +1,17 @@
-/*-------------------------------------------------------------------------------------------------------------------*
- -- SOURCE FILE: GeneralController.c
- --		The Process that will ...
- --
- -- FUNCTIONS:
- -- 		int ...
- --
- --
- -- DATE:
- --
- -- REVISIONS: 	none
- --
- -- DESIGNER:
- --
- -- PROGRAMMER: 	German Villarreal
- --
- -- NOTES:
- --
- *-------------------------------------------------------------------------------------------------------------------*/
+/** @ingroup Server */
+/** @{ */
+
+/**
+ * This file contains all methods responsible for "general" interactions between server and client.
+ * This controller is in charge of setting the game winner and maintaining the list of objectives.
+ * It also stores all of the player information and keeps it updated as connections are dropped or
+ * accepted.
+ *
+ *
+ * @file GeneralController.c
+ */
+
+/** @} */
 
 #include "Server.h"
 #define BUFFSIZE        64
@@ -53,37 +48,21 @@ teamNo_t desiredTeams[MAX_PLAYERS] = {0};
 
 char serverName[MAX_NAME] = {0};
 
-
-/*--------------------------------------------------------------------------------------------------------------------
- -- FUNCTION:	GeneralController
- --
- -- DATE: 		20 February 2014
- --
- -- REVISIONS: 	....
-                11 March 2014
-                pkt3 is being sent after IPC_PKT_1 received
- --
- -- DESIGNER:
- --
- -- PROGRAMMER: 	German Villarreal
- --
- -- INTERFACE: 	int GeneralController(SOCKET generalSock, SOCKET outswitchSock)
- --
- -- RETURNS: 	int
- --					failure:	-99 Not yet implemented
- --					success: 	0
- --
- -- NOTES:
-
- -- COMMUNICATIONS:
- -- IPC_PKT_0 -> Initializes server
- -- IPC_PKT_1 -> PKT3 | PKT 8
- -- IPC_PKT_2 -> PKT3
- -- PKT5 -> PKT3
- -- PKT8 -> PKT8
- -- PKT14 -> PKT3 | IPC3 -> check win
-
- --------------------------------------------------------------------------------------------------------------------*/
+/**
+ * Ongoing function while the server is running. Stores all player and game objective information.
+ * Controls packets via the sub controllers.
+ *
+ * Revisions:
+ *      -# March 26 - Largely refactored to have subcontrollers.
+ *
+ * @param[in]   ipcSocks     Array of 2 sockets for reading and writing.
+ * @return void
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date February 20, 2014
+ */
 void* GeneralController(void* ipcSocks)
 {
 
@@ -113,11 +92,33 @@ void* GeneralController(void* ipcSocks)
 	return NULL;
 }
 
-// handles new player and player lost packets
-// checks win on player lost
-// should be called in each controller that is allowed to accept these packets...pretty much all of them
-// created march 25
-// march 26 added player selection
+/**
+ * Handles packets that may be received regardless of the game state. This packet should be called
+ * in both the lobby and running controller to allow it to process these incoming packets.
+ *
+ * Communication:
+ *  - Listens for IPC_PKT_1 (New Player) -> Sends pkt03 (PKT_PLAYERS_UPDATE)
+ *      Adds the player to player lists.
+ *  - IPC_PKT_2 (Player Lost) -> pkt03 (PKT_PLAYERS_UPDATE)
+ *      Removes the player information creating an available slot. Verifies whether enough players are
+ *      still connected. Sends appropriate team win or updated player list.
+ *  - pkt04 (PKT_CHAT) -> pkt04 (PKT_CHAT)
+ *      Forwards the packet to appropriate players
+ *
+ * Revisions:
+ *      -# March 26 - Store desired character.
+ *
+ * @param[in]   sockets     Array of 2 sockets for reading and writing.
+ * @param[in]  pType        The packet type read that requires processing.
+ * @param[out]  pLists      Holds all information related to each player.
+ * @param[out]  gameInfo    Holds all information related to game state and objectives.
+ * @return void
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 25, 2014
+ */
 void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
     SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
@@ -242,6 +243,27 @@ void ongoingController(void* sockets, packet_t pType, PKT_PLAYERS_UPDATE *pLists
     }
 }
 
+/**
+ * Handles packets that may be received while the game is in the lobby. Players can move around, pick
+ * teams, and chat in the lobby.
+ *
+ * Communication:
+ *  - Listens for pkt05 (PKT_READY_STATUS)-> Sends pkt03 (PKT_PLAYERS_UPDATE)
+ *      Reads player states and desired teams. Once enough players are ready, the teams are checked and balanced
+ *      if neccessary. The game state is then changed and players are sent to their respective floor depending on their
+ *      new balanced teams.
+ *
+ * @param[in]   sockets     Array of 2 sockets for reading and writing.
+ * @param[in]   pType        The packet type read that requires processing.
+ * @param[out]  pLists      Holds all information related to each player.
+ * @param[out]  gameInfo    Holds all information related to game state and objectives.
+ * @return void
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 25, 2014
+ */
 void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
     SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
@@ -343,10 +365,33 @@ void lobbyController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS 
     }
 }
 
-// main game engine controller
-// refactored march 25
-// created WAY BACK IN THE DAY
-//
+/**
+ * Handles packets that may be received during regular gameplay. Runs for the duration of the game.
+ *
+ * Communication:
+ *  - Listens for pkt05 (PKT_READY_STATUS) -> none.
+ *      Allows to accept these packets in order to allow players to join the lobby while the game is running
+ *      but it does not allow any other states to change. This allows players to ready up for the next game.
+ *  - pkt06 (PKT_SPECIAL_TILE) -> pkt06 (PKT_SPECIAL_TILE)
+ *      Reads when a player drops a special tile and echoes it to all other players.
+ *  - pkt08 (PKT_GAME_STATUS) -> pkt08 (PKT_GAME_STATUS)
+ *      Copies any newly captured objective and checks if enough were captured for them to win; echoes new
+ *      list of objectives to all players.
+ *  - pkt14 (PKT_TAGGING) -> pkt03 (PKT_PLAYERS_UPDATE) && pkt08 (PKT_GAME_STATUS)
+ *      Sends the tagged player to the lobby, notifies all other players who was tagged and checks whether
+ *      cops won the game.
+ *
+ *
+ * @param[in]   sockets     Array of 2 sockets for reading and writing.
+ * @param[out]  pLists      Holds all information related to each player.
+ * @param[out]  gameInfo    Holds all information related to game state and objectives.
+ * @return void
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 25, 2014
+ */
 void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
     SOCKET in   = ((SOCKET*) sockets)[0];     // Socket to relay network messages
@@ -361,7 +406,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
 
     OUTMASK m;
 
-    int i;
+    int i, j;
     int capCount[MAX_PLAYERS] = {0};
 	packet_t pType;
 	int objCount = 0, winCount = 0, curCount = 0;
@@ -389,8 +434,8 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     for(i = 0; i < objCount; ++i){
         gameInfo->objectiveStates[i] = OBJECTIVE_AVAILABLE;
     }
-    for(i = i; i < MAX_OBJECTIVES; ++i){
-        gameInfo->objectiveStates[i] = OBJECTIVE_INVALID;
+    for(j = i; j < MAX_OBJECTIVES; ++j){
+        gameInfo->objectiveStates[j] = OBJECTIVE_INVALID;
     }
 
     writePacket(out, gameInfo, 8);
@@ -569,9 +614,25 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     }
 }
 
-// moves all players to lobby
-// created march 24
-// revised march 25 lobby controller strips player teams
+/**
+ * Handles game reset; once the game ends this sends the winner and the win message. Then sends all
+ * players back to the lobby.
+ *
+ * Communication:
+ * Sends pkt08 (PKT_GAME_STATUS) with the winner information.
+ * Sends pkt03 (PKT_PLAYERS_UPDATE) with the new player infomation.
+ *
+ *
+ * @param[in]   sockets     Array of 2 sockets for reading and writing.
+ * @param[out]  pLists      Holds all information related to each player.
+ * @param[out]  gameInfo    Holds all information related to game state and objectives.
+ * @return void
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 25, 2014
+ */
 void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *gameInfo)
 {
     SOCKET out   = ((SOCKET*) sockets)[1];     // Socket to relay network messages
@@ -632,9 +693,25 @@ void endController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATUS *g
 /******                HELPER FUNCTIONS               ******/
 /***********************************************************/
 
-// created march 24
-// sends ipc3 for all players
-// moves all players to specified floor and sets their specified state
+/**
+ * Used for moving all players to a specified floor. Players need to be moved in certain conditions such as
+ * game start and game end. the status parameter is used to differentiate the positions to send to as well as
+ * uses this status to set their player state.
+ *
+ * Communication:
+ * Sends IPC_PKT_3 (PKT_FORCE_MOVE) to the GameplayController for moving them to new floor.
+ *
+ *
+ * @param[in]   sockets     Array of 2 sockets for reading and writing.
+ * @param[out]  pLists      Holds all information related to each player.
+ * @param[in]   status      Used for determining the position to move to.
+ * @return void
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 24, 2014
+ */
 void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
 {
     int i;
@@ -673,9 +750,24 @@ void forceMoveAll(void* sockets, PKT_PLAYERS_UPDATE *pLists, status_t status)
 
 }
 
-// counts the captured objectives
-// created march 14
-// refactored march 24
+/**
+ * Used for moving all players to a specified floor. Players need to be moved in certain conditions such as
+ * game start and game end. the status parameter is used to differentiate the positions to send to as well as
+ * uses this status to set their player state.
+ *
+ * Revisions:
+ *      -# March 24 - Refactored and added status parameter for multipurposing
+ *
+ * @param[in]   sockets     Array of 2 sockets for reading and writing.
+ * @param[out]  pLists      Holds all information related to each player.
+ * @param[in]   status      Used for determining the position to move to.
+ * @return void
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 14, 2014
+ */
 size_t countObjectives(bool_t *objectives)
 {
     int i, val = 0;
@@ -687,19 +779,41 @@ size_t countObjectives(bool_t *objectives)
     return val;
 }
 
-//created march 25
-//uses player teams to count the number of players still in the game
-// returns the amoun of players
+/**
+ * Counts the number of players currently in the game. If the player has a team he is considered to be
+ * active.
+ *
+ * Revisions:
+ *      -# March 24 - Refactored and added status parameter for multipurposing
+ *
+ * @param[in]   playerTeams     Array of player teams
+ * @return amount of players in the game
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 25, 2014
+ */
 size_t countActivePlayers(const teamNo_t *playerTeams)
 {
     size_t team1 = 0, team2 = 0;
     return countTeams(playerTeams, &team1, &team2);
 }
 
-// params [out] team1 - number of players in team1
-//        [out] team2 - number of players in team2
-// returns total number of players in the game
-// created march 12
+/**
+ * Counts the number of players currently in the game. If the player has a team he is considered to be
+ * active.
+ *
+ * @param[in]   playerTeams   Array of player teams
+ * @param[out]  team1         Number of players in TEAM_COPS
+ * @param[out]  team2         Number of players in TEAM_ROBBERS
+ * @return amount of players in the game
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 12, 2014
+ */
 size_t countTeams(const teamNo_t *playerTeams, size_t *team1, size_t *team2)
 {
     size_t i, state;
@@ -729,10 +843,19 @@ size_t countTeams(const teamNo_t *playerTeams, size_t *team1, size_t *team2)
     return (*team1) + (*team2);
 }
 
-// in - teams chosed by the users
-// out- teams balanced by the server
-// created march 12
-// Unbalanced teams go to favour of the cops
+/**
+ * Counts number of players in each team and returns an array of balanced teams. Deisgned to favor TEAM_COPS
+ * if uneven number of players.
+ *
+ * @param[in]   teamIn        Array of unbalanced player teams
+ * @param[out]  teamOut       Array of balanced player teams
+ * @return void
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 12, 2014
+ */
 void balanceTeams(teamNo_t *teamIn, teamNo_t *teamOut)
 {
     size_t team1Count = 0, team2Count = 0, i = 0;
@@ -791,9 +914,19 @@ void balanceTeams(teamNo_t *teamIn, teamNo_t *teamOut)
     }
 }
 
-// counts ready players
-// if enough players ready; returns GAME_STATE_ACTIVE
-//      // else GAME_STATE_WAITING
+/**
+ * Counts number of players that are ready; returns appropriate game state.
+ *
+ * @param[in]   teamIn        Array of unbalanced player teams
+ * @param[out]  teamOut       Array of balanced player teams
+ * @return GAME_STATE_ACTIVE if enough players are ready;
+ *             GAME_STATE_WAITING otherwise.
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 12, 2014
+ */
 status_t getGameStatus(const status_t *playerStatus, const teamNo_t *playerTeams)
 {
     status_t s = GAME_STATE_WAITING;
@@ -818,9 +951,20 @@ status_t getGameStatus(const status_t *playerStatus, const teamNo_t *playerTeams
     return s;
 }
 
-// useful in setup of a new game
-// sets ll player data to initial states
-// march25 created
+/**
+ * Resets the player lists. -useful in new game setup
+ * All player data set to initial status.
+ *
+ * @param[out]   pLists        Array of unbalanced player teams
+ * @param[in]    maxPlayers       Array of balanced player teams
+ * @return GAME_STATE_ACTIVE if enough players are ready;
+ *             GAME_STATE_WAITING otherwise.
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 25, 2014
+ */
 void zeroPlayerLists(PKT_PLAYERS_UPDATE *pLists, const int maxPlayers)
 {
     int i, j;
@@ -841,10 +985,21 @@ void zeroPlayerLists(PKT_PLAYERS_UPDATE *pLists, const int maxPlayers)
 	}
 }
 
+/**
+ * Resets the player lists. -useful in new game setup
+ * All player data set to initial status.
+ *
+ * @param[in]    in             Socket to read from.
+ * @param[out]   maxPlayers     Maximum number of players allowed.
+ * @param[out]   pLists         Zeroed out player lists.
 
-// receives setup packet and initializes player lists
-// returns 1 on success <0 on error
-// march 25 created
+ * @return 1 on success; 0 otherwise.
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 25, 2014
+ */
 int setup(SOCKET in, int *maxPlayers, PKT_PLAYERS_UPDATE *pLists)
 {
     char msg[BUFFSIZE] = {0};
@@ -868,6 +1023,21 @@ int setup(SOCKET in, int *maxPlayers, PKT_PLAYERS_UPDATE *pLists)
 	return 1;
 }
 
+/**
+ * Resets the player lists. -useful in new game setup
+ * All player data set to initial status.
+ *
+ * @param[in]    in             Socket to read from.
+ * @param[out]   maxPlayers     Maximum number of players allowed.
+ * @param[out]   pLists         Zeroed out player lists.
+
+ * @return 1 on success; 0 otherwise.
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 25, 2014
+ */
 void clearUnexpectedPacket(SOCKET sock, packet_t type){
     void* data = malloc(netPacketSizes[type]);
     getPacket(sock, data, netPacketSizes[type]);
@@ -877,6 +1047,19 @@ void clearUnexpectedPacket(SOCKET sock, packet_t type){
 /***********************************************************/
 /******         SOCKET UTILITY FUNCTIONS              ******/
 /***********************************************************/
+
+/**
+ * Sends IPC data to the IPC socket for another thread to process.
+ *
+ * @param[in]    sock             Socket to read from.
+ * @param[in]    buf            Data to send.
+ * @param[in]    type           IPC packet type to send.
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date February 20, 2014
+ */
 inline void writeIPC(SOCKET sock, void* buf, packet_t type)
 {
 
@@ -891,6 +1074,18 @@ inline void writeIPC(SOCKET sock, void* buf, packet_t type)
     #endif
 }
 
+/**
+ * Sends net packet to outbound network socket. Packets are sent to all clients.
+ *
+ * @param[in]    sock           Socket to read from.
+ * @param[in]    packet         Data to send.
+ * @param[in]    type           Net packet type to send.
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date February 20, 2014
+ */
 inline void writePacket(SOCKET sock, void* packet, packet_t type)
 {
 	OUTMASK m;
@@ -907,6 +1102,20 @@ inline void writePacket(SOCKET sock, void* packet, packet_t type)
     #endif
 }
 
+/**
+ * Sends net packet to outbound network socket. Packets are sent to clients if
+ * specified int he mask.
+ *
+ * @param[in]    sock           Socket to read from.
+ * @param[in]    packet         Data to send.
+ * @param[in]    type           Net packet type to send.
+ * @param[in]    mask           Specifies the clients to send to.
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date February 20, 2014
+ */
 inline void writePacketTo(SOCKET sock, void* packet, packet_t type, OUTMASK mask){
 
 	write(sock, &type, sizeof(packet_t));

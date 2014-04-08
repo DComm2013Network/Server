@@ -1,76 +1,51 @@
-/*-------------------------------------------------------------------------------------------------------------------*
- -- SOURCE FILE: .c
- --		The Process will receive individual player updates, add them to the complete list
- --			and then send that updated package to outbound switchboard
- --
- -- FUNCTIONS:
- -- 		int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock)
- --
- --
- -- DATE:  February 20, 2014
- --
- -- REVISIONS: 	none
- --
- -- DESIGNER: 	Andrew Burian
- --
- -- PROGRAMMER: Chris Holisky
- --
- -- NOTES:
- --
- *-------------------------------------------------------------------------------------------------------------------*/
+/** @ingroup Server */
+/** @{ */
+
+/**
+ * The Process will receive individual player updates, add them to the complete list
+ * and then send that updated package to outbound switchboard
+ *
+ * @file GameplayController.c
+ */
+
+/** @} */
 
 #include "Server.h"
 
 extern int RUNNING;
 
-void writeType2(SOCKET sock, void* packet, packet_t type, OUTMASK m);
+//void writeType2(SOCKET sock, void* packet, packet_t type, OUTMASK m);
 
-/*--------------------------------------------------------------------------------------------------------------------
- -- FUNCTION:	GameplayController
- --
- -- DATE:  February 20, 2014
- --
- -- REVISIONS: 	Chris Holisky
- --				March 11, 2014
- --				Added code to handle IPC packets 0xB1 and 0xB2
- --				Cleaned up IPC packet IPC 0xB0
- --				Initialized floor array to 0
- --				Added handling for packet 12 (floor change)
- --				Added packet 11 and 13 echo in packet 0xB1
- --
- -- DESIGNER:	Andrew Burian / Chris Holisky
- --
- -- PROGRAMMER:	Chris Holisky
- --
- -- INTERFACE: 	int GameplayController(SOCKET gameplaySock, SOCKET outswitchSock)
- --					SOCKET gameplaySock: socket that leads to this function
- --					SOCKET outswitchSock: socket that leads to the outbound switchboard
- --
- -- RETURNS: 	int
- --					failure:	-99 Not yet implemented
- --								-1  General failure / error number not assigned
- --					success: 	0
- --
- -- NOTES:  Each floor will have it's own controller.  This creates a master list for the floor, gets updates
- --		from the inbound switchboard, adds these updates to the master file and sends that to the outbound
- --		switchboard for distribution to players on that floor.
- --		Takes packets:
- --			IPC_PKT_0 0xB0	PKT_SERVER_SETUP	pktB0 - uses maxplayers
- --			IPC_PKT_1 0xB1	PKT_NEW_CLIENT		pktB1 - uses playerNo
- --							PKT_POS_UPDATE		pkt10 - uses whole packet
- --		Sends packets:
- --							PKT_ALL_POS_UPDATE	pkt11 - uses whole packet
 
- --	CH - February 20, 2014: There is currently no error checking, handling or correction in place.  This will come
- --		in later updates.
- --		For Milestone 1 only a small part of the functionality is in place.
- --		Takes packets 10
- --		Sends packets 11
- --
- --	CH - February 27, 2014: Added error messages for data inconsistencies, send and receive errors
- --		Now using outbound mask
- --
- ----------------------------------------------------------------------------------------------------------------------*/
+ /**
+ * This creates a master list for the floor, gets updates
+ *		from the inbound switchboard, adds these updates to the master file and sends that to the outbound
+ *		switchboard for distribution to players on that floor.
+ *		Takes packets:
+ *			IPC_PKT_0 0xB0	PKT_SERVER_SETUP	pktB0 - uses maxplayers
+ *			IPC_PKT_1 0xB1	PKT_NEW_CLIENT		pktB1 - uses playerNo
+ *							PKT_POS_UPDATE		pkt10 - uses whole packet
+ *		Sends packets:
+ *							PKT_ALL_POS_UPDATE	pkt11 - uses whole packet
+ *
+ * Revisions:
+ *      -# February 20, 2014: There is currently no error checking, handling or correction in place.  This will come
+ *		    in later updates.
+ *		    For Milestone 1 only a small part of the functionality is in place.
+ *		    Takes packets 10
+ *		    Sends packets 11
+ *
+ *	    -# February 27, 2014: Added error messages for data inconsistencies, send and receive errors
+ *		    Now using outbound mask
+ *
+ * @param[in]   ipcSocks      The Sockets to communicate with other controllers
+ * @return void
+ *
+ * @designer Andrew Burian & Chris Holisky
+ * @author Chris Holisky
+ *
+ * @date February 20, 2014
+ */
 void* GameplayController(void* ipcSocks) {
 
 	SOCKET outswitchSock;
@@ -320,6 +295,7 @@ void* GameplayController(void* ipcSocks) {
         case MIN_10:
             getPacket(gameplaySock, minPos, netPacketSizes[MIN_10]);
             decapsulate_pos_update(minPos, bufPlayerIn);
+            /* no break */
 
 		case 10: //player position update
 
