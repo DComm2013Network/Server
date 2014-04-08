@@ -2,6 +2,21 @@
 
 extern int RUNNING;
 
+/**
+ * Sends an alarm packet to the gameplay controller once at MOVE_UPDATE_FREQUENCY
+ * times a second, which causes a movement update to be sent to all players in the game
+ *
+ * Revisions:
+ *      -# none
+ *
+ * @param[in]   ipcSocks    socket to the inbound switchboard
+ * @return null
+ *
+ * @designer Andrew Burian
+ * @author Andrew Burian
+ *
+ * @date March 6, 2014
+ */
 void* MovementTimer(void* ipcSocks) {
     packet_t setup;
     void* setupPacket = malloc(ipcPacketSizes[0]);
