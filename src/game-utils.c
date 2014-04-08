@@ -20,7 +20,7 @@
  *      -# None
  *
  * @param[in]   player      	The player number
- * @param[in]   floorNo_t      	The new floor number
+ * @param[in]   floor      	The new floor number
  * @param[out]  xPos      		The new x position
  * @param[out]  yPos      		The new y position
  * @return void

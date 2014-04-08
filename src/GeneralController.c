@@ -1044,7 +1044,7 @@ void clearUnexpectedPacket(SOCKET sock, packet_t type){
 /**
  * Sends IPC data to the IPC socket for another thread to process.
  *
- * @param[in]    in             Socket to read from.
+ * @param[in]    sock             Socket to read from.
  * @param[in]    buf            Data to send.
  * @param[in]    type           IPC packet type to send.
  *

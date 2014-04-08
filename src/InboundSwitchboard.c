@@ -76,6 +76,8 @@ void addNewPlayer(){
  * Gets IPC messages.  Gets the packet type, the packet data and then routes it
  *  according to type
  *
+ * @param[in]    sock             Socket to read from.
+ *
  * Revisions:
  *      -# None
  *
