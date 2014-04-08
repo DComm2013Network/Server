@@ -14,7 +14,7 @@
 
 extern int RUNNING;
 
-void writeType2(SOCKET sock, void* packet, packet_t type, OUTMASK m);
+//void writeType2(SOCKET sock, void* packet, packet_t type, OUTMASK m);
 
 
  /**
@@ -295,6 +295,7 @@ void* GameplayController(void* ipcSocks) {
         case MIN_10:
             getPacket(gameplaySock, minPos, netPacketSizes[MIN_10]);
             decapsulate_pos_update(minPos, bufPlayerIn);
+            /* no break */
 
 		case 10: //player position update
 
