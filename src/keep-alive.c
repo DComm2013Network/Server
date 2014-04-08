@@ -1,7 +1,36 @@
+/** @ingroup Server */
+/** @{ */
+
+/**
+ * This file contains methods to help keep TCP connection live when there is no activity
+ * 	and test for lost connections
+ *
+ *
+ * @file keep-alive.c
+ */
+
+/** @} */
+
 #include "Server.h"
 
 extern int RUNNING;
 
+/**
+ * Function sends 'heartbeats' to connected clients when there is no activity for a time,
+ * 	also tests to make sure that client is still connected and sends an internal
+ * 	lost player message if they are not
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   outSock     Array of TCP sockets
+ * @return void
+ *
+ * @designer German Villarreal
+ * @author German Villarreal
+ *
+ * @date March 20, 2014
+ */
 void* KeepAlive(void* outSock){
     SOCKET out = ((SOCKET*)outSock)[0];
     SOCKET in = ((SOCKET*)outSock)[1];

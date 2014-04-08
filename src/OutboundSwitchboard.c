@@ -1,23 +1,13 @@
-/*-------------------------------------------------------------------------------------------------------------------*
- -- SOURCE FILE: .c
- --		The Process that will ...
- --
- -- FUNCTIONS:
- -- 		int OutboundSwitchboard(SOCKET outswitchSock)
- --
- --
- -- DATE:		February 20, 2014
- --
- -- REVISIONS: 	none
- --
- -- DESIGNER:	Andrew Burian
- --
- -- PROGRAMMER:	Chris Holisky
- --
- -- NOTES:
- --
- *-------------------------------------------------------------------------------------------------------------------*/
+/** @ingroup Server */
+/** @{ */
 
+/**
+ * The Process will take packets from other threads and dispatch them to the appropriate players
+ *
+ * @file OutboundSwitchboard.c
+ */
+
+/** @} */
 #include "Server.h"
 
 extern int RUNNING;
@@ -25,7 +15,23 @@ void lostConnection(int pos);
 sequence_t seq = 0;
 SOCKET inSw;
 
-
+/**
+ * Sends packets to the appropriate players based on an outbound mask
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]  protocol				TCP / UDP
+ * @param[in]  to          			The bitmask of players the packet should be sent to
+ * @param[in]  data            		The packet data
+ * @param[in]  type            		The type of packet being sent
+ * @return void
+ *
+ * @designer Andrew Burian / Chris Holisky
+ * @author Chris Holisky
+ *
+ * @date February 16, 2014
+ */
 void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 
 	int i, ret;
@@ -64,7 +70,20 @@ void sendToPlayers(int protocol, OUTMASK to, void* data, packet_t type){
 
 
 
-
+/**
+ * Outbound packet handler
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   livesock      The live outbound socket
+ * @return void
+ *
+ * @designer Andrew Burian / Chris Holisky
+ * @author Chris Holisky
+ *
+ * @date February 16, 2014
+ */
 void handleOut(SOCKET liveSock){
 
 	OUTMASK mask;
@@ -129,27 +148,21 @@ void handleOut(SOCKET liveSock){
 	free(packet);
 }
 
-/*--------------------------------------------------------------------------------------------------------------------
- -- FUNCTION:	OutboundSwitchboard
- --
- -- DATE:		February 20, 2014
- --
- -- REVISIONS: 	none
- --
- -- DESIGNER:	Andrew Burian / Chris Holisky
- --
- -- PROGRAMMER:	Chris Holisky
- --
- -- INTERFACE: 	int OutboundSwitchboard(SOCKET outswitchSock)
- SOCKET outswitchSock : inbound socket
- --
- -- RETURNS: 	int
- --					failure:	-99 Not yet implemented
- --					success: 	0
- --
- -- NOTES:
- --
- ----------------------------------------------------------------------------------------------------------------------*/
+
+/**
+ * Receives IPC packets from other methods and sends them to the appropriate clients
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   ipcSocks      		The struct containing information for the sockets
+ * @return void
+ *
+ * @designer Andrew Burian / Chris Holisky
+ * @author Chris Holisky
+ *
+ * @date February 16, 2014
+ */
 void* OutboundSwitchboard(void* ipcSocks){
 
 	SOCKET game;
@@ -219,7 +232,20 @@ void* OutboundSwitchboard(void* ipcSocks){
 	return NULL;
 }
 
-
+/**
+ * Sends lost connection packet to inbound switchboard
+ *
+ * Revisions:
+ *      -# None
+ *
+ * @param[in]   pos				    The player position in the socket array
+ * @return void
+ *
+ * @designer Andrew Burian / Chris Holisky
+ * @author Chris Holisky
+ *
+ * @date February 16, 2014
+ */
 void lostConnection(int pos){
     PKT_LOST_CLIENT lost;
     packet_t lostType = IPC_PKT_2;
