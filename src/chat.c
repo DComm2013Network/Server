@@ -40,6 +40,7 @@ void sendChat(PKT_CHAT* chat, teamNo_t teams[MAX_PLAYERS], SOCKET outswitch){
     // If robber chat, send encrypted to cops
 
     // determine % decryped
+    OUT_ZERO(outM);
     currentTime = time(NULL);
     timeDiff = (currentTime - gameStart);
     decryptLvl = (timeDiff / CHAT_DECRYPT_TIME);

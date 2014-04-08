@@ -28,7 +28,7 @@
 // ************************************************************************************************
 
     // Version no
-    #define SERVER_VERSION          3.5
+    #define SERVER_VERSION          3.6
 
     // Net comm control
     #define TCP_PORT                42337
@@ -55,8 +55,8 @@
     #define PRESUME_DEAD_FREQUENCY  5       // Seconds until loss is assumed
 
     // Floor control
-    #define FLOOR_COP_START         9       // The floor the cops start on
-    #define FLOOR_ROBBER_START      1       // The floor the robbers start on
+    #define FLOOR_COP_START         3       // The floor the cops start on
+    #define FLOOR_ROBBER_START      9       // The floor the robbers start on
 
     // Players
     #define MIN_PLAYERS             2       // min players to start the game

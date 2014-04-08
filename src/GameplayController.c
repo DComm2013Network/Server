@@ -384,7 +384,7 @@ void* GameplayController(void* ipcSocks) {
 			DEBUG(DEBUG_INFO, "Sending game update");
 
 			//set outbound mask for outbound server
-			for(j = 0; j < MAX_FLOORS; ++j){
+			for(j = 0; j < MAX_FLOORS + 1; ++j){
                 OUT_ZERO(m);
                 for (i = 0; i < MAX_PLAYERS; i++) {
                     if (floorArray[j].playersOnFloor[i] == 1) {
@@ -395,8 +395,8 @@ void* GameplayController(void* ipcSocks) {
                 for(i = 0; i < MAX_PLAYERS; ++i){
                     if(!updated[i] && floorArray[j].playersOnFloor[i]){
                         // Player on this floor needs predictive update
-                        floorArray[i].xPos[i] += floorArray[i].xVel[i];
-                        floorArray[i].yPos[i] += floorArray[i].yVel[i];
+                        floorArray[j].xPos[i] += floorArray[j].xVel[i];
+                        floorArray[j].yPos[i] += floorArray[j].yVel[i];
                     }
                 }
 

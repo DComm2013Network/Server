@@ -378,7 +378,7 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     totalPlayers = countActivePlayers(pLists->playerTeams);
 
     // start with half the player count
-    objCount = totalPlayers / 2;
+    objCount = totalPlayers;
     // at least 3 floors
     objCount = (objCount < 12) ? 12 : objCount;
     // rounded to the nearest full floor
