@@ -400,7 +400,6 @@ void runningController(void* sockets, PKT_PLAYERS_UPDATE *pLists, PKT_GAME_STATU
     OUTMASK m;
 
     int i;
-    int j;
     int capCount[MAX_PLAYERS] = {0};
 	packet_t pType;
 	int objCount = 0, winCount = 0, curCount = 0;
